@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** 03 Auth Backend (2026-09-30)
-**Berikutnya:** 04 Halaman Login & Lupa Password
+**Terakhir selesai:** 04 Halaman Login & Lupa Password (2026-09-30)
+**Berikutnya:** 05 Signup Owner & Verifikasi Email
 
 ---
 
@@ -18,7 +18,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 01 Setup Project
 - [x] 02 Fondasi Multi-Tenant & RLS
 - [x] 03 Auth Backend
-- [ ] 04 Halaman Login & Lupa Password
+- [x] 04 Halaman Login & Lupa Password
 - [ ] 05 Signup Owner & Verifikasi Email
 - [ ] 06 App Shell & Navigasi
 - [ ] 07 Panel Super-Admin
@@ -102,6 +102,12 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Login tanpa konteks lewat fungsi `auth_find_user_by_email()` (SECURITY DEFINER, `app_owner`) + policy `definer_select` (`current_user = 'app_owner'`). User boleh membaca membership/tenant miliknya lintas tenant (policy `own_memberships_select`, `member_tenants_select`).
 - 2026-09-30 — Trigger `guard_super_admin_flag`: `is_super_admin` hanya bisa diubah `app_owner` — super-admin dibuat lewat skrip/migration (feature 07).
 - 2026-09-30 — Ditambahkan `AllExceptionsFilter` (format `{success:false,error}`), `ZodValidationPipe`, `app.setup.ts` (dipakai main.ts & test e2e), modul `email` (abstraksi `EmailTransport`, implementasi SMTP).
+- 2026-09-30 — Halaman `/login`, `/forgot-password`, `/reset-password` dibangun **tanpa referensi visual** (opsi 3 ui-workflow, izin user) — hanya dari `ui-rules.md` + `ui-tokens.md`. Tema lalu diganti atas permintaan user agar mengacu **https://solvexaerp.tech/** (oranye `#f2790f`, krem, cokelat tua; DM Sans + Plus Jakarta Sans; tombol pill; card 22px) — detail di `ui-tokens.md` Riwayat Token. Panel kiri halaman auth: **foto orang bekerja** (Unsplash, disimpan lokal) + lapisan gelap rata — tanpa gradient/pendar (permintaan user). Gaya ini menjadi acuan halaman berikutnya.
+- 2026-09-30 — Reset password (feature 04): token acak 32 byte, hanya hash SHA-256 di `password_reset_tokens` (migration `0002`, RLS per user + lookup `auth_find_password_reset()` SECURITY DEFINER), berlaku 60 menit, cooldown 60 detik, sekali pakai; reset mencabut semua refresh token. `forgot-password` selalu 200 (tanpa enumerasi email). Email dikirim fire-and-forget (belum BullMQ).
+- 2026-09-30 — Refresh token: kolom `rotated_at` dipisah dari `revoked_at` (migration `0003`). Token yang dirotasi boleh dipakai ulang ≤ 30 detik (request paralel proxy Next.js) dan dilayani; token yang dicabut (logout/reset/pencurian) tidak pernah berlaku lagi. Menggantikan perilaku feature 03 (reuse dalam jendela = ditolak).
+- 2026-09-30 — Web auth: browser hanya berbicara dengan web. Server Action (`apps/web/actions/auth.ts`) & `proxy.ts` (Next 16, pengganti middleware) meneruskan cookie sesi ke API dan `Set-Cookie` dari API ke browser. Proxy me-refresh sesi otomatis, redirect per peran (karyawan → `/me`, owner/admin/atasan → `/dashboard`, super-admin → `/admin/tenants`, multi usaha tanpa pilihan → langkah pilih usaha di `/login`). Klaim JWT di web dibaca tanpa verifikasi — hanya routing.
+- 2026-09-30 — `/dashboard`, `/me`, `/admin/tenants` sementara memakai `SessionPlaceholder` (hapus di 06/07/14/37). Skrip seed dev `pnpm --filter @exapay/api db:seed` (akun per peran, password `password123`).
+- 2026-09-30 — `next.config.ts` hanya mengambil `API_INTERNAL_URL` dari `.env` root; secret API/DB tidak dimuat ke proses Next. Env baru API: `APP_WEB_URL`.
 
 ---
 
@@ -110,7 +116,7 @@ _Format: tanggal — keputusan — alasan._
 _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat session berikutnya._
 
 - Belum diputuskan (tidak memblokir MVP): model harga & paket, nama produk final & domain.
-- Referensi desain di `context/designs/` belum ada — wajib sebelum feature UI pertama (04).
+- `context/designs/` masih kosong. Gaya UI saat ini ditetapkan lewat `ui-rules.md` + `ui-tokens.md` (tema solvexaerp.tech, anti "AI slop"). Halaman baru tetap wajib melewati cek referensi di `ui-workflow.md`.
 - Folder di luar struktur `architecture.md` (feature 01): `apps/api/src/common/config/` (skema env zod) dan `apps/api/src/redis/` (koneksi Redis global, analog `src/database/`). Sudah ditambahkan ke architecture.md.
 - Redis lokal user memakai port 6379 → `.env` lokal memetakan Redis container ke host port **6380** (`REDIS_HOST_PORT`). Di dalam jaringan Docker tetap 6379.
 - `.env` lokal berisi secret dev acak (tidak di-commit). Script init Postgres hanya jalan saat volume kosong — ganti password role perlu `docker compose down -v` (hapus data dev).
@@ -122,6 +128,8 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
-- Feature 04 (web): refresh token dirotasi — Next.js harus menghindari refresh paralel dengan token yang sama (jendela toleransi 30 detik hanya mencegah pencabutan family, request kedua tetap 401). Cookie path `/` — sesuaikan jika reverse proxy memakai prefix `/api`.
-- Email saat ini dikirim langsung (sinkron). Putuskan di 04/05 apakah email reset/verifikasi lewat antrean BullMQ.
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 42 test per feature 03.
+- Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
+- Email (reset password) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (kandidat: bersamaan email verifikasi feature 05).
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 48 test per feature 04.
+- Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
+- `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.

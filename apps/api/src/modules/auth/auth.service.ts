@@ -15,8 +15,9 @@ import { type Database, type Transaction, withUser } from "../../database/tenant
 
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
-// Refresh token yang dipakai ulang dalam jendela ini dianggap request paralel (mis. dua tab), bukan pencurian:
-// ditolak tanpa mencabut seluruh family.
+// Refresh token yang dipakai ulang dalam jendela ini dianggap request paralel (mis. proxy Next.js yang
+// me-refresh navigasi + prefetch bersamaan), bukan pencurian: tetap dilayani dengan token baru di family yang sama.
+// Di luar jendela → seluruh family dicabut.
 const REUSE_GRACE_SECONDS = 30;
 
 type RefreshTokenPayload = {
@@ -109,19 +110,25 @@ export class AuthService {
 
     const outcome = await withUser(this.db, payload.sub, async (tx): Promise<RotationOutcome> => {
       const [row] = await tx
-        .select({ revokedAt: refreshTokens.revokedAt, expiresAt: refreshTokens.expiresAt, activeTenantId: refreshTokens.activeTenantId })
+        .select({
+          rotatedAt: refreshTokens.rotatedAt,
+          revokedAt: refreshTokens.revokedAt,
+          expiresAt: refreshTokens.expiresAt,
+          activeTenantId: refreshTokens.activeTenantId,
+        })
         .from(refreshTokens)
         .where(and(eq(refreshTokens.id, payload.jti), eq(refreshTokens.familyId, payload.fam)))
         .for("update");
 
-      if (!row) return { kind: "rejected", revokeFamily: false };
-      if (row.revokedAt) {
-        const reusedAfterSeconds = (Date.now() - row.revokedAt.getTime()) / 1000;
-        return { kind: "rejected", revokeFamily: reusedAfterSeconds > REUSE_GRACE_SECONDS };
+      // Dicabut (logout/reset/pencurian) atau kedaluwarsa: tidak pernah berlaku lagi
+      if (!row || row.revokedAt || row.expiresAt.getTime() <= Date.now()) return { kind: "rejected", revokeFamily: false };
+      if (row.rotatedAt) {
+        const reusedAfterSeconds = (Date.now() - row.rotatedAt.getTime()) / 1000;
+        if (reusedAfterSeconds > REUSE_GRACE_SECONDS) return { kind: "rejected", revokeFamily: true };
+        // Dalam jendela toleransi (request paralel): layani lagi tanpa mengubah rotatedAt
+      } else {
+        await tx.update(refreshTokens).set({ rotatedAt: new Date() }).where(eq(refreshTokens.id, payload.jti));
       }
-      if (row.expiresAt.getTime() <= Date.now()) return { kind: "rejected", revokeFamily: false };
-
-      await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, payload.jti));
 
       const requestedTenantId = target.kind === "switch" ? target.tenantId : row.activeTenantId;
       const session = await this.loadSession(tx, payload.sub, requestedTenantId);

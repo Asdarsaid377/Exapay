@@ -8,7 +8,8 @@
     "dev": "tsc -p tsconfig.build.json && concurrently -k -n tsc,node \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --env-file-if-exists=../../.env dist/main.js\"",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:seed": "node --env-file-if-exists=../../.env dist/scripts/seed-dev.js"
   },
   "dependencies": {
     "@exapay/db": "workspace:*",

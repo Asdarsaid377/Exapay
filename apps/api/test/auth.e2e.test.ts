@@ -322,17 +322,20 @@ describe("refresh token", () => {
     expect((await agent.get("/probe/me")).status).toBe(200);
   });
 
-  it("dirotasi: token lama ditolak; dipakai ulang dalam jendela toleransi tidak mencabut family", async () => {
+  it("dirotasi; dipakai ulang dalam jendela toleransi (request paralel) tetap dilayani tanpa mencabut family", async () => {
     const login = await mobileLogin(single);
-    const first = await request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" });
+    const [first, parallel] = await Promise.all([
+      request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" }),
+      request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" }),
+    ]);
     expect(first.status).toBe(200);
-    const rotated = tokensOf(first);
+    expect(parallel.status).toBe(200);
+    expect(tokensOf(first).refreshToken).not.toBe(login.refreshToken);
 
-    const reuse = await request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" });
-    expect(reuse.status).toBe(401);
-
-    const next = await request(server).post("/auth/refresh").send({ refreshToken: rotated.refreshToken, client: "mobile" });
-    expect(next.status).toBe(200);
+    for (const res of [first, parallel]) {
+      const next = await request(server).post("/auth/refresh").send({ refreshToken: tokensOf(res).refreshToken, client: "mobile" });
+      expect(next.status).toBe(200);
+    }
   });
 
   it("dipakai ulang setelah jendela toleransi → seluruh family dicabut", async () => {
@@ -340,9 +343,9 @@ describe("refresh token", () => {
     const first = await request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" });
     const rotated = tokensOf(first);
 
-    // Mundurkan waktu pencabutan token lama ke luar jendela toleransi
+    // Mundurkan waktu rotasi token lama ke luar jendela toleransi
     await withUser(db, single.id, (tx) =>
-      tx.execute(sql`update refresh_tokens set revoked_at = now() - interval '5 minutes' where revoked_at is not null`),
+      tx.execute(sql`update refresh_tokens set rotated_at = now() - interval '5 minutes' where rotated_at is not null`),
     );
 
     const stolen = await request(server).post("/auth/refresh").send({ refreshToken: login.refreshToken, client: "mobile" });

@@ -1,4 +1,6 @@
-// Placeholder feature 01 — diganti redirect sesuai sesi di feature 04
+import { redirect } from "next/navigation";
+
+// Proxy mengarahkan "/" sesuai sesi & peran; ini hanya cadangan jika proxy dilewati
 export default function HomePage() {
-  return <main className="min-h-dvh" />;
+  redirect("/login");
 }

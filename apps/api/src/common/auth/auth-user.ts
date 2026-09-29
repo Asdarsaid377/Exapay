@@ -21,8 +21,8 @@ export type AccessTokenPayload = {
   sa: boolean;
 };
 
-export const ACCESS_COOKIE = "exapay_access";
-export const REFRESH_COOKIE = "exapay_refresh";
+// Nama cookie didefinisikan di @exapay/shared (dipakai juga oleh web)
+export { ACCESS_COOKIE, REFRESH_COOKIE } from "@exapay/shared";
 
 // Konteks RLS dari user terautentikasi. Endpoint dengan @Roles sudah menjamin tenant aktif ada.
 export function tenantContextOf(user: AuthUser): TenantContext {

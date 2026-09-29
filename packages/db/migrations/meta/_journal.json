@@ -15,6 +15,20 @@
       "when": 1790718858725,
       "tag": "0001_auth_refresh_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790722619625,
+      "tag": "0002_password_reset_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790722797429,
+      "tag": "0003_refresh_tokens_rotated_at",
+      "breakpoints": true
     }
   ]
 }

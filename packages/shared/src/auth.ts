@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import type { MembershipRole } from "./roles.js";
+import { MEMBERSHIP_ROLES, type MembershipRole } from "./roles.js";
+
+// Nama cookie sesi web (di-set API, diteruskan oleh web). Dipakai bersama api & web.
+export const ACCESS_COOKIE = "exapay_access";
+export const REFRESH_COOKIE = "exapay_refresh";
 
 // "web": token hanya di cookie httpOnly. "mobile": token juga dikembalikan di body (dipakai sebagai Bearer).
 export const AUTH_CLIENTS = ["web", "mobile"] as const;
@@ -24,6 +28,22 @@ export const switchTenantSchema = refreshSchema.extend({
   tenantId: z.uuid("Tenant tidak valid"),
 });
 export type SwitchTenantInput = z.infer<typeof switchTenantSchema>;
+
+export const PASSWORD_MIN_LENGTH = 8;
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Format email tidak valid").trim(),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Tautan reset tidak valid"),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Password minimal ${PASSWORD_MIN_LENGTH} karakter`)
+    .max(128, "Password maksimal 128 karakter"),
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export type TenantMembership = {
   tenantId: string;
@@ -51,3 +71,10 @@ export type AuthTokens = {
 
 // Respons login/refresh/switch-tenant. `tokens` hanya ada untuk client "mobile".
 export type AuthResult = AuthSession & { tokens?: AuthTokens };
+
+// Validasi respons sesi dari API (dipakai web — respons tidak dipercaya begitu saja)
+export const authSessionSchema: z.ZodType<AuthSession> = z.object({
+  user: z.object({ id: z.string(), email: z.string(), fullName: z.string(), isSuperAdmin: z.boolean() }),
+  activeTenant: z.object({ tenantId: z.string(), tenantName: z.string(), role: z.enum(MEMBERSHIP_ROLES) }).nullable(),
+  tenants: z.array(z.object({ tenantId: z.string(), tenantName: z.string(), role: z.enum(MEMBERSHIP_ROLES) })),
+});

@@ -90,9 +90,30 @@ export const refreshTokens = pgTable(
     // Tenant aktif yang dipertahankan saat refresh; null jika belum memilih tenant
     activeTenantId: uuid("active_tenant_id").references(() => tenants.id, { onDelete: "set null" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // Sudah ditukar dengan token baru (rotasi). Boleh dipakai ulang sebentar (request paralel).
+    rotatedAt: timestamp("rotated_at", { withTimezone: true }),
+    // Dicabut (logout, reset password, deteksi pencurian) — tidak pernah berlaku lagi
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [index("refresh_tokens_user_id_idx").on(t.userId), index("refresh_tokens_family_id_idx").on(t.familyId)],
+);
+
+// Token reset password (feature 04). Hanya hash SHA-256 yang disimpan — token asli hanya ada di email.
+// Level user: RLS per app.user_id; lookup by hash sebelum ada konteks lewat fungsi SECURITY DEFINER.
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("password_reset_tokens_token_hash_key").on(t.tokenHash), index("password_reset_tokens_user_id_idx").on(t.userId)],
 );

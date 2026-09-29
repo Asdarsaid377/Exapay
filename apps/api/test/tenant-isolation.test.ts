@@ -95,7 +95,7 @@ describe("role runtime app_user", () => {
        from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'public' and c.relkind = 'r'`,
     );
-    expect(rows.map((r) => r.relname).sort()).toEqual(["audit_logs", "memberships", "refresh_tokens", "tenants", "users"]);
+    expect(rows.map((r) => r.relname).sort()).toEqual(["audit_logs", "memberships", "password_reset_tokens", "refresh_tokens", "tenants", "users"]);
     for (const row of rows) {
       expect(row.relrowsecurity, `${row.relname} RLS enabled`).toBe(true);
       expect(row.relforcerowsecurity, `${row.relname} FORCE RLS`).toBe(true);
@@ -194,12 +194,12 @@ describe("isolasi tulis antar tenant", () => {
 describe("tanpa konteks tenant", () => {
   it("query tanpa konteks tidak mengembalikan baris", async () => {
     const counts = await Promise.all(
-      ["tenants", "users", "memberships", "audit_logs", "refresh_tokens"].map(async (table) => {
+      ["tenants", "users", "memberships", "audit_logs", "refresh_tokens", "password_reset_tokens"].map(async (table) => {
         const { rows } = await pool.query<{ count: string }>(`select count(*) as count from ${table}`);
         return rows[0]?.count;
       }),
     );
-    expect(counts).toEqual(["0", "0", "0", "0", "0"]);
+    expect(counts).toEqual(["0", "0", "0", "0", "0", "0"]);
   });
 
   it("koneksi pool bekas transaksi ber-tenant tidak membawa konteks lama", async () => {

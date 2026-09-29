@@ -84,13 +84,14 @@ Aturan:
 - Tabel `memberships (user_id, tenant_id, role)` — satu user bisa di lebih dari satu tenant
 - Role: `owner`, `admin`, `atasan`, `karyawan` — didefinisikan sebagai enum di `packages/shared`
 - Otorisasi di API lewat `RolesGuard` + dekorator `@Roles(...)`; aturan "atasan hanya melihat bawahannya" dicek di service
-- Reset password & undangan: diputuskan di feature 04/08
+- Undangan: diputuskan di feature 08
+- **Reset password (feature 04):** `POST /auth/forgot-password` selalu 200 (tidak membocorkan email terdaftar); token acak 32 byte, hanya hash SHA-256 disimpan di `password_reset_tokens`, berlaku 60 menit, cooldown kirim ulang 60 detik, hanya tautan terbaru berlaku. `POST /auth/reset-password` → ganti password + tandai `used_at` + cabut semua refresh token user; 410 jika tautan tidak valid/kedaluwarsa/terpakai. Lookup hash tanpa konteks lewat `auth_find_password_reset()` (SECURITY DEFINER). Email dikirim di latar (fire-and-forget) — TODO pindah ke BullMQ
 
 **Mekanisme (feature 03):**
 
 - Password: argon2id (`@node-rs/argon2`, parameter default = rekomendasi OWASP). Email tidak terdaftar tetap menjalankan verify dummy (waktu respons tidak membocorkan akun)
 - Access token: JWT HS256 15 menit, klaim `{ sub, tid, role, sa }`, secret `JWT_ACCESS_SECRET`
-- Refresh token: JWT HS256 30 hari `{ sub, jti, fam }` (secret `JWT_REFRESH_SECRET`); `jti` = baris `refresh_tokens` (status pencabutan + tenant aktif). **Rotasi** tiap refresh; token lama dipakai ulang > 30 detik setelah dirotasi → seluruh family dicabut (indikasi pencurian); ≤ 30 detik → hanya ditolak (request paralel)
+- Refresh token: JWT HS256 30 hari `{ sub, jti, fam }` (secret `JWT_REFRESH_SECRET`); `jti` = baris `refresh_tokens` (tenant aktif + status). **Rotasi** tiap refresh → `rotated_at`. Token yang sudah dirotasi dipakai ulang ≤ 30 detik → **tetap dilayani** (request paralel dari proxy Next.js); > 30 detik → seluruh family dicabut (indikasi pencurian). `revoked_at` (logout, reset password, pencurian) = tidak pernah berlaku lagi — dua kolom ini sengaja dipisah (migration `0003`)
 - Web: cookie `exapay_access` & `exapay_refresh` (httpOnly, SameSite=Lax, Secure di production, path `/`). Mobile: kirim `client: "mobile"` → token di body, dipakai sebagai `Authorization: Bearer`; refresh token dikirim di body
 - Endpoint: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/switch-tenant`, `POST /auth/logout` (publik — tetap jalan walau access token kedaluwarsa), `GET /auth/me`
 - Tenant aktif: otomatis jika user hanya punya 1 membership; selain itu pilih lewat `switch-tenant` (rotasi refresh token dengan tenant baru). Peran di access token bisa basi maksimal 15 menit — refresh membaca ulang membership

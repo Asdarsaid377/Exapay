@@ -1,35 +1,54 @@
 @import "tailwindcss";
 
-/* Token dari context/ui-tokens.md — jangan tambah warna di luar daftar ini */
+/* Token dari context/ui-tokens.md — jangan tambah warna di luar daftar ini.
+   Tema hangat (oranye + krem) mengacu solvexaerp.tech atas permintaan user. */
 @theme {
-  /* Font (--font-inter diisi next/font di layout.tsx) */
-  --font-sans: var(--font-inter), "Inter", sans-serif;
+  /* Font (--font-dm-sans & --font-jakarta diisi next/font di layout.tsx) */
+  --font-sans: var(--font-dm-sans), "DM Sans", sans-serif;
+  --font-display: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
 
   /* Background halaman dan surface */
-  --color-background: #f6f7fb;
+  --color-background: #fbf8f3;
   --color-surface: #ffffff;
-  --color-surface-secondary: #f9fafb;
+  --color-surface-secondary: #fbf8f3;
 
   /* Border */
-  --color-border: #e7eaf3;
+  --color-border: #f3e5d9;
+  --color-border-strong: #ecd6c6;
 
   /* Teks */
-  --color-text-primary: #101828;
-  --color-text-secondary: #4a5565;
-  --color-text-muted: #99a1af;
+  --color-text-primary: #221208;
+  --color-text-secondary: #5b4636;
+  --color-text-muted: #8a7561;
 
   /* Brand / accent */
-  --color-accent: #7c5cfc;
-  --color-accent-hover: #6a4be0;
-  --color-accent-soft: #f1edff;
+  --color-accent: #f2790f;
+  --color-accent-hover: #d9600a;
+  /* Teks/tautan beraksen di atas latar terang (kontras cukup untuk teks kecil) */
+  --color-accent-strong: #b34c08;
+  --color-accent-soft: #fff3e9;
+  /* Teks/ikon di atas permukaan accent (tombol primary) */
+  --color-on-accent: #ffffff;
+
+  /* Permukaan gelap (panel brand) */
+  --color-inverse: #221208;
+  --color-on-inverse: #fdf3ea;
 
   /* Status */
-  --color-success: #10b981;
-  --color-success-soft: #ecfdf5;
-  --color-warning: #ff8904;
-  --color-warning-soft: #fff7ed;
-  --color-danger: #ef4444;
+  --color-success: #15803d;
+  --color-success-soft: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #dc2626;
   --color-danger-soft: #fef2f2;
-  --color-info: #61a8ff;
+  --color-info: #2563eb;
   --color-info-soft: #eff6ff;
+
+  /* Radius */
+  --radius-card: 22px;
+  --radius-field: 14px;
+
+  /* Bayangan hangat */
+  --shadow-card: 0 2px 14px 0 rgb(120 60 10 / 0.06);
+  --shadow-accent: 0 8px 20px 0 rgb(242 121 15 / 0.3);
 }

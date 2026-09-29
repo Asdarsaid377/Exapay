@@ -13,6 +13,8 @@ export const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM: z.string().min(1),
+  // URL publik web (Next.js) — dipakai untuk tautan di email (reset password, verifikasi, undangan)
+  APP_WEB_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -8,14 +8,12 @@ Aturan ringkas untuk membangun UI project ini. File desain di `context/designs/`
 
 ## Font
 
-`[SESUAIKAN]` — Import via `next/font/google` di root layout.
+Dua font via `next/font/google` di root layout (`apps/web/app/layout.tsx`):
 
-```typescript
-import { Inter } from "next/font/google";
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-```
+- **DM Sans** → `--font-sans` (default `body`) — semua teks
+- **Plus Jakarta Sans** → `--font-display` (kelas `font-display`) — judul halaman/card, wordmark, heading besar; weight 700–800, `tracking-tight`
 
-Variabel `--font-sans` dideklarasikan di `@theme` pada `globals.css`. Terapkan class variabel font di tag `<html>` pada root layout. Jangan pakai system font sebagai font utama kecuali desain memintanya.
+Tema mengacu https://solvexaerp.tech/.
 
 ---
 
@@ -32,52 +30,48 @@ Variabel `--font-sans` dideklarasikan di `@theme` pada `globals.css`. Terapkan c
 
 ## Cards
 
-`[SESUAIKAN]` — setiap section konten hidup di dalam card:
+Setiap section konten hidup di dalam card:
 
 ```
-background: var(--color-surface)
-border: 1px solid var(--color-border)
-border-radius: 16px
-padding: 24px
+bg-surface border border-border rounded-card (22px) shadow-card p-6 (sm:p-8 untuk card tunggal seperti auth)
 ```
 
-Warna masuk ke dalam card lewat badge, bar, dan teks — bukan pada permukaan card.
+Warna masuk ke dalam card lewat badge, bar, ikon, dan teks — bukan pada permukaan card. Panel brand/hero halaman auth memakai **foto** (`next/image` fill + `object-cover`) dengan lapisan gelap rata `bg-inverse/60` agar teks `text-on-inverse` terbaca. **Tanpa gradient dan tanpa efek pendar** (keputusan user). Foto disimpan lokal di `apps/web/public/images/`, sertakan kredit fotografer.
 
 ---
 
 ## Hierarki Typography
 
-Tiga level dipakai konsisten:
-
-| Level | Ukuran | Weight | Token warna |
+| Level | Ukuran | Weight | Token |
 | --- | --- | --- | --- |
-| Section heading | `[SESUAIKAN]` 16px | 600 | `--color-text-primary` |
-| Body / konten utama | 14px | 500 | `--color-text-primary` |
-| Secondary / muted | 12px | 400 | `--color-text-muted` |
+| Judul halaman / card auth | 24px (`text-2xl`) | 800, `font-display tracking-tight` | `text-text-primary` |
+| Section heading | 16px | 700, `font-display` | `text-text-primary` |
+| Label form | 14px | 600 | `text-text-primary` |
+| Body / konten utama | 14px | 400–500 | `text-text-primary` / `text-text-secondary` |
+| Secondary / muted | 12px | 400 | `text-text-muted` |
 
 ---
 
 ## Buttons
 
-`[SESUAIKAN]`:
-
-- **Primary:** background `--color-accent`, teks putih, radius 8px, padding 8px 16px
-- **Secondary:** background surface, border `--color-border`, teks `--color-text-primary`
+- Bentuk **pill**: `rounded-full px-6 py-2.5 text-sm font-semibold`
+- **Primary:** `bg-accent text-on-accent shadow-accent hover:bg-accent-hover`
+- **Secondary:** `bg-surface border-2 border-border-strong text-text-primary hover:bg-surface-secondary`
+- Tautan teks: `text-accent-strong hover:underline underline-offset-4` (bukan `text-accent` — kontras kurang untuk teks kecil)
+- Komponen: `components/common/Button.tsx`
 
 ---
 
 ## Form Inputs
 
-`[SESUAIKAN]`:
+```
+rounded-field (14px) border border-border bg-surface-secondary px-4 py-3 text-sm
+placeholder:text-text-muted
+focus: bg-surface border-accent ring-1 ring-accent
+error: border-danger ring-danger + pesan text-xs text-danger
+```
 
-```
-background: var(--color-surface)
-border: 1px solid var(--color-border)
-border-radius: 8px
-padding: 8px 12px
-font-size: 14px
-focus: ring-1 ring-accent border-accent
-```
+Komponen: `components/common/TextField.tsx`, `PasswordField.tsx`.
 
 ---
 
@@ -108,11 +102,27 @@ Project ini memakai **Tailwind v4**. Token didefinisikan dengan `@theme` di `glo
 
 ---
 
+## Gaya yang Ditolak User (Anti "AI Slop")
+
+User secara eksplisit **tidak suka** pola dekoratif yang terasa generik/buatan AI. Jangan buat:
+
+- **Badge/pill dengan titik (dot) di depan teks** — contoh yang ditolak: pill "• Asisten HRD untuk UMKM" di atas judul hero. Tagline cukup teks biasa, atau tidak ada sama sekali
+- **Deretan ikon dalam kotak/lingkaran** sebagai hiasan daftar fitur (ikon di chip `size-10 rounded-xl` di samping setiap poin). Daftar keunggulan/fitur ditulis sebagai teks
+- **Titik/dot dekoratif, ikon berlebihan, eyebrow label warna-warni** yang tidak membawa informasi
+- Gradient dan efek pendar (glow/blur) dekoratif
+
+Ikon **boleh** hanya jika fungsional: aksi (tampilkan password, panah kembali), status (spinner, ikon alert/error), atau navigasi. Satu ikon per konteks, bukan satu ikon per baris hiasan.
+
+Pertanyaan pengecekan sebelum menambah elemen dekoratif: "apakah elemen ini membawa informasi atau aksi?" Jika tidak — jangan ditambahkan.
+
+---
+
 ## Larangan (Do Nots)
 
 - Jangan pakai kelas warna bawaan Tailwind (`bg-purple-500`, `text-gray-600`) — hanya token project
 - Jangan definisikan warna di `tailwind.config.ts` — pakai `@theme` di globals.css
-- Jangan tambah gradient pada background card (kecuali desain memintanya)
+- Jangan tambah gradient pada background card maupun panel (user menolak gradient)
+- Jangan pakai badge ber-dot, chip ikon dekoratif, atau ikon hiasan per baris (lihat "Gaya yang Ditolak User")
 - Jangan pakai lebih dari satu font weight dalam satu elemen UI
 - Jangan tampilkan raw error message ke user
 - Jangan tumpuk lebih dari 2 level border-radius bersarang

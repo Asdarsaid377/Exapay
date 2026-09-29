@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// Teks: DM Sans. Judul: Plus Jakarta Sans (kelas `font-display`)
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" });
 
 export const metadata: Metadata = {
   title: "Exapay",
@@ -17,7 +19,7 @@ type Props = {
 
 export default function RootLayout({ children }: Props) {
   return (
-    <html lang="id" className={inter.variable}>
+    <html lang="id" className={`${dmSans.variable} ${jakarta.variable}`}>
       <body className="bg-background font-sans text-text-primary antialiased">{children}</body>
     </html>
   );

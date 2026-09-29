@@ -9,6 +9,7 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 ## Area yang Paling Sering Berubah (WASPADA)
 
 ### Next.js
+- **Next 16: `middleware.ts` diganti `proxy.ts`** dengan export `proxy` (runtime Node). Docs versi terpasang ada di `node_modules/next/dist/docs/`
 - `params` dan `searchParams` pada page: **async** di versi terbaru — harus di-`await`
 - `cookies()` / `headers()`: async — harus di-`await`
 - Perilaku caching berubah signifikan antar major version — verifikasi default caching pada versi terpasang sebelum mengandalkan asumsi
@@ -110,3 +111,9 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 
 ### supertest (v7.3) + @nestjs/testing (v12.1)
 - **Pola:** test e2e membuat app dari `AppModule` + controller uji (`ProbeController`) lalu `configureApp(app)` — sama dengan `main.ts`. `request.agent(server)` untuk alur cookie
+
+### Auth web (feature 04) — pola cookie
+- Browser hanya berbicara dengan web; web meneruskan cookie sesi ke API (`Cookie` header) lewat `lib/api/server.ts`, dan meneruskan `Set-Cookie` dari API ke browser: di Server Action pakai `(await cookies()).set/delete`, di `proxy.ts` pakai `response.cookies.set` + `request.cookies.set` lalu `NextResponse.next({ request: { headers: request.headers } })` agar Server Component pada request yang sama melihat token baru
+- `response.headers.getSetCookie()` (fetch Node) untuk membaca banyak Set-Cookie
+- `next.config.ts` hanya mengambil `API_INTERNAL_URL` dari `.env` root (`node:util` `parseEnv`) — secret API/DB tidak dimuat ke proses Next
+- Klaim JWT di web dibaca **tanpa verifikasi**, hanya untuk memilih halaman; otorisasi tetap di API

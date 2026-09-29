@@ -6,6 +6,7 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard.js";
 import { RolesGuard } from "../../common/auth/roles.guard.js";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
+import { PasswordResetService } from "./password-reset.service.js";
 
 @Module({
   // Secret diberikan per panggilan (access & refresh memakai secret berbeda)
@@ -13,6 +14,7 @@ import { AuthService } from "./auth.service.js";
   controllers: [AuthController],
   providers: [
     AuthService,
+    PasswordResetService,
     // Global, berurutan: autentikasi dulu, lalu peran. Endpoint publik ditandai @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

@@ -57,6 +57,7 @@
 │   │       │   └── config/           → skema env (zod) untuk ConfigModule
 │   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext)
 │   │       ├── redis/                → koneksi Redis global (health, antrean)
+│   │       ├── scripts/              → skrip dev (seed-dev.ts → `pnpm --filter @exapay/api db:seed`)
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
 │   │           ├── email/            → abstraksi pengirim email (SMTP)
@@ -79,9 +80,12 @@
 │       │   ├── ui/                   → shadcn/ui primitives saja
 │       │   ├── layout/               → Navbar, Sidebar
 │       │   └── <fitur>/              → Component per fitur
+│       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie), mis. auth.ts
 │       ├── lib/
-│       │   └── api/                  → Client pemanggil API NestJS (server.ts, client.ts)
-│       └── middleware.ts             → Proteksi route (cek cookie sesi)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts)
+│       │   └── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
+│       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)
 ├── packages/
 │   ├── shared/                       → zod schema, DTO type, enum (role, status) — dipakai api & web
 │   ├── payroll-engine/               → Perhitungan gaji MURNI: tanpa NestJS, tanpa DB, + unit test

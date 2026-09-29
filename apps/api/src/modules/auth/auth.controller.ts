@@ -3,10 +3,14 @@ import {
   type AuthClient,
   type AuthResult,
   type AuthSession,
+  type ForgotPasswordInput,
+  forgotPasswordSchema,
   type LoginInput,
   loginSchema,
   type RefreshInput,
   refreshSchema,
+  type ResetPasswordInput,
+  resetPasswordSchema,
   type SwitchTenantInput,
   switchTenantSchema,
 } from "@exapay/shared";
@@ -20,11 +24,13 @@ import { Public } from "../../common/auth/public.decorator.js";
 import type { Env } from "../../common/config/env.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
 import { ACCESS_TOKEN_TTL_SECONDS, AuthService, type IssuedSession, REFRESH_TOKEN_TTL_SECONDS } from "./auth.service.js";
+import { PasswordResetService } from "./password-reset.service.js";
 
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly passwordResetService: PasswordResetService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -76,6 +82,24 @@ export class AuthController {
     if (token) await this.authService.logout(token);
     res.clearCookie(ACCESS_COOKIE, this.cookieOptions());
     res.clearCookie(REFRESH_COOKIE, this.cookieOptions());
+    return { success: true, data: null };
+  }
+
+  // Selalu sukses (tidak membocorkan apakah email terdaftar)
+  @Public()
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordInput): Promise<ApiResponse<null>> {
+    await this.passwordResetService.request(body.email);
+    return { success: true, data: null };
+  }
+
+  // 410 jika tautan tidak valid/kedaluwarsa/sudah dipakai
+  @Public()
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordInput): Promise<ApiResponse<null>> {
+    await this.passwordResetService.reset(body.token, body.password);
     return { success: true, data: null };
   }
 
