@@ -5,9 +5,8 @@
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
     "isolatedModules": false,
-    "rootDir": "src",
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

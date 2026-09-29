@@ -127,7 +127,7 @@ Aturan:
 
 ## Penyimpanan File
 
-- Slip gaji PDF, foto bukti tugas, lampiran izin, file impor: server **S3-compatible self-hosted** di VPS (`[PUTUSKAN]` MinIO/Garage/SeaweedFS di feature 01), diakses lewat API S3 agar bisa pindah provider tanpa ubah kode
+- Slip gaji PDF, foto bukti tugas, lampiran izin, file impor: server **S3-compatible self-hosted** di VPS (**SeaweedFS**), diakses lewat API S3 agar bisa pindah provider tanpa ubah kode
 - File privat; diakses lewat endpoint API yang mengecek hak akses atau signed URL berumur pendek
 - Path file mengandung `tenant_id` agar mudah diisolasi dan di-backup
 
@@ -141,4 +141,31 @@ Aturan:
 
 ## Pola ORM
 
-_Diisi di feature 02: cara membuka transaksi ber-tenant dengan Drizzle, cara menulis custom migration untuk RLS, perintah generate/migrate._
+Drizzle `0.45` + drizzle-kit `0.31`. Schema: `packages/db/src/schema.ts` (satu file — drizzle-kit memuat file TS langsung). Migration: `packages/db/migrations/`.
+
+**Transaksi ber-tenant** (`apps/api/src/database/tenant-transaction.ts`):
+
+```typescript
+// Inject db: @Inject(DRIZZLE) private readonly db: Database
+const rows = await withTenant(this.db, ctx, async (tx) => {
+  const result = await tx.select({ id: employees.id }).from(employees);
+  await this.audit.record(tx, ctx, { entity: "employee", entityId: id, action: "update", before, after });
+  return result;
+});
+```
+
+- `withTenant` membuka transaksi lalu `set_config('app.tenant_id' / 'app.user_id', ..., true)`. `ctx: TenantContext = { tenantId, userId | null }` berasal dari sesi terverifikasi
+- Policy memakai fungsi `current_app_tenant_id()` / `current_app_user_id()` (bukan `current_setting(...)::uuid` langsung): setting kembali menjadi `''` — bukan NULL — di koneksi pool setelah transaksi selesai, dan `''::uuid` error
+- Query di luar `withTenant` tidak melihat baris apapun (by design)
+- Audit log: `AuditService.record(tx, ctx, entry)` di transaksi yang sama dengan mutasinya → ikut rollback. `audit_logs` append-only (app_user hanya SELECT + INSERT)
+
+**Membuat migration:**
+
+1. Ubah `packages/db/src/schema.ts` → `pnpm --filter @exapay/db db:generate --name=<nama>`
+2. **Sebelum apply**, tambahkan ke file SQL yang sama (dipisah `--> statement-breakpoint`): `ENABLE` + `FORCE ROW LEVEL SECURITY`, policy `tenant_isolation` (pakai `public.current_app_tenant_id()`), trigger `<tabel>_set_updated_at` (`EXECUTE FUNCTION public.set_updated_at()`), dan `GRANT ... TO app_user` per tabel
+3. Tidak ada `ALTER DEFAULT PRIVILEGES` — tabel tanpa grant eksplisit gagal keras (lebih aman daripada tabel tanpa RLS yang bocor diam-diam)
+4. Migration khusus SQL (fungsi, data): `pnpm --filter @exapay/db exec drizzle-kit generate --custom --name=<nama>`
+5. Apply: `pnpm --filter @exapay/db db:migrate` (memakai `DATABASE_MIGRATION_URL`, role `app_owner`; tabel riwayat `drizzle.__drizzle_migrations`)
+6. Tambah test isolasi di `apps/api/test/` untuk tabel baru. Test "semua tabel public RLS + FORCE" otomatis gagal jika ada tabel tanpa RLS — update daftar tabelnya
+
+**Test integrasi:** `pnpm --filter @exapay/api test` (butuh container postgres jalan). Global setup membuat database terpisah `exapayroll_test` (drop/create — hanya DB itu), menjalankan migration sebagai `app_owner`, test berjalan sebagai `app_user`, lalu DB test di-drop.

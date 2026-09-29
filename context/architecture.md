@@ -18,7 +18,7 @@
 | Validasi | zod | Schema dipakai bersama API dan web lewat `packages/shared` |
 | Uang | decimal.js | Semua perhitungan uang. Tidak pernah float |
 | AI | Claude (Anthropic) | Di balik lapisan abstraksi provider, dipanggil dari worker |
-| File storage | S3-compatible self-hosted (`[PUTUSKAN]` MinIO/Garage/SeaweedFS di feature 01) | Slip PDF, foto bukti tugas, lampiran izin, file impor |
+| File storage | S3-compatible self-hosted — **SeaweedFS** | Slip PDF, foto bukti tugas, lampiran izin, file impor |
 | Email | SMTP (abstraksi) | Dev: Mailpit. Prod: SMTP relay tier gratis |
 | Monorepo | pnpm workspaces + Turborepo | Tipe & validasi dipakai bersama |
 | Container | Docker + Docker Compose | Dev: `api`, `web`, `worker`, `postgres`, `redis`, `mailpit`, storage S3 |
@@ -39,17 +39,22 @@
 ├── context/                          → Dokumen context
 │   └── designs/                      → Referensi desain (png/jpg)
 ├── docker-compose.yml                → api, web, worker, postgres, redis, mailpit, storage (development)
+├── Dockerfile                        → image dev bersama api/web/worker
+├── docker/postgres/init/             → script init: role app_owner & app_user
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── apps/
 │   ├── api/                          → NestJS
+│   │   ├── test/                     → test integrasi (vitest) terhadap database test terpisah
 │   │   └── src/
 │   │       ├── main.ts
 │   │       ├── app.module.ts
 │   │       ├── common/               → guard, interceptor, filter, decorator bersama
 │   │       │   ├── auth/             → JwtAuthGuard, RolesGuard, @CurrentUser, @Roles
-│   │       │   └── tenant/           → TenantContext: set_config tenant per transaksi
+│   │       │   ├── tenant/           → TenantContext: set_config tenant per transaksi
+│   │       │   └── config/           → skema env (zod) untuk ConfigModule
 │   │       ├── database/             → koneksi DB + helper transaksi ber-tenant
+│   │       ├── redis/                → koneksi Redis global (health, antrean)
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
 │   │           ├── tenants/
@@ -78,6 +83,8 @@
 │   ├── shared/                       → zod schema, DTO type, enum (role, status) — dipakai api & web
 │   ├── payroll-engine/               → Perhitungan gaji MURNI: tanpa NestJS, tanpa DB, + unit test
 │   └── db/                           → Schema Drizzle + migration (drizzle-kit)
+│       ├── src/schema.ts
+│       ├── drizzle.config.ts
 │       └── migrations/
 ├── .env.example
 └── .env                              → Env asli (tidak di-commit)

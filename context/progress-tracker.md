@@ -7,16 +7,16 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** Perencanaan (`/plan-app`) — project-overview & build-plan terisi
-**Berikutnya:** 01 Setup Project
+**Terakhir selesai:** 02 Fondasi Multi-Tenant & RLS (2026-09-30)
+**Berikutnya:** 03 Auth Backend
 
 ---
 
 ## Progress
 
 ### Phase 1 — Foundation
-- [ ] 01 Setup Project
-- [ ] 02 Fondasi Multi-Tenant & RLS
+- [x] 01 Setup Project
+- [x] 02 Fondasi Multi-Tenant & RLS
 - [ ] 03 Auth Backend
 - [ ] 04 Halaman Login & Lupa Password
 - [ ] 05 Signup Owner & Verifikasi Email
@@ -88,6 +88,14 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-29 — Mobile native direncanakan di fase berikutnya; MVP PWA. Auth API dirancang agar mendukung Bearer token untuk client mobile nanti.
 - 2026-09-29 — Nama produk sementara: **Exapay**.
 - 2026-09-29 — Notifikasi WhatsApp tetap di fase berikutnya. Tahap uji coba memakai gateway self-hosted (WAHA/Evolution API) hanya untuk notifikasi ringan tanpa data sensitif (link ke app, bukan isi slip), fallback email. Lapisan abstraksi notifikasi dibuat sejak MVP (channel email).
+- 2026-09-30 — Storage S3-compatible: **SeaweedFS** (`chrislusf/seaweedfs`, Apache-2.0). MinIO community tidak di-maintain lagi (image berhenti Okt 2025, repo dikunci Apr 2026); Garage layak tapi butuh init layout tambahan. Dev: kredensial admin S3 via env `AWS_ACCESS_KEY_ID/SECRET`; production pakai `-s3.config` dengan identitas terbatas (feature 38).
+- 2026-09-30 — **NestJS 12 (ESM-only)** + TypeScript `~6.0` (bukan 7). API & worker dibangun dengan `tsc` langsung (bukan Nest CLI — CLI butuh Node ≥22.22.3). Semua workspace `"type": "module"`, import relatif berakhiran `.js`.
+- 2026-09-30 — Role Postgres `app_owner`/`app_user` dibuat oleh `docker/postgres/init/01-roles.sh` (bukan migration — migration tidak bisa membuat role yang dipakainya sendiri). Grant tabel ada di migration (per tabel, tanpa default privileges — lihat keputusan feature 02).
+- 2026-09-30 — Satu Dockerfile dev bersama untuk api/web/worker (beda `command`); image production ramping di feature 38.
+- 2026-09-30 — Migration `0000_foundation_multi_tenant`: `tenants`, `users`, `memberships` (enum `membership_role`), `audit_logs` + RLS FORCE + trigger `updated_at`. Policy memakai `current_app_tenant_id()`/`current_app_user_id()` (nullif `''` — setting jadi `''` di koneksi pool setelah transaksi).
+- 2026-09-30 — Grant `app_user` eksplisit per tabel, **tanpa** `ALTER DEFAULT PRIVILEGES` — tabel lupa grant gagal keras, bukan bocor diam-diam.
+- 2026-09-30 — `users` juga ber-RLS: terlihat jika diri sendiri atau anggota tenant aktif; insert/update hanya baris sendiri (`app.user_id`). `audit_logs` append-only (app_user SELECT + INSERT); tenant & aktor diambil dari `TenantContext`.
+- 2026-09-30 — Test integrasi RLS memakai database terpisah `exapayroll_test` (drop/create otomatis oleh vitest globalSetup via superuser dari `.env`).
 
 ---
 
@@ -95,6 +103,15 @@ _Format: tanggal — keputusan — alasan._
 
 _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat session berikutnya._
 
-- Masih `[PUTUSKAN]`: server penyimpanan S3-compatible (MinIO/Garage/SeaweedFS — verifikasi status lisensi & maintenance saat feature 01).
 - Belum diputuskan (tidak memblokir MVP): model harga & paket, nama produk final & domain.
 - Referensi desain di `context/designs/` belum ada — wajib sebelum feature UI pertama (04).
+- Folder di luar struktur `architecture.md` (feature 01): `apps/api/src/common/config/` (skema env zod) dan `apps/api/src/redis/` (koneksi Redis global, analog `src/database/`). Sudah ditambahkan ke architecture.md.
+- Redis lokal user memakai port 6379 → `.env` lokal memetakan Redis container ke host port **6380** (`REDIS_HOST_PORT`). Di dalam jaringan Docker tetap 6379.
+- `.env` lokal berisi secret dev acak (tidak di-commit). Script init Postgres hanya jalan saat volume kosong — ganti password role perlu `docker compose down -v` (hapus data dev).
+- `pnpm-workspace.yaml` berisi `minimumReleaseAgeExclude` untuk next@16.3.7 (ditambahkan otomatis pnpm 11 karena rilis masih baru) — boleh dihapus setelah umur rilis melewati batas.
+- Bucket S3 belum dibuat — dibuat saat fitur pertama yang menyimpan file.
+- Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
+- **Untuk feature 03:** login by email (tanpa konteks) butuh fungsi `SECURITY DEFINER` khusus di migration baru; tenant switcher butuh policy SELECT membership/tenant milik user sendiri (`user_id = current_app_user_id()`). Signup (05): generate uuid tenant/user di app, set konteks ke id itu, lalu insert — policy sudah mendukung.
+- Undang user (08): insert `users` untuk orang lain ditolak policy saat ini — perlu desain (fungsi definer/policy) di feature itu.
+- `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
+- Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
