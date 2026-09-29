@@ -36,14 +36,35 @@ export const forgotPasswordSchema = z.object({
 });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
+const newPasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Password minimal ${PASSWORD_MIN_LENGTH} karakter`)
+  .max(128, "Password maksimal 128 karakter");
+
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Tautan reset tidak valid"),
-  password: z
-    .string()
-    .min(PASSWORD_MIN_LENGTH, `Password minimal ${PASSWORD_MIN_LENGTH} karakter`)
-    .max(128, "Password maksimal 128 karakter"),
+  password: newPasswordSchema,
 });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+// Signup owner (feature 05): membuat akun + usaha + membership owner sekaligus
+export const signupSchema = z.object({
+  fullName: z.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(100, "Nama lengkap maksimal 100 karakter"),
+  companyName: z.string().trim().min(2, "Nama usaha minimal 2 karakter").max(120, "Nama usaha maksimal 120 karakter"),
+  email: z.email("Format email tidak valid").trim(),
+  password: newPasswordSchema,
+});
+export type SignupInput = z.infer<typeof signupSchema>;
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, "Tautan verifikasi tidak valid"),
+});
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const resendVerificationSchema = z.object({
+  email: z.email("Format email tidak valid").trim(),
+});
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 
 export type TenantMembership = {
   tenantId: string;

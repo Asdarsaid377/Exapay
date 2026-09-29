@@ -8,7 +8,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
-// Data dev untuk mencoba login per peran (sebelum ada signup di feature 05).
+// Data dev untuk mencoba login per peran (akun langsung terverifikasi).
 // Jalankan: pnpm --filter @exapay/api db:seed  — idempotent, hanya untuk development.
 // Memakai role app_owner (DATABASE_MIGRATION_URL) karena flag super-admin hanya boleh di-set app_owner;
 // RLS tetap berlaku (FORCE), jadi setiap insert dijalankan dengan konteks yang sesuai.
@@ -60,7 +60,7 @@ async function main(): Promise<void> {
       for (const user of USERS) {
         const id = userIds.get(user.email) ?? randomUUID();
         await setContext(null, id);
-        await tx.insert(users).values({ id, email: user.email, fullName: user.fullName, passwordHash, isSuperAdmin: user.superAdmin ?? false });
+        await tx.insert(users).values({ id, email: user.email, fullName: user.fullName, passwordHash, isSuperAdmin: user.superAdmin ?? false, emailVerifiedAt: new Date() });
       }
       for (const [name, id] of tenantIds) {
         await setContext(id, null);

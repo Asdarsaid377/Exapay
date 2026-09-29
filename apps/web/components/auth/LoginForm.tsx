@@ -7,6 +7,7 @@ import { type FormEvent, useState } from "react";
 
 import { login, logout, selectTenant } from "@/actions/auth";
 import { AuthHeading } from "@/components/auth/AuthHeading";
+import { ResendVerificationButton } from "@/components/auth/ResendVerificationButton";
 import { TenantPicker } from "@/components/auth/TenantPicker";
 import { Button } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
@@ -35,6 +36,8 @@ export function LoginForm({ initialTenants, next }: Props) {
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // Email akun yang password-nya benar tapi belum diverifikasi
+  const [unverified, setUnverified] = useState<{ email: string; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingTenantId, setPendingTenantId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(
@@ -52,6 +55,7 @@ export function LoginForm({ initialTenants, next }: Props) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setUnverified(null);
 
     const parsed = loginSchema.safeParse({ email, password });
     if (!parsed.success) {
@@ -69,6 +73,7 @@ export function LoginForm({ initialTenants, next }: Props) {
     try {
       const outcome = await login({ email: parsed.data.email, password: parsed.data.password });
       if (outcome.kind === "error") setFormError(outcome.message);
+      else if (outcome.kind === "unverified") setUnverified({ email: outcome.email, message: outcome.message });
       else if (outcome.kind === "select-tenant") setStep({ kind: "select-tenant", tenants: outcome.tenants });
       else goTo(outcome.redirectTo);
     } catch {
@@ -129,6 +134,12 @@ export function LoginForm({ initialTenants, next }: Props) {
   return (
     <>
       <AuthHeading title="Masuk ke Exapay" description="Kelola gaji, absensi, dan kinerja karyawan dalam satu tempat." />
+      {unverified ? (
+        <div className="flex flex-col gap-3">
+          <FormAlert tone="info">{unverified.message}</FormAlert>
+          <ResendVerificationButton key={unverified.email} email={unverified.email} />
+        </div>
+      ) : null}
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
         {formError ? <FormAlert tone="danger">{formError}</FormAlert> : null}
         <TextField

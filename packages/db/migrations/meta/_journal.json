@@ -29,6 +29,13 @@
       "when": 1790722797429,
       "tag": "0003_refresh_tokens_rotated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790724577826,
+      "tag": "0004_email_verification",
+      "breakpoints": true
     }
   ]
 }

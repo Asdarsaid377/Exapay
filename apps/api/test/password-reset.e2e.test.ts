@@ -38,7 +38,7 @@ async function createUser(): Promise<{ id: string; email: string }> {
   const id = randomUUID();
   const email = `reset-${id.slice(0, 8)}@test.exapay.local`;
   const passwordHash = await hash(OLD_PASSWORD);
-  await withUser(db, id, (tx) => tx.insert(users).values({ id, email, fullName: "Uji Reset", passwordHash }));
+  await withUser(db, id, (tx) => tx.insert(users).values({ id, email, fullName: "Uji Reset", passwordHash, emailVerifiedAt: new Date() }));
   return { id, email };
 }
 

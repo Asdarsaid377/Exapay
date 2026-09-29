@@ -66,7 +66,7 @@ async function createUser(fullName: string): Promise<SeedUser> {
   const id = randomUUID();
   const email = `${fullName.toLowerCase().replace(/\s+/g, "-")}-${id.slice(0, 8)}@test.exapay.local`;
   const passwordHash = await hash(PASSWORD);
-  await withUser(db, id, (tx) => tx.insert(users).values({ id, email, fullName, passwordHash }));
+  await withUser(db, id, (tx) => tx.insert(users).values({ id, email, fullName, passwordHash, emailVerifiedAt: new Date() }));
   return { id, email };
 }
 

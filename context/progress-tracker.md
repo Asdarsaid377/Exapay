@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** 04 Halaman Login & Lupa Password (2026-09-30)
-**Berikutnya:** 05 Signup Owner & Verifikasi Email
+**Terakhir selesai:** 05 Signup Owner & Verifikasi Email (2026-09-30)
+**Berikutnya:** 06 App Shell & Navigasi
 
 ---
 
@@ -19,7 +19,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 02 Fondasi Multi-Tenant & RLS
 - [x] 03 Auth Backend
 - [x] 04 Halaman Login & Lupa Password
-- [ ] 05 Signup Owner & Verifikasi Email
+- [x] 05 Signup Owner & Verifikasi Email
 - [ ] 06 App Shell & Navigasi
 - [ ] 07 Panel Super-Admin
 - [ ] 08 Undang Pengguna & Kelola Peran
@@ -108,6 +108,11 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Web auth: browser hanya berbicara dengan web. Server Action (`apps/web/actions/auth.ts`) & `proxy.ts` (Next 16, pengganti middleware) meneruskan cookie sesi ke API dan `Set-Cookie` dari API ke browser. Proxy me-refresh sesi otomatis, redirect per peran (karyawan → `/me`, owner/admin/atasan → `/dashboard`, super-admin → `/admin/tenants`, multi usaha tanpa pilihan → langkah pilih usaha di `/login`). Klaim JWT di web dibaca tanpa verifikasi — hanya routing.
 - 2026-09-30 — `/dashboard`, `/me`, `/admin/tenants` sementara memakai `SessionPlaceholder` (hapus di 06/07/14/37). Skrip seed dev `pnpm --filter @exapay/api db:seed` (akun per peran, password `password123`).
 - 2026-09-30 — `next.config.ts` hanya mengambil `API_INTERNAL_URL` dari `.env` root; secret API/DB tidak dimuat ke proses Next. Env baru API: `APP_WEB_URL`.
+- 2026-09-30 — Signup (feature 05): `POST /auth/signup` membuat user + tenant + membership owner + audit log (`tenant/signup`) dalam satu `withTenant` (uuid dibuat di app), lalu token verifikasi di transaksi yang sama. **Sesi tidak dibuat** — login setelah verifikasi. Respons selalu sama (anti enumerasi): email terverifikasi → email pemberitahuan "sudah terdaftar" (cooldown 1 jam via Redis `signup:existing-notice:*`, dilewati jika Redis mati); terdaftar belum terverifikasi → kirim ulang tautan. Unique violation paralel diperlakukan sebagai email terdaftar.
+- 2026-09-30 — Verifikasi email: `users.email_verified_at` (null = belum) + `email_verification_tokens` (migration `0004`, pola sama dengan reset password: hash SHA-256, RLS per user, lookup `auth_find_email_verification()` SECURITY DEFINER). Berlaku 24 jam, cooldown kirim ulang 60 detik, hanya tautan terbaru berlaku; verifikasi idempoten (token terpakai + user terverifikasi = sukses). `auth_find_user_by_email()` kini juga mengembalikan `email_verified_at` (DROP + CREATE).
+- 2026-09-30 — Login akun belum terverifikasi → **403** (dicek setelah password benar; password salah tetap 401). Web memetakan 403 login ke state "unverified" + tombol kirim ulang. Akun lama dibackfill terverifikasi di migration (FORCE RLS `users` dilepas sementara di transaksi migration — tanpa itu UPDATE kena 0 baris). Seed & helper test membuat user dengan `emailVerifiedAt`. User buatan feature 07/08 wajib men-set `email_verified_at` saat undangan diterima.
+- 2026-09-30 — Halaman `/signup` & `/verify-email` dibangun **tanpa referensi visual** (opsi 3 ui-workflow, izin user) — mengikuti gaya auth feature 04 (`AuthShell` + komponen form). `/verify-email` memverifikasi otomatis saat dibuka (client component → Server Action).
+- 2026-09-30 — Data bawaan tenant baru: `seedTenantDefaults(tx, ctx)` di `apps/api/src/modules/tenants/tenant-defaults.ts` (placeholder, dipanggil di transaksi signup) — diisi feature 13/18/22/28; dipakai juga feature 07.
 
 ---
 
@@ -123,13 +128,12 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - `pnpm-workspace.yaml` berisi `minimumReleaseAgeExclude` untuk next@16.3.7 (ditambahkan otomatis pnpm 11 karena rilis masih baru) — boleh dihapus setelah umur rilis melewati batas.
 - Bucket S3 belum dibuat — dibuat saat fitur pertama yang menyimpan file.
 - Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
-- Signup (05): generate uuid tenant/user di app, set konteks ke id itu (`withTenant`), lalu insert tenant + user + membership — policy sudah mendukung. Pakai `AuthService.hashPassword()`.
 - Undang user (08): insert `users` untuk orang lain ditolak policy saat ini — perlu desain (fungsi definer/policy) di feature itu.
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
-- Email (reset password) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (kandidat: bersamaan email verifikasi feature 05).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 48 test per feature 04.
+- Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 56 test per feature 05.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.

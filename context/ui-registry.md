@@ -40,14 +40,14 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### TextField
 - **Path:** apps/web/components/common/TextField.tsx
-- **Dipakai di:** /login, /forgot-password
+- **Dipakai di:** /login, /forgot-password, /signup
 - **Referensi desain:** tanpa file desain — ui-rules + ui-tokens, tema mengacu solvexaerp.tech (feature 04, tercatat di progress-tracker)
 - **Pola kelas kunci:** input `rounded-field border border-border bg-surface-secondary px-4 py-3 text-sm focus:bg-surface focus:ring-1 focus:ring-accent focus:border-accent`; error `border-danger` + pesan `text-xs text-danger`; hint `text-xs text-text-muted`; label `text-sm font-semibold`
 - **Catatan:** props wajib `id` + `label`; opsional `error`, `hint`, `labelAction` (elemen kanan label), `trailing` (elemen di dalam input kanan). Server-safe (tanpa state)
 
 ### PasswordField
 - **Path:** apps/web/components/common/PasswordField.tsx
-- **Dipakai di:** /login, /reset-password
+- **Dipakai di:** /login, /reset-password, /signup
 - **Referensi desain:** tanpa file desain — ui-rules + ui-tokens, tema mengacu solvexaerp.tech (feature 04, tercatat di progress-tracker)
 - **Pola kelas kunci:** TextField + tombol ikon mata `text-text-muted hover:text-text-secondary`
 - **Catatan:** client component; toggle tampil/sembunyi password. Props sama dengan TextField kecuali `type`/`trailing`
@@ -61,7 +61,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### AuthShell
 - **Path:** apps/web/components/auth/AuthShell.tsx
-- **Dipakai di:** /login, /forgot-password, /reset-password (nanti /signup, /verify-email, /invite/[token])
+- **Dipakai di:** /login, /forgot-password, /reset-password, /signup, /verify-email (nanti /invite/[token])
 - **Referensi desain:** tanpa file desain — ui-rules + ui-tokens, tema mengacu solvexaerp.tech (feature 04, tercatat di progress-tracker)
 - **Pola kelas kunci:** grid `lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]`; panel foto `relative overflow-hidden bg-inverse p-12` + `<Image fill className="object-cover">` + lapisan `absolute inset-0 bg-inverse/60` (hanya ≥lg); konten di bawah (`mt-auto`), highlight teks saja `grid grid-cols-2`, tiap item `border-t border-on-inverse/20 pt-3` (tanpa ikon/badge); teks `text-on-inverse`; card `max-w-md rounded-card border border-border bg-surface shadow-card p-6 sm:p-8 gap-6`
 - **Catatan:** foto `public/images/auth-team.jpg` (Unsplash lLrZy195sIU, ThisisEngineering, lisensi Unsplash — kredit di pojok panel). `title`/`description` opsional — kosongkan jika form merender `AuthHeading` sendiri. `footer` untuk tautan di bawah card. Mobile: logo di atas card, panel brand disembunyikan
@@ -100,6 +100,27 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa file desain — ui-rules + ui-tokens, tema mengacu solvexaerp.tech (feature 04, tercatat di progress-tracker)
 - **Pola kelas kunci:** form `flex flex-col gap-4`, tombol submit `mt-2 fullWidth`; state hasil = ikon `size-11 rounded-field bg-<tone>-soft text-<tone>` + AuthHeading dalam `flex flex-col gap-4`
 - **Catatan:** validasi client memakai zod schema dari `@exapay/shared`. Setiap form punya state loading/error/sukses. Memanggil Server Action `actions/auth.ts`. LoginForm props: `initialTenants` (mulai di langkah pilih usaha), `next` (redirect setelah login, hanya path internal)
+
+### SignupForm
+- **Path:** apps/web/components/auth/SignupForm.tsx
+- **Dipakai di:** /signup
+- **Referensi desain:** tanpa file desain — gaya auth feature 04 (ui-rules + ui-tokens, tema solvexaerp.tech), tercatat di progress-tracker feature 05
+- **Pola kelas kunci:** sama dengan LoginForm (form `flex flex-col gap-4`, submit `mt-2 fullWidth`); state sukses = ikon `size-11 rounded-field bg-accent-soft text-accent` + AuthHeading + ResendVerificationButton + tautan teks `text-accent-strong`
+- **Catatan:** field nama lengkap, nama usaha, email, password (tanpa konfirmasi — ada toggle lihat password). Validasi `signupSchema` dari `@exapay/shared`. Tombol "Salah email?" kembali ke form (password dikosongkan)
+
+### VerifyEmailStatus
+- **Path:** apps/web/components/auth/VerifyEmailStatus.tsx
+- **Dipakai di:** /verify-email
+- **Referensi desain:** tanpa file desain — gaya auth feature 04, tercatat di progress-tracker feature 05
+- **Pola kelas kunci:** state memverifikasi = AuthHeading + skeleton `h-11 rounded-full bg-surface-secondary animate-pulse`; sukses/tidak valid = pola ikon tone ResetPasswordForm + `<Link>` berkelas tombol primary
+- **Catatan:** client component, memanggil Server Action `verifyEmail` sekali saat mount (ref guard StrictMode). State: verifying | success | invalid-token | error (tombol "Coba lagi")
+
+### ResendVerificationButton
+- **Path:** apps/web/components/auth/ResendVerificationButton.tsx
+- **Dipakai di:** SignupForm (/signup), LoginForm (/login, saat email belum terverifikasi)
+- **Referensi desain:** tanpa file desain — gaya auth feature 04, tercatat di progress-tracker feature 05
+- **Pola kelas kunci:** Button secondary fullWidth + FormAlert success/danger di atasnya (`flex flex-col gap-3`)
+- **Catatan:** props `email`, `startWithCooldown`. Hitung mundur 60 detik (sama dengan cooldown API). Pola cooldown bisa dipakai ulang untuk kirim ulang undangan (feature 08)
 
 ### SessionPlaceholder (SEMENTARA)
 - **Path:** apps/web/components/auth/SessionPlaceholder.tsx

@@ -30,6 +30,7 @@ type LoginAccount = {
   id: string;
   password_hash: string | null;
   is_super_admin: boolean;
+  email_verified_at: Date | null;
 };
 
 export type IssuedSession = {
@@ -54,7 +55,7 @@ export class AuthService {
   async login(input: LoginInput): Promise<IssuedSession> {
     // Belum ada konteks user → satu-satunya jalur baca users adalah fungsi SECURITY DEFINER
     const { rows } = await this.db.execute<LoginAccount>(
-      sql`select id, password_hash, is_super_admin from auth_find_user_by_email(${input.email})`,
+      sql`select id, password_hash, is_super_admin, email_verified_at from auth_find_user_by_email(${input.email})`,
     );
     const account = rows[0];
 
@@ -63,6 +64,10 @@ export class AuthService {
       : await this.verifyDummy(input.password);
     if (!account || !passwordValid) {
       throw new UnauthorizedException("Email atau password salah");
+    }
+    // Dicek SETELAH password benar: status verifikasi tidak bocor ke orang yang tidak tahu password
+    if (!account.email_verified_at) {
+      throw new ForbiddenException("Email Anda belum diverifikasi. Buka tautan verifikasi yang kami kirim ke email Anda.");
     }
 
     return withUser(this.db, account.id, async (tx) => {

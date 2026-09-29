@@ -28,6 +28,8 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     fullName: text("full_name").notNull(),
     isSuperAdmin: boolean("is_super_admin").notNull().default(false),
+    // null = email belum diverifikasi (signup owner, feature 05) → login ditolak
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -116,4 +118,25 @@ export const passwordResetTokens = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex("password_reset_tokens_token_hash_key").on(t.tokenHash), index("password_reset_tokens_user_id_idx").on(t.userId)],
+);
+
+// Token verifikasi email signup (feature 05). Pola sama dengan password_reset_tokens: hanya hash SHA-256 disimpan,
+// RLS per app.user_id, lookup by hash tanpa konteks lewat fungsi SECURITY DEFINER.
+export const emailVerificationTokens = pgTable(
+  "email_verification_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("email_verification_tokens_token_hash_key").on(t.tokenHash),
+    index("email_verification_tokens_user_id_idx").on(t.userId),
+  ],
 );

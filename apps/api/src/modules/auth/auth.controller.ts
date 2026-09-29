@@ -9,10 +9,16 @@ import {
   loginSchema,
   type RefreshInput,
   refreshSchema,
+  type ResendVerificationInput,
+  resendVerificationSchema,
   type ResetPasswordInput,
   resetPasswordSchema,
+  type SignupInput,
+  signupSchema,
   type SwitchTenantInput,
   switchTenantSchema,
+  type VerifyEmailInput,
+  verifyEmailSchema,
 } from "@exapay/shared";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -24,13 +30,17 @@ import { Public } from "../../common/auth/public.decorator.js";
 import type { Env } from "../../common/config/env.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
 import { ACCESS_TOKEN_TTL_SECONDS, AuthService, type IssuedSession, REFRESH_TOKEN_TTL_SECONDS } from "./auth.service.js";
+import { EmailVerificationService } from "./email-verification.service.js";
 import { PasswordResetService } from "./password-reset.service.js";
+import { SignupService } from "./signup.service.js";
 
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly signupService: SignupService,
+    private readonly emailVerificationService: EmailVerificationService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -100,6 +110,35 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordInput): Promise<ApiResponse<null>> {
     await this.passwordResetService.reset(body.token, body.password);
+    return { success: true, data: null };
+  }
+
+  // Respons sama untuk email baru maupun terdaftar (tidak membocorkan akun). Sesi TIDAK dibuat: login setelah verifikasi.
+  @Public()
+  @Post("signup")
+  @HttpCode(HttpStatus.OK)
+  async signup(@Body(new ZodValidationPipe(signupSchema)) body: SignupInput): Promise<ApiResponse<null>> {
+    await this.signupService.signup(body);
+    return { success: true, data: null };
+  }
+
+  // 410 jika tautan tidak valid/kedaluwarsa
+  @Public()
+  @Post("verify-email")
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body(new ZodValidationPipe(verifyEmailSchema)) body: VerifyEmailInput): Promise<ApiResponse<null>> {
+    await this.emailVerificationService.verify(body.token);
+    return { success: true, data: null };
+  }
+
+  // Selalu sukses (tidak membocorkan apakah email terdaftar / sudah terverifikasi)
+  @Public()
+  @Post("resend-verification")
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(
+    @Body(new ZodValidationPipe(resendVerificationSchema)) body: ResendVerificationInput,
+  ): Promise<ApiResponse<null>> {
+    await this.emailVerificationService.resend(body.email);
     return { success: true, data: null };
   }
 

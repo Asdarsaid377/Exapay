@@ -6,8 +6,12 @@ import {
   forgotPasswordSchema,
   loginSchema,
   REFRESH_COOKIE,
+  resendVerificationSchema,
   resetPasswordSchema,
+  signupSchema,
   type AuthSession,
+  type SignupInput,
+  verifyEmailSchema,
 } from "@exapay/shared";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -65,6 +69,8 @@ export async function login(input: { email: string; password: string }): Promise
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
   const result = await apiRequest("/auth/login", (data) => authSessionSchema.parse(data), { method: "POST", body: parsed.data });
+  // 403: password benar tapi email belum diverifikasi
+  if (!result.ok && result.status === 403) return { kind: "unverified", email: parsed.data.email, message: result.error };
   if (!result.ok) return { kind: "error", message: result.error };
 
   const session = result.data;
@@ -115,6 +121,33 @@ export async function resetPassword(token: string, password: string): Promise<Si
   if (result.ok) return { kind: "success" };
   // 410: tautan tidak valid / kedaluwarsa / sudah dipakai
   return result.status === 410 ? { kind: "invalid-token" } : { kind: "error", message: result.error };
+}
+
+// Respons API sama untuk email baru maupun terdaftar; sesi tidak dibuat (login setelah verifikasi)
+export async function signup(input: SignupInput): Promise<SimpleOutcome> {
+  const parsed = signupSchema.safeParse(input);
+  if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
+
+  const result = await apiRequest("/auth/signup", ignoreData, { method: "POST", body: parsed.data });
+  return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
+}
+
+export async function verifyEmail(token: string): Promise<SimpleOutcome> {
+  const parsed = verifyEmailSchema.safeParse({ token });
+  if (!parsed.success) return { kind: "invalid-token" };
+
+  const result = await apiRequest("/auth/verify-email", ignoreData, { method: "POST", body: parsed.data });
+  if (result.ok) return { kind: "success" };
+  // 410: tautan tidak valid / kedaluwarsa
+  return result.status === 410 ? { kind: "invalid-token" } : { kind: "error", message: result.error };
+}
+
+export async function resendVerification(email: string): Promise<SimpleOutcome> {
+  const parsed = resendVerificationSchema.safeParse({ email });
+  if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
+
+  const result = await apiRequest("/auth/resend-verification", ignoreData, { method: "POST", body: parsed.data });
+  return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
 }
 
 export async function logout(): Promise<never> {
