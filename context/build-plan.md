@@ -1,0 +1,242 @@
+# Build Plan — Exapay MVP
+
+## Prinsip Inti
+
+**UI halaman penuh dengan mock data dulu — diverifikasi visual sebelum logic ditulis.** Setelah UI benar, fungsionalitas dibangun dan di-wiring ke UI selangkah demi selangkah. Setiap feature harus terlihat dan bisa dites sebelum lanjut ke berikutnya.
+
+Urutan pengerjaan setiap halaman:
+
+1. Referensi desain dikonfirmasi (lihat `ui-workflow.md`)
+2. UI lengkap dengan mock data → verifikasi visual oleh user
+3. Schema database (migration via `/db-change`) jika halaman butuh data baru
+4. Endpoint NestJS + wiring ke UI
+5. Edge cases: loading, error, empty state
+6. Update `progress-tracker.md` + `ui-registry.md`
+
+**Pengecualian:** feature fondasi tanpa UI (RLS, payroll-engine, data regulasi) diverifikasi lewat **test otomatis yang dijalankan di depan user**, bukan visual.
+
+Aturan yang berlaku di semua feature: tabel bisnis wajib `tenant_id` + RLS (FORCE) + test isolasi; uang `numeric` + decimal.js; aturan regulasi sebagai data berlaku-tanggal; mutasi data sensitif masuk audit log; skor/ringkasan AI tidak final tanpa review atasan.
+
+> **Titik uji coba:** setelah Phase 5 selesai, uji coba absensi + KPI dengan 1–2 klien sebelum membangun Phase 6 (payroll).
+
+---
+
+## Phase 1 — Foundation
+
+### 01 Setup Project
+- Monorepo pnpm + Turborepo: `apps/api` (NestJS), `apps/web` (Next.js + Tailwind v4), `apps/worker`, `packages/shared`, `packages/payroll-engine`, `packages/db`
+- Docker Compose: api, web, worker, postgres, redis, mailpit, penyimpanan S3-compatible self-hosted (verifikasi status lisensi/maintenance MinIO vs Garage vs SeaweedFS, pilih, catat di Decisions)
+- `.env.example` lengkap; TypeScript strict di semua workspace
+- `apps/web/app/globals.css` dengan token dari `ui-tokens.md`
+- **Verifikasi:** `docker compose up` jalan; `GET /health` API merespons (cek DB + Redis); halaman web kosong tampil dengan background token; Mailpit UI terbuka
+
+### 02 Fondasi Multi-Tenant & RLS
+- Setup Drizzle + migration pertama: role `app_owner` / `app_user`, tabel `tenants`, `users`, `memberships`, `audit_logs`, trigger `updated_at`
+- Helper transaksi ber-tenant di `apps/api/src/database/` (`set_config('app.tenant_id', ..., true)`)
+- Helper penulisan audit log
+- **Verifikasi:** test otomatis — data tenant A tidak terbaca/tertulis dari konteks tenant B; query tanpa tenant context tidak mengembalikan baris; `app_user` bukan owner tabel
+
+### 03 Auth Backend
+- Modul auth NestJS: hash password (argon2), access + refresh token, cookie httpOnly; desain juga mendukung `Authorization: Bearer` untuk client mobile di masa depan
+- `JwtAuthGuard`, `RolesGuard`, `@Roles`, `@CurrentUser`, pemilihan tenant aktif
+- Modul email (SMTP abstraksi → Mailpit di dev)
+- **Verifikasi:** test e2e login/refresh/logout; endpoint terproteksi menolak tanpa token dan peran salah
+
+### 04 Halaman Login & Lupa Password
+**UI:** `/login`, `/forgot-password`, `/reset-password` sesuai desain
+**Logic:** wiring ke auth API, middleware proteksi route di web, redirect sesuai peran
+- **Verifikasi:** login → redirect benar per peran; reset password lewat email di Mailpit
+
+### 05 Signup Owner & Verifikasi Email
+**UI:** `/signup`, `/verify-email`
+**Logic:** buat user + tenant + membership owner dalam satu transaksi; seed default tenant (placeholder — data regulasi/template diisi feature terkait)
+- **Verifikasi:** daftar → email verifikasi di Mailpit → login → masuk dashboard kosong
+
+### 06 App Shell & Navigasi
+**UI:** layout sidebar (owner/admin/atasan, drawer di mobile), bottom nav portal karyawan `/me`, tenant switcher, halaman dashboard kosong
+**Logic:** menu disaring per peran
+- **Verifikasi:** login sebagai tiap peran → menu sesuai; tampilan mobile benar
+
+### 07 Panel Super-Admin
+**UI:** `/admin/tenants`, `/admin/tenants/[id]`
+**Logic:** buat tenant + undang owner, nonaktifkan tenant (tenant nonaktif tidak bisa login), statistik dasar; super-admin tanpa akses data gaji/karyawan
+- **Verifikasi:** buat tenant → owner menerima email → login; nonaktifkan → login ditolak
+
+### 08 Undang Pengguna & Kelola Peran
+**UI:** `/settings/users`, `/invite/[token]`
+**Logic:** undangan berbatas waktu, terima undangan & set password, ubah peran, cabut akses
+- **Verifikasi:** undang atasan & karyawan → terima → login dengan menu sesuai peran
+
+---
+
+## Phase 2 — Master Data
+
+### 09 Profil Usaha
+**UI:** `/settings/company`
+**Logic:** nama, alamat, NPWP badan, kota/kabupaten, tanggal gajian
+- **Verifikasi:** simpan & tampil kembali; audit log tercatat
+
+### 10 Departemen & Jabatan
+**UI:** `/organization`
+**Logic:** CRUD departemen & jabatan
+- **Verifikasi:** tambah/ubah/hapus; empty state tampil
+
+### 11 Daftar & Detail Karyawan
+**UI:** `/employees`, `/employees/new`, `/employees/[id]` (tab Data)
+**Logic:** CRUD karyawan; enkripsi AES-GCM NIK/NPWP/rekening + tampilan termasking; PTKP, status, tanggal kontrak/percobaan, atasan langsung
+- **Verifikasi:** data sensitif tersimpan terenkripsi di DB; atasan hanya melihat bawahannya
+
+### 12 Impor Karyawan dari Excel
+**UI:** `/employees/import` — unduh template, unggah, pratinjau dengan error per baris
+**Logic:** parsing & validasi (zod), simpan dalam transaksi
+- **Verifikasi:** impor file contoh 30 baris dengan beberapa baris salah → error jelas, baris valid tersimpan setelah konfirmasi
+
+---
+
+## Phase 3 — Absensi
+
+### 13 Jadwal Kerja & Hari Libur
+**UI:** `/settings/attendance` (bagian jadwal & libur)
+**Logic:** jadwal default per tenant (hari & jam kerja), daftar hari libur nasional + custom; fungsi hitung hari kerja untuk rentang tanggal (dipakai KPI & payroll)
+- **Verifikasi:** unit test hitung hari kerja; UI simpan jadwal
+
+### 14 Absen Masuk/Pulang (Portal Karyawan)
+**UI:** `/me` (kartu absen), `/me/attendance` (riwayat)
+**Logic:** waktu dari server, GPS opsional dicatat, status telat dihitung dari jadwal
+- **Verifikasi:** absen dari HP (atau devtools mobile) → tercatat, telat terdeteksi
+
+### 15 Izin, Sakit, Cuti
+**UI:** form pengajuan di `/me/attendance`, persetujuan di `/attendance/requests`
+**Logic:** pengajuan + lampiran opsional (storage S3-compatible), persetujuan atasan
+- **Verifikasi:** karyawan ajukan → atasan setujui → status di rekap berubah
+
+### 16 Rekap & Koreksi Absensi
+**UI:** `/attendance`, `/attendance/corrections`
+**Logic:** rekap per periode (hadir, telat menit, alpa, izin, sakit, cuti); koreksi admin + audit log
+- **Verifikasi:** koreksi mengubah rekap dan tercatat di audit log
+
+### 17 Aturan Potongan Absensi
+**UI:** `/settings/attendance` (bagian aturan)
+**Logic:** simpan aturan terstruktur berversi (`effective_from`/`effective_to`) sesuai tabel di `project-overview.md`; pratinjau potongan untuk satu karyawan contoh (perhitungan dari `payroll-engine`)
+- **Verifikasi:** unit test tiap jenis aturan; ubah aturan → versi lama tetap tersimpan
+
+---
+
+## Phase 4 — Tugas Harian & KPI
+
+### 18 Template KPI per Jabatan
+**UI:** `/kpi/templates`
+**Logic:** indikator, bobot (total 100%), target + satuan waktu, tipe; 3–5 template bawaan (sales, kasir, admin gudang, staf produksi); salin & edit
+- **Verifikasi:** validasi bobot ≠ 100% ditolak; template bawaan tersedia di tenant baru
+
+### 19 Log Tugas Harian Karyawan
+**UI:** `/me/tasks`, kartu "tugas hari ini" di `/me`
+**Logic:** pilih indikator dari template jabatan, isi realisasi, catatan, foto opsional
+- **Verifikasi:** karyawan mencatat dari HP; foto tersimpan & bisa dilihat
+
+### 20 Verifikasi Atasan
+**UI:** `/kpi/verification`
+**Logic:** setuju / tolak (dengan alasan) / koreksi angka; hanya bawahan langsung
+- **Verifikasi:** hanya entri terverifikasi yang muncul di perhitungan skor
+
+### 21 Skor Ad-hoc
+**UI:** `/kpi/scores` (pilih rentang bebas, per karyawan/tim), ringkasan di `/me/performance`
+**Logic:** fungsi skor murni: target diprorata per hari kerja, capaian maks 120%, bobot, predikat; indikator penilaian hanya jika sudah dinilai; indikator kehadiran dari rekap absensi
+- **Verifikasi:** unit test skenario skor; angka UI cocok dengan hitung manual
+
+---
+
+## Phase 5 — Penilaian Periodik & AI
+
+### 22 Siklus & Penilaian Periodik
+**UI:** `/settings/kpi`, `/kpi/reviews`, `/kpi/reviews/[id]` (tanpa AI dulu)
+**Logic:** siklus per tenant (mingguan/bulanan/triwulanan, tidak tumpang-tindih); pembuatan penilaian per periode; atasan mengisi nilai indikator penilaian; status draft → direview → final; snapshot saat final
+- **Verifikasi:** penilaian final terkunci; perubahan log sesudahnya tidak mengubah skor final
+
+### 23 Ringkasan AI
+**Logic:** lapisan abstraksi provider AI (implementasi Claude — verifikasi model & API terbaru saat implementasi); job BullMQ di worker; simpan input terstruktur, output, versi prompt; kuota per tenant per bulan
+**UI:** panel narasi AI di `/kpi/reviews/[id]` — generate ulang, edit, status
+- **Verifikasi:** narasi terbentuk dari data terstruktur; atasan bisa edit; kuota habis → pesan jelas; tidak bisa final tanpa review
+
+> **Titik uji coba dengan 1–2 klien.**
+
+---
+
+## Phase 6 — Payroll
+
+### 24 Data Regulasi Berlaku-Tanggal
+**Logic:** tabel & seed: tarif + batas upah BPJS, tabel TER PPh 21 (kategori A/B/C), PTKP, tarif Pasal 17, UMK per kota — semua dengan `effective_from`/`effective_to`; sumber resmi dicatat di seed
+- **Verifikasi:** query aturan untuk tanggal tertentu mengembalikan versi yang benar (test)
+
+### 25 Payroll Engine — Komponen & BPJS
+**Logic:** `packages/payroll-engine`: gaji pokok, tunjangan tetap/tidak tetap, potongan; BPJS Kesehatan & Ketenagakerjaan (JHT, JP, JKK, JKM) porsi perusahaan & karyawan dengan batas upah; output berisi rincian langkah
+- **Verifikasi:** unit test banyak skenario termasuk di atas/bawah batas upah dan pembulatan
+
+### 26 Payroll Engine — PPh 21 TER & True-up Desember
+**Logic:** TER bulanan per kategori PTKP; true-up Desember (tarif Pasal 17 atas penghasilan setahun dikurangi PPh yang sudah dipotong); THR/pendapatan tidak tetap ikut dasar bulan dibayar
+- **Verifikasi:** unit test skenario resmi (contoh perhitungan DJP) + karyawan masuk tengah tahun
+
+### 27 Payroll Engine — Potongan Absensi
+**Logic:** terapkan aturan tenant (feature 17) ke rekap absensi → baris potongan + penjelasan teks
+- **Verifikasi:** unit test tiap kombinasi aturan
+
+### 28 Komponen Gaji
+**UI:** `/settings/salary-components`, tab Gaji di `/employees/[id]`
+**Logic:** template komponen bawaan; nilai komponen per karyawan (berlaku-tanggal)
+- **Verifikasi:** komponen tersimpan & tampil di detail karyawan
+
+### 29 Run Payroll — Draf & Review
+**UI:** `/payroll`, `/payroll/[id]`
+**Logic:** buka periode → susun draf via engine; admin tambah pendapatan tidak tetap (THR) & sesuaikan baris; rincian per karyawan dengan penjelasan
+- **Verifikasi:** angka draf cocok dengan hitung manual untuk 3 karyawan contoh
+
+### 30 Finalisasi Payroll
+**Logic:** finalisasi dalam satu transaksi → snapshot immutable (input, hasil, versi aturan) + audit log; koreksi lewat adjustment periode berikutnya
+- **Verifikasi:** payroll final tidak bisa diubah; audit log lengkap
+
+### 31 Slip Gaji PDF
+**Logic:** job BullMQ di worker → PDF → storage S3-compatible → email ke karyawan
+**UI:** `/payroll/[id]/slips`, `/me/payslips`
+- **Verifikasi:** slip terbentuk & bisa diunduh hanya oleh yang berhak; email di Mailpit
+
+### 32 Laporan & Ekspor Payroll
+**UI:** `/payroll/reports`
+**Logic:** rekap total gaji, BPJS, PPh 21 per periode; ekspor Excel (daftar transfer bank, rekap setor)
+- **Verifikasi:** total laporan = jumlah slip; file Excel terbuka benar
+
+---
+
+## Phase 7 — Kepatuhan, Dashboard & Portal
+
+### 33 Kalender Kepatuhan
+**UI:** `/compliance`
+**Logic:** generator pengingat (setor BPJS, setor/lapor PPh 21, kontrak habis, percobaan selesai) via job terjadwal BullMQ; email H-7/H-1
+- **Verifikasi:** data contoh → pengingat muncul di tanggal benar; email terkirim ke Mailpit
+
+### 34 Peringatan UMK
+**Logic:** bandingkan gaji pokok karyawan dengan UMK kota tenant yang berlaku
+**UI:** badge peringatan di daftar karyawan & kalender kepatuhan
+- **Verifikasi:** karyawan di bawah UMK tertandai
+
+### 35 Dashboard Owner/Admin
+**UI:** `/dashboard` — biaya gaji, rekap kehadiran, sebaran skor KPI, pengingat, tindakan tertunda
+- **Verifikasi:** angka cocok dengan halaman sumbernya
+
+### 36 Dashboard Atasan
+**UI:** `/dashboard` versi atasan — log menunggu verifikasi, pengajuan izin, penilaian perlu review
+- **Verifikasi:** hanya data bawahan langsung
+
+### 37 Portal Karyawan Lengkap & PWA
+**UI:** `/me/performance`, `/me/profile`, penyempurnaan `/me`
+**Logic:** manifest + service worker (installable), tampilan offline sederhana
+- **Verifikasi:** bisa di-install di HP; semua menu karyawan berfungsi
+
+---
+
+## Phase 8 — Siap Produksi
+
+### 38 Backup & Deploy VPS
+- Docker Compose production + reverse proxy (web & `/api` satu domain, HTTPS)
+- Backup Postgres + storage terjadwal ke luar server; uji restore
+- Konfigurasi SMTP relay tier gratis untuk production
+- **Verifikasi:** deploy ke VPS berjalan; restore backup ke instance uji berhasil
