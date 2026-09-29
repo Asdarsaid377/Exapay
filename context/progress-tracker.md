@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** 02 Fondasi Multi-Tenant & RLS (2026-09-30)
-**Berikutnya:** 03 Auth Backend
+**Terakhir selesai:** 03 Auth Backend (2026-09-30)
+**Berikutnya:** 04 Halaman Login & Lupa Password
 
 ---
 
@@ -17,7 +17,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 1 — Foundation
 - [x] 01 Setup Project
 - [x] 02 Fondasi Multi-Tenant & RLS
-- [ ] 03 Auth Backend
+- [x] 03 Auth Backend
 - [ ] 04 Halaman Login & Lupa Password
 - [ ] 05 Signup Owner & Verifikasi Email
 - [ ] 06 App Shell & Navigasi
@@ -96,6 +96,12 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Grant `app_user` eksplisit per tabel, **tanpa** `ALTER DEFAULT PRIVILEGES` — tabel lupa grant gagal keras, bukan bocor diam-diam.
 - 2026-09-30 — `users` juga ber-RLS: terlihat jika diri sendiri atau anggota tenant aktif; insert/update hanya baris sendiri (`app.user_id`). `audit_logs` append-only (app_user SELECT + INSERT); tenant & aktor diambil dari `TenantContext`.
 - 2026-09-30 — Test integrasi RLS memakai database terpisah `exapayroll_test` (drop/create otomatis oleh vitest globalSetup via superuser dari `.env`).
+- 2026-09-30 — Auth (feature 03): argon2id via `@node-rs/argon2`; access JWT 15 menit `{sub,tid,role,sa}`; refresh JWT 30 hari `{sub,jti,fam}` berotasi, baris di `refresh_tokens` (migration `0001`). Reuse > 30 detik setelah rotasi → seluruh family dicabut; ≤ 30 detik hanya ditolak (request paralel). Detail di `database-standards.md` bagian Auth.
+- 2026-09-30 — Web: token hanya di cookie httpOnly (`exapay_access`/`exapay_refresh`, SameSite=Lax, path `/`). Mobile: `client: "mobile"` → token di body + Bearer.
+- 2026-09-30 — `JwtAuthGuard` + `RolesGuard` global (`APP_GUARD`), endpoint publik wajib `@Public()`. `@Roles` menolak user tanpa tenant aktif. Tenant aktif otomatis jika hanya 1 membership, selain itu lewat `POST /auth/switch-tenant`.
+- 2026-09-30 — Login tanpa konteks lewat fungsi `auth_find_user_by_email()` (SECURITY DEFINER, `app_owner`) + policy `definer_select` (`current_user = 'app_owner'`). User boleh membaca membership/tenant miliknya lintas tenant (policy `own_memberships_select`, `member_tenants_select`).
+- 2026-09-30 — Trigger `guard_super_admin_flag`: `is_super_admin` hanya bisa diubah `app_owner` — super-admin dibuat lewat skrip/migration (feature 07).
+- 2026-09-30 — Ditambahkan `AllExceptionsFilter` (format `{success:false,error}`), `ZodValidationPipe`, `app.setup.ts` (dipakai main.ts & test e2e), modul `email` (abstraksi `EmailTransport`, implementasi SMTP).
 
 ---
 
@@ -111,7 +117,11 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - `pnpm-workspace.yaml` berisi `minimumReleaseAgeExclude` untuk next@16.3.7 (ditambahkan otomatis pnpm 11 karena rilis masih baru) — boleh dihapus setelah umur rilis melewati batas.
 - Bucket S3 belum dibuat — dibuat saat fitur pertama yang menyimpan file.
 - Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
-- **Untuk feature 03:** login by email (tanpa konteks) butuh fungsi `SECURITY DEFINER` khusus di migration baru; tenant switcher butuh policy SELECT membership/tenant milik user sendiri (`user_id = current_app_user_id()`). Signup (05): generate uuid tenant/user di app, set konteks ke id itu, lalu insert — policy sudah mendukung.
+- Signup (05): generate uuid tenant/user di app, set konteks ke id itu (`withTenant`), lalu insert tenant + user + membership — policy sudah mendukung. Pakai `AuthService.hashPassword()`.
 - Undang user (08): insert `users` untuk orang lain ditolak policy saat ini — perlu desain (fungsi definer/policy) di feature itu.
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
+- **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
+- Feature 04 (web): refresh token dirotasi — Next.js harus menghindari refresh paralel dengan token yang sama (jendela toleransi 30 detik hanya mencegah pencabutan family, request kedua tetap 401). Cookie path `/` — sesuaikan jika reverse proxy memakai prefix `/api`.
+- Email saat ini dikirim langsung (sinkron). Putuskan di 04/05 apakah email reset/verifikasi lewat antrean BullMQ.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 42 test per feature 03.

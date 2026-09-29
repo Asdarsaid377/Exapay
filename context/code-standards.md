@@ -39,15 +39,14 @@ Claude Code di project ini beroperasi sebagai senior engineer:
 - **Service** berisi business logic dan akses DB (lewat helper transaksi ber-tenant dari `src/database/`)
 - Perhitungan gaji tidak ditulis di service — service memanggil `packages/payroll-engine`
 - Validasi input di boundary dengan zod schema dari `packages/shared` (lewat pipe validasi)
-- Setiap endpoint data tenant dilindungi `JwtAuthGuard` + `RolesGuard`; endpoint publik harus ditandai eksplisit
+- `JwtAuthGuard` + `RolesGuard` terdaftar **global** (`APP_GUARD` di `AuthModule`): semua endpoint wajib login secara default. Endpoint publik ditandai eksplisit `@Public()`; peran dibatasi dengan `@Roles(...)` (otomatis menolak user yang belum memilih tenant)
 - Tenant & user diambil dari request yang sudah terautentikasi (`@CurrentUser()`), tidak dari body
 - Pekerjaan lambat/eksternal → enqueue BullMQ, jangan dikerjakan di request
 - Error ditangani lewat exception filter global: log detail di server, kirim pesan aman ke client
 
 ```typescript
 // apps/api/src/modules/employees/employees.controller.ts
-@Controller("employees")
-@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller("employees") // guard auth & peran berlaku global
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
@@ -57,6 +56,7 @@ export class EmployeesController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(createEmployeeSchema)) body: CreateEmployeeInput,
   ): Promise<ApiResponse<Employee>> {
+    // Service membuka withTenant(db, tenantContextOf(user), ...)
     const employee = await this.employeesService.create(user, body);
     return { success: true, data: employee };
   }

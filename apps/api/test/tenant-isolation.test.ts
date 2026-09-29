@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import { auditLogs, memberships, tenants, users } from "@exapay/db";
+import { auditLogs, memberships, refreshTokens, tenants, users } from "@exapay/db";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import * as schema from "@exapay/db";
-import { type Database, type TenantContext, withTenant } from "../src/database/tenant-transaction.js";
+import { type Database, type TenantContext, withTenant, withUser } from "../src/database/tenant-transaction.js";
 import { AuditService } from "../src/modules/audit/audit.service.js";
 
 // Verifikasi feature 02: isolasi tenant lewat RLS, dijalankan sebagai app_user (role runtime API).
@@ -95,7 +95,7 @@ describe("role runtime app_user", () => {
        from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'public' and c.relkind = 'r'`,
     );
-    expect(rows.map((r) => r.relname).sort()).toEqual(["audit_logs", "memberships", "tenants", "users"]);
+    expect(rows.map((r) => r.relname).sort()).toEqual(["audit_logs", "memberships", "refresh_tokens", "tenants", "users"]);
     for (const row of rows) {
       expect(row.relrowsecurity, `${row.relname} RLS enabled`).toBe(true);
       expect(row.relforcerowsecurity, `${row.relname} FORCE RLS`).toBe(true);
@@ -194,12 +194,12 @@ describe("isolasi tulis antar tenant", () => {
 describe("tanpa konteks tenant", () => {
   it("query tanpa konteks tidak mengembalikan baris", async () => {
     const counts = await Promise.all(
-      ["tenants", "users", "memberships", "audit_logs"].map(async (table) => {
+      ["tenants", "users", "memberships", "audit_logs", "refresh_tokens"].map(async (table) => {
         const { rows } = await pool.query<{ count: string }>(`select count(*) as count from ${table}`);
         return rows[0]?.count;
       }),
     );
-    expect(counts).toEqual(["0", "0", "0", "0"]);
+    expect(counts).toEqual(["0", "0", "0", "0", "0"]);
   });
 
   it("koneksi pool bekas transaksi ber-tenant tidak membawa konteks lama", async () => {
@@ -272,5 +272,65 @@ describe("trigger updated_at", () => {
     );
     if (!row) throw new Error("tenant A tidak ditemukan");
     expect(row.updatedAt.getTime()).toBeGreaterThan(row.createdAt.getTime());
+  });
+});
+
+describe("akses level user (auth)", () => {
+  it("fungsi login definer menemukan user by email (case-insensitive) tanpa konteks", async () => {
+    const { rows } = await pool.query<{ id: string }>("select id from auth_find_user_by_email($1)", [
+      `OWNER-${tenantA.userId}@TEST.exapay.local`,
+    ]);
+    expect(rows).toEqual([{ id: tenantA.userId }]);
+  });
+
+  it("user melihat semua membership & tenant MILIKNYA lintas tenant, tapi tidak milik orang lain", async () => {
+    // User A juga bergabung ke tenant B sebagai karyawan (dibuat dari konteks tenant B)
+    await withTenant(db, { tenantId: tenantB.tenantId, userId: tenantB.userId }, (tx) =>
+      tx.insert(memberships).values({ tenantId: tenantB.tenantId, userId: tenantA.userId, role: "karyawan" }),
+    );
+
+    const result = await withUser(db, tenantA.userId, async (tx) => ({
+      memberships: await tx.select({ tenantId: memberships.tenantId, userId: memberships.userId }).from(memberships),
+      tenants: await tx.select({ id: tenants.id }).from(tenants),
+    }));
+    expect(result.memberships).toHaveLength(2);
+    expect(result.memberships.every((m) => m.userId === tenantA.userId)).toBe(true);
+    expect(result.tenants.map((t) => t.id).sort()).toEqual([tenantA.tenantId, tenantB.tenantId].sort());
+
+    await withTenant(db, tenantB.ctx, (tx) =>
+      tx.delete(memberships).where(eq(memberships.userId, tenantA.userId)),
+    );
+  });
+
+  it("refresh token hanya terlihat oleh pemiliknya", async () => {
+    const tokenId = randomUUID();
+    await withUser(db, tenantA.userId, (tx) =>
+      tx.insert(refreshTokens).values({ id: tokenId, userId: tenantA.userId, familyId: randomUUID(), expiresAt: new Date(Date.now() + 60_000) }),
+    );
+    const own = await withUser(db, tenantA.userId, (tx) => tx.select({ id: refreshTokens.id }).from(refreshTokens));
+    const other = await withUser(db, tenantB.userId, (tx) => tx.select({ id: refreshTokens.id }).from(refreshTokens));
+    expect(own.map((r) => r.id)).toContain(tokenId);
+    expect(other.map((r) => r.id)).not.toContain(tokenId);
+
+    await expectDbError(
+      withUser(db, tenantB.userId, (tx) =>
+        tx.insert(refreshTokens).values({ userId: tenantA.userId, familyId: randomUUID(), expiresAt: new Date() }),
+      ),
+      /row-level security/,
+    );
+  });
+
+  it("app_user tidak bisa menjadikan user super-admin", async () => {
+    await expectDbError(
+      withUser(db, tenantA.userId, (tx) => tx.update(users).set({ isSuperAdmin: true }).where(eq(users.id, tenantA.userId))),
+      /is_super_admin hanya boleh diubah oleh app_owner/,
+    );
+    const newId = randomUUID();
+    await expectDbError(
+      withUser(db, newId, (tx) =>
+        tx.insert(users).values({ id: newId, email: `sa-${newId}@test.exapay.local`, fullName: "Calon SA", isSuperAdmin: true }),
+      ),
+      /is_super_admin hanya boleh diubah oleh app_owner/,
+    );
   });
 });

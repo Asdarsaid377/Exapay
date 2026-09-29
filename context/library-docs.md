@@ -97,4 +97,16 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 
 ### Vitest (v4.1.11)
 - **Dipakai untuk:** test integrasi `apps/api/test/` (RLS). Dipilih v4 (5.0 baru rilis 2026-09-25)
-- **Pola:** `globalSetup` mengembalikan fungsi teardown; data dari setup ke test lewat `project.provide(key, value)` + `inject(key)` dengan augmentasi `declare module "vitest" { interface ProvidedContext }`
+- **Pola:** `globalSetup` mengembalikan fungsi teardown; data dari setup ke test lewat `project.provide(key, value)` + `inject(key)` dengan augmentasi `declare module "vitest" { interface ProvidedContext }`. `setupFiles` (`test/setup-env.ts`) mengarahkan `DATABASE_URL` ke DB test sebelum `AppModule` di-import. `fileParallelism: false` (semua file berbagi satu DB test)
+- **Gotcha:** Vite 8 (transformer oxc) meng-emit decorator metadata dari tsconfig (`emitDecoratorMetadata`) → DI NestJS jalan di vitest **tanpa** `unplugin-swc`
+
+### Auth API — @nestjs/jwt (v12.0.2), @node-rs/argon2 (v2.2.1), cookie-parser (v1.4.7)
+- **Pola:** `JwtModule.register({})` tanpa secret global; secret + `algorithm: "HS256"` diberikan per `signAsync`/`verifyAsync` (access & refresh beda secret). `verifyAsync` selalu dengan `algorithms: ["HS256"]`
+- **Gotcha:** `@node-rs/argon2` dipilih (bukan `argon2`) karena binary prebuilt per platform lewat optional dependency — tanpa build script, jalan di Alpine (musl). `import cookieParser from "cookie-parser"` (default import CJS)
+
+### nodemailer (v10.0.12) + @types/nodemailer (v8)
+- **Dipakai untuk:** implementasi `EmailTransport` SMTP di `modules/email` (dev: Mailpit `localhost:1025`, UI/API `localhost:8025`)
+- **Gotcha:** tipe dari `@types/nodemailer` 8 (paket tidak membawa tipe sendiri). Auth SMTP hanya dipasang jika `SMTP_USER` & `SMTP_PASSWORD` terisi
+
+### supertest (v7.3) + @nestjs/testing (v12.1)
+- **Pola:** test e2e membuat app dari `AppModule` + controller uji (`ProbeController`) lalu `configureApp(app)` — sama dengan `main.ts`. `request.agent(server)` untuk alur cookie

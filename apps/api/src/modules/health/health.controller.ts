@@ -2,9 +2,11 @@ import { Controller, Get, HttpCode, HttpStatus, Res } from "@nestjs/common";
 import type { ApiResponse } from "@exapay/shared";
 import type { Response } from "express";
 
+import { Public } from "../../common/auth/public.decorator.js";
 import { HealthService, type HealthReport } from "./health.service.js";
 
 // Endpoint publik (tanpa auth) — dipakai Docker healthcheck & monitoring.
+@Public()
 @Controller("health")
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}

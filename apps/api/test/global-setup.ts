@@ -12,7 +12,10 @@ const MIGRATIONS_FOLDER = fileURLToPath(new URL("../../../packages/db/migrations
 
 declare module "vitest" {
   export interface ProvidedContext {
+    // Role app_user (runtime API) — dipakai hampir semua test
     testDatabaseUrl: string;
+    // Role app_owner — hanya untuk seed yang memang butuh owner (mis. flag super-admin)
+    testOwnerDatabaseUrl: string;
   }
 }
 
@@ -88,6 +91,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
 
   project.provide("testDatabaseUrl", withDatabase(appUrl, TEST_DB));
+  project.provide("testOwnerDatabaseUrl", withDatabase(migrationUrl, TEST_DB));
 
   return async (): Promise<void> => {
     await runAsSuperuser(superuserMaintenanceUrl, [`drop database if exists ${TEST_DB} with (force)`]);

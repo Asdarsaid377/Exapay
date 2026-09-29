@@ -8,6 +8,13 @@
       "when": 1790717079582,
       "tag": "0000_foundation_multi_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790718858725,
+      "tag": "0001_auth_refresh_tokens",
+      "breakpoints": true
     }
   ]
 }

@@ -84,7 +84,18 @@ Aturan:
 - Tabel `memberships (user_id, tenant_id, role)` — satu user bisa di lebih dari satu tenant
 - Role: `owner`, `admin`, `atasan`, `karyawan` — didefinisikan sebagai enum di `packages/shared`
 - Otorisasi di API lewat `RolesGuard` + dekorator `@Roles(...)`; aturan "atasan hanya melihat bawahannya" dicek di service
-- Detail mekanisme (refresh rotation, reset password, undangan karyawan) diputuskan saat feature auth
+- Reset password & undangan: diputuskan di feature 04/08
+
+**Mekanisme (feature 03):**
+
+- Password: argon2id (`@node-rs/argon2`, parameter default = rekomendasi OWASP). Email tidak terdaftar tetap menjalankan verify dummy (waktu respons tidak membocorkan akun)
+- Access token: JWT HS256 15 menit, klaim `{ sub, tid, role, sa }`, secret `JWT_ACCESS_SECRET`
+- Refresh token: JWT HS256 30 hari `{ sub, jti, fam }` (secret `JWT_REFRESH_SECRET`); `jti` = baris `refresh_tokens` (status pencabutan + tenant aktif). **Rotasi** tiap refresh; token lama dipakai ulang > 30 detik setelah dirotasi → seluruh family dicabut (indikasi pencurian); ≤ 30 detik → hanya ditolak (request paralel)
+- Web: cookie `exapay_access` & `exapay_refresh` (httpOnly, SameSite=Lax, Secure di production, path `/`). Mobile: kirim `client: "mobile"` → token di body, dipakai sebagai `Authorization: Bearer`; refresh token dikirim di body
+- Endpoint: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/switch-tenant`, `POST /auth/logout` (publik — tetap jalan walau access token kedaluwarsa), `GET /auth/me`
+- Tenant aktif: otomatis jika user hanya punya 1 membership; selain itu pilih lewat `switch-tenant` (rotasi refresh token dengan tenant baru). Peran di access token bisa basi maksimal 15 menit — refresh membaca ulang membership
+- Login tanpa konteks memakai fungsi `auth_find_user_by_email()` (SECURITY DEFINER milik `app_owner`); policy `definer_select` di `users` hanya berlaku untuk `current_user = 'app_owner'`
+- `is_super_admin` hanya bisa diubah `app_owner` (trigger `guard_super_admin_flag`)
 
 ---
 

@@ -49,14 +49,17 @@
 │   │   └── src/
 │   │       ├── main.ts
 │   │       ├── app.module.ts
+│   │       ├── app.setup.ts          → konfigurasi HTTP bersama (cookie-parser, filter) untuk main.ts & test e2e
 │   │       ├── common/               → guard, interceptor, filter, decorator bersama
-│   │       │   ├── auth/             → JwtAuthGuard, RolesGuard, @CurrentUser, @Roles
-│   │       │   ├── tenant/           → TenantContext: set_config tenant per transaksi
+│   │       │   ├── auth/             → JwtAuthGuard, RolesGuard (global), @Public, @Roles, @CurrentUser
+│   │       │   ├── validation/       → ZodValidationPipe
+│   │       │   ├── filters/          → AllExceptionsFilter → { success: false, error }
 │   │       │   └── config/           → skema env (zod) untuk ConfigModule
-│   │       ├── database/             → koneksi DB + helper transaksi ber-tenant
+│   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext)
 │   │       ├── redis/                → koneksi Redis global (health, antrean)
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
+│   │           ├── email/            → abstraksi pengirim email (SMTP)
 │   │           ├── tenants/
 │   │           ├── employees/
 │   │           ├── tasks/
