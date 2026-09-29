@@ -33,7 +33,8 @@ className="bg-purple-500 text-gray-600"
 
 @theme {
   /* Font */
-  --font-sans: "Inter", sans-serif;
+  /* --font-inter diisi next/font (nama font ber-hash), lihat apps/web/app/layout.tsx */
+  --font-sans: var(--font-inter), "Inter", sans-serif;
 
   /* Background halaman dan surface */
   --color-background: #f6f7fb;

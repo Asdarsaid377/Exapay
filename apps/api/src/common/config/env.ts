@@ -1,0 +1,11 @@
+import { z } from "zod";
+
+// Env yang wajib ada agar API bisa start. Tambah variabel di sini saat feature membutuhkannya.
+export const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  API_PORT: z.coerce.number().int().positive().default(4000),
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1),
+});
+
+export type Env = z.infer<typeof envSchema>;
