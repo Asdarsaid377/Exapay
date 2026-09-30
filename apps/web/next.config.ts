@@ -19,9 +19,9 @@ try {
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Upload file impor karyawan (maks 1 MB, EMPLOYEE_IMPORT_MAX_BYTES) lewat Server Action — bawaan Next 1 MB
-    // belum termasuk overhead multipart
-    serverActions: { bodySizeLimit: "2mb" },
+    // Upload lewat Server Action: impor karyawan (maks 1 MB) & lampiran izin (maks 5 MB, LEAVE_ATTACHMENT_MAX_BYTES)
+    // + overhead multipart — bawaan Next 1 MB
+    serverActions: { bodySizeLimit: "6mb" },
   },
 };
 

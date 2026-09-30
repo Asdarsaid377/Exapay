@@ -1,4 +1,13 @@
-import { EMPLOYMENT_STATUSES, GENDERS, MEMBERSHIP_ROLES, NATIONAL_HOLIDAY_KINDS, PTKP_STATUSES } from "@exapay/shared";
+import {
+  EMPLOYMENT_STATUSES,
+  GENDERS,
+  LEAVE_ATTACHMENT_TYPES,
+  LEAVE_REQUEST_STATUSES,
+  LEAVE_TYPES,
+  MEMBERSHIP_ROLES,
+  NATIONAL_HOLIDAY_KINDS,
+  PTKP_STATUSES,
+} from "@exapay/shared";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -455,5 +464,61 @@ export const attendanceRecords = pgTable(
       "attendance_records_check_out_location_needs_time",
       sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutLatitude} IS NULL`,
     ),
+  ],
+);
+
+export const leaveType = pgEnum("leave_type", LEAVE_TYPES);
+export const leaveRequestStatus = pgEnum("leave_request_status", LEAVE_REQUEST_STATUSES);
+
+// Pengajuan izin/sakit/cuti (feature 15): rentang hari penuh, diajukan karyawan sendiri, diputuskan atasan langsung
+// atau owner/admin. Tanpa DELETE — dibatalkan = status cancelled. Pengajuan aktif (menunggu/disetujui) satu karyawan
+// tidak boleh beririsan (exclusion constraint di migration — btree_gist).
+// Lampiran opsional di storage S3 (key diawali tenant_id); hanya metadata di sini.
+export const leaveRequests = pgTable(
+  "leave_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    type: leaveType("type").notNull(),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+    reason: text("reason").notNull(),
+    status: leaveRequestStatus("status").notNull().default("pending"),
+    attachmentKey: text("attachment_key"),
+    attachmentName: text("attachment_name"),
+    attachmentType: text("attachment_type", { enum: LEAVE_ATTACHMENT_TYPES }),
+    attachmentSize: integer("attachment_size"),
+    // Akun yang mengajukan (akun tertaut karyawan saat itu)
+    requestedByUserId: uuid("requested_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decidedByUserId: uuid("decided_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Nama pemutus saat memutuskan (snapshot) — tetap terbaca walau aksesnya kemudian dicabut
+    decidedByName: text("decided_by_name"),
+    decisionNote: text("decision_note"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Pengajuan per karyawan per rentang tanggal; juga melayani filter tenant
+    index("leave_requests_tenant_employee_start_idx").on(t.tenantId, t.employeeId, t.startDate),
+    index("leave_requests_tenant_status_idx").on(t.tenantId, t.status, t.createdAt),
+    foreignKey({ name: "leave_requests_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    check("leave_requests_date_order", sql`${t.endDate} >= ${t.startDate}`),
+    check("leave_requests_max_range", sql`${t.endDate} - ${t.startDate} < 92`),
+    check(
+      "leave_requests_attachment",
+      sql`(${t.attachmentKey} IS NULL) = (${t.attachmentName} IS NULL) AND (${t.attachmentKey} IS NULL) = (${t.attachmentType} IS NULL) AND (${t.attachmentKey} IS NULL) = (${t.attachmentSize} IS NULL)`,
+    ),
+    check(
+      "leave_requests_decision",
+      sql`(${t.status} IN ('approved', 'rejected')) = (${t.decidedAt} IS NOT NULL) AND (${t.decidedAt} IS NOT NULL OR (${t.decidedByUserId} IS NULL AND ${t.decidedByName} IS NULL AND ${t.decisionNote} IS NULL))`,
+    ),
+    check("leave_requests_cancelled", sql`(${t.status} = 'cancelled') = (${t.cancelledAt} IS NOT NULL)`),
   ],
 );

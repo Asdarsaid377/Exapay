@@ -17,6 +17,12 @@ export const envSchema = z.object({
   APP_WEB_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
   // Kunci enkripsi kolom sensitif (NIK, NPWP, rekening): 32 byte acak, base64. Buat: `openssl rand -base64 32`.
   // JANGAN diganti setelah ada data — ciphertext lama tidak bisa dibaca lagi (rotasi kunci = migrasi data terpisah).
+  // Storage S3-compatible (SeaweedFS self-hosted): lampiran izin, foto tugas, slip PDF. Bucket dibuat otomatis saat API start.
+  S3_ENDPOINT: z.url(),
+  S3_REGION: z.string().min(1),
+  S3_BUCKET: z.string().min(3),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
   DATA_ENCRYPTION_KEY: z
     .string()
     .refine((value) => /^[A-Za-z0-9+/]+={0,2}$/.test(value) && Buffer.from(value, "base64").length === 32, "DATA_ENCRYPTION_KEY harus 32 byte dalam base64"),

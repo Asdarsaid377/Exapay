@@ -27,3 +27,9 @@ export function foreignKeyViolationConstraint(error: unknown): string | null {
   const found = pgErrorOf(error, "23503");
   return found ? (constraintOf(found) ?? "") : null;
 }
+
+// exclusion_violation (23P01) → nama constraint (null jika bukan exclusion violation)
+export function exclusionViolationConstraint(error: unknown): string | null {
+  const found = pgErrorOf(error, "23P01");
+  return found ? (constraintOf(found) ?? "") : null;
+}

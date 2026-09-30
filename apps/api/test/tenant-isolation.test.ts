@@ -103,6 +103,7 @@ describe("role runtime app_user", () => {
       "email_verification_tokens",
       "employees",
       "invitations",
+      "leave_requests",
       "memberships",
       "national_holiday_exclusions",
       "national_holidays",

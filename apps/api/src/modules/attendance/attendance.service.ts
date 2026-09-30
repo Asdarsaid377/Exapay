@@ -25,7 +25,7 @@ export type AttendanceTodayResult = {
   record: AttendanceRecord | null;
 };
 
-type OwnEmployee = { id: string; joinDate: string; endDate: string | null };
+export type OwnEmployee = { id: string; joinDate: string; endDate: string | null };
 
 const recordColumns = {
   id: attendanceRecords.id,
@@ -196,8 +196,10 @@ export class AttendanceService {
     });
   }
 
+  // ——— dipakai juga LeaveRequestsService (feature 15) ———
+
   // Zona waktu provinsi dari kota di profil usaha (feature 09); belum diisi → WIB
-  private async tenantTimeZone(tx: Transaction, tenantId: string): Promise<string> {
+  async tenantTimeZone(tx: Transaction, tenantId: string): Promise<string> {
     const [row] = await tx
       .select({ timeZone: provinces.timeZone })
       .from(tenants)
@@ -209,7 +211,7 @@ export class AttendanceService {
   }
 
   // Data karyawan yang tertaut ke akun ini di usaha aktif (unik per tenant)
-  private async ownEmployee(tx: Transaction, userId: string): Promise<OwnEmployee | null> {
+  async ownEmployee(tx: Transaction, userId: string): Promise<OwnEmployee | null> {
     const [row] = await tx
       .select({ id: employees.id, joinDate: employees.joinDate, endDate: employees.endDate })
       .from(employees)
@@ -217,13 +219,13 @@ export class AttendanceService {
     return row ?? null;
   }
 
-  private accessOf(employee: OwnEmployee | null, date: string): AttendanceAccess {
+  accessOf(employee: OwnEmployee | null, date: string): AttendanceAccess {
     if (!employee) return "not_linked";
     if (employee.endDate !== null) return "inactive";
     return date < employee.joinDate ? "inactive" : "ok";
   }
 
-  private async requireEmployee(tx: Transaction, userId: string, date: string): Promise<OwnEmployee> {
+  async requireEmployee(tx: Transaction, userId: string, date: string): Promise<OwnEmployee> {
     const employee = await this.ownEmployee(tx, userId);
     const access = this.accessOf(employee, date);
     if (!employee || access === "not_linked") throw new ForbiddenException("Akun Anda belum tertaut ke data karyawan. Hubungi admin usaha.");

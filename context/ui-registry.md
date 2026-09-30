@@ -408,4 +408,25 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /me/attendance
 - **Referensi desain:** tanpa snapshot — diturunkan dari pola me.html (tile "Kehadiran bulan ini", card solid) (feature 14, izin user)
 - **Pola kelas kunci:** nav bulan `surface-solid rounded-[20px] p-1.5` + panah `size-11 rounded-field hover:bg-fill-subtle` + label `font-display text-[17px] font-bold` (bulan depan dari bulan berjalan = panah `text-text-muted` nonaktif); tile `surface-solid rounded-[20px] p-4 gap-1.5` grid 2 kolom (label `text-[13px]`, angka `font-display text-[30px] font-extrabold tabular-nums` + satuan `text-[13px] font-bold`, catatan `text-[12.5px] text-text-tertiary`); daftar `surface-solid rounded-card px-4.5 pt-4.5` judul `text-[17px] font-bold`, baris `border-t border-border-subtle py-3.5` = CalendarDate + hari `text-[14.5px] font-bold` + jam `text-small tabular-nums` + Badge status (success Tepat waktu / warning Telat / neutral Di luar hari kerja)
-- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hanya hadir & telat — alpa/izin menyusul feature 15/16. Pola acuan halaman daftar portal berikutnya (slip, tugas)
+- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hadir, telat, + tile "Izin & cuti" (grid 3 kolom, prop `leave`, feature 15); riwayat menggabungkan hari izin disetujui (Badge `info` jenis). Alpa menyusul feature 16. Pola acuan halaman daftar portal berikutnya (slip, tugas)
+
+### NewLeaveRequestButton / LeaveRequestFormDialog
+- **Path:** apps/web/components/attendance/NewLeaveRequestButton.tsx, LeaveRequestFormDialog.tsx
+- **Dipakai di:** /me/attendance (aksi PageHeader)
+- **Referensi desain:** tanpa referensi — pola CompanyHolidayFormDialog + FileDropzone (feature 15, izin user)
+- **Pola kelas kunci:** tombol primary + ikon CalendarPlus (`max-sm:w-full`); dialog: SegmentedControl `fullWidth size="lg"` jenis, grid 2 kolom TextField `type="date"` (Mulai/Sampai), TextAreaField alasan (placeholder per jenis), lampiran = FileDropzone → setelah dipilih baris file `rounded-field border-border-control bg-control` (FileText + nama bold + ukuran caption + tombol X 44px)
+- **Catatan:** client. Validasi `leaveRequestInputSchema` + cek ekstensi/ukuran di client; Server Action `submitLeaveRequest(FormData)`. Default tanggal = `today` dari API (zona waktu usaha)
+
+### MyLeaveRequestList / CancelLeaveRequestButton
+- **Path:** apps/web/components/attendance/MyLeaveRequestList.tsx, CancelLeaveRequestButton.tsx
+- **Dipakai di:** /me/attendance
+- **Referensi desain:** tanpa referensi — pola AttendanceHistoryList (feature 15)
+- **Pola kelas kunci:** card `surface-solid rounded-card px-4.5 pt-4.5`; baris = CalendarDate (tanggal mulai, redup jika ditolak/batal) + "Jenis · N hari kerja" `text-[14.5px] font-bold` + rentang `text-small tabular-nums` + alasan + keputusan (ditolak `text-danger-text`) + Badge status (warning/success/danger/neutral); tautan lampiran Paperclip `text-accent-strong font-bold`; "Batalkan" teks `text-danger-text` → Dialog konfirmasi Button `dark`
+- **Catatan:** List server-safe; Cancel client → Server Action `cancelLeaveRequest` + `router.refresh()`. Label/tone di `lib/leaveLabels.ts` (`formatDateRange`, `LEAVE_STATUS_TONES`)
+
+### LeaveRequestTable / LeaveDecisionActions / LeaveRequestFilter
+- **Path:** apps/web/components/attendance/LeaveRequestTable.tsx, LeaveDecisionActions.tsx, LeaveRequestFilter.tsx
+- **Dipakai di:** /attendance/requests
+- **Referensi desain:** tanpa referensi — pola EmployeeTable + Dialog (feature 15, izin user)
+- **Pola kelas kunci:** tabel `glass-data rounded-card` kolom Karyawan (EmployeeAvatar + nama + jabatan) · Jenis · Tanggal · Alasan (`line-clamp-3` + lampiran) · Status (Badge + tombol Tolak secondary / Setujui primary, atau catatan keputusan `text-small text-text-secondary`), sel `align-top py-3.5`; mobile card `glass-data rounded-[20px]` + tombol grid 2 kolom; filter SegmentedControl "Menunggu (n) / Disetujui / Ditolak / Semua"
+- **Catatan:** Table server-safe; Actions client (dirender dua kali → id textarea pakai `useId`): dialog menampilkan ringkasan + alasan karyawan, catatan opsional saat setuju, alasan wajib saat tolak (Button `danger`). Filter client, `?status=` via `leaveRequestsHref`

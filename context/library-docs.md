@@ -125,3 +125,9 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 - `fflate.unzipSync(buf, { filter })` dengan filter `false` hanya membaca direktori zip — dipakai untuk menjumlah `originalSize` (cegah zip bomb).
 - Upload NestJS: `FileInterceptor` dari `@nestjs/platform-express` (multer 2.x dibundel; tanpa `dest` = memory storage, `file.buffer`). `limits.fileSize` terlampaui → `PayloadTooLargeException` (413).
 
+
+### @aws-sdk/client-s3 (v3.1142) — storage lampiran (feature 15)
+- **Dipakai untuk:** `S3FileStorage` di `apps/api/src/modules/storage/` terhadap SeaweedFS (S3-compatible)
+- **Pola:** `new S3Client({ endpoint, region, credentials, forcePathStyle: true, requestChecksumCalculation: "WHEN_REQUIRED", responseChecksumValidation: "WHEN_REQUIRED" })`; `PutObjectCommand` / `GetObjectCommand` (`Body.transformToByteArray()`) / `DeleteObjectCommand` / `HeadBucketCommand` + `CreateBucketCommand`. Error layanan = `S3ServiceException` (`$metadata.httpStatusCode`)
+- **Gotcha:** SDK ≥ 3.729 menambah checksum CRC32 bawaan di setiap request — dimatikan (`WHEN_REQUIRED`) agar kompatibel dengan server S3 non-AWS. pnpm 11 memasang versi yang lolos umur rilis minimum (3.1142, bukan 3.1143 terbaru)
+- Upload multipart NestJS: `FileInterceptor("attachment", { limits })` — field teks multipart tetap masuk `@Body()` (string) dan divalidasi zod yang sama dengan form web. `originalname` dibaca multer sebagai latin1 → didekode ke UTF-8 di `leave-attachment.ts`

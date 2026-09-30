@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 3 — Absensi
-**Terakhir selesai:** 14 Absen Masuk/Pulang (Portal Karyawan) (2026-09-30)
-**Berikutnya:** 15 Izin, Sakit, Cuti
+**Terakhir selesai:** 15 Izin, Sakit, Cuti (2026-09-30)
+**Berikutnya:** 16 Rekap & Koreksi Absensi
 
 ---
 
@@ -33,7 +33,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 3 — Absensi
 - [x] 13 Jadwal Kerja & Hari Libur
 - [x] 14 Absen Masuk/Pulang (Portal Karyawan)
-- [ ] 15 Izin, Sakit, Cuti
+- [x] 15 Izin, Sakit, Cuti
 - [ ] 16 Rekap & Koreksi Absensi
 - [ ] 17 Aturan Potongan Absensi
 
@@ -166,6 +166,12 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — GPS opsional: lat/long/akurasi (`double precision`) masuk & pulang, CHECK berpasangan. Web meminta lokasi maks 8 detik (`lib/geolocation.ts`); gagal/ditolak → absen tetap dikirim tanpa lokasi. API hanya mengembalikan `checkInLocated/checkOutLocated`, bukan koordinat.
 - 2026-09-30 — UI: kartu absen `/me` mengikuti snapshot `me.html`; `/me/attendance` **tanpa referensi visual** (turunkan dari pola me.html, izin user). Jam di kartu = jam server (selisih jam perangkat dikoreksi), refresh otomatis saat lewat tengah malam lokal. Owner/admin/atasan masuk portal lewat menu akun "Absen saya" (`AppShell showPortalLink`), kembali lewat "Kembali ke dashboard" (`UserMenu switchTo`). Tombol absen memakai Button `lg` (h-12) — desain 58px; tidak ditambah ukuran baru.
 
+- 2026-09-30 — **Izin, sakit, cuti (feature 15):** portal `/me/attendance` (form di Dialog, daftar "Pengajuan saya", tile "Izin & cuti", hari izin di Riwayat) & `/attendance/requests` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola me.html + tabel karyawan + Dialog.
+- 2026-09-30 — Keputusan user: **penyetuju = atasan langsung + owner/admin** (tidak ada yang memutuskan pengajuan miliknya sendiri — 403; karyawan tanpa atasan diputuskan owner/admin); **rentang hari penuh tanpa saldo cuti** (saldo tetap fase berikutnya). Jenis `permit|sick|leave`, status `pending|approved|rejected|cancelled`; karyawan bisa membatalkan selama menunggu; menolak wajib beralasan. Maks 92 hari kalender; rentang tanpa hari kerja ditolak; tanggal mulai tidak boleh sebelum tanggal masuk; tanggal lampau boleh (sakit dilaporkan belakangan).
+- 2026-09-30 — Migration `0013_leave_requests`: tanpa DELETE, **exclusion constraint** GiST (`btree_gist`, trusted extension dibuat app_owner) menolak rentang beririsan untuk pengajuan menunggu/disetujui → 409. Nama pemutus di-snapshot (`decided_by_name`). Audit hanya untuk keputusan (approve/reject). Hari kerja pengajuan dihitung saat dibaca (jadwal tidak berversi).
+- 2026-09-30 — **Storage file dimulai** (fitur pertama yang menyimpan file): modul `apps/api/src/modules/storage/` (`FileStorage` abstrak + `S3FileStorage`, `@aws-sdk/client-s3`), env `S3_*` wajib, bucket dibuat otomatis saat start. Key `tenants/<tenant_id>/leave-requests/<id>/<uuid>.<ext>`; jenis file dari magic bytes; unduh lewat `GET /attendance/leave-requests/:id/attachment` (pemilik, atasan langsung, owner/admin) diteruskan Route Handler web `/me/attendance/requests/[id]/attachment` & `/attendance/requests/[id]/attachment`. `serverActions.bodySizeLimit` dinaikkan ke `6mb`.
+- 2026-09-30 — Ringkasan hari izin per bulan (`leaveDays`, `summary`) ada di respons `GET /attendance/me/leave-requests`, bukan di riwayat absensi (hindari import melingkar shared). `AttendanceService` membuka helper `tenantTimeZone/ownEmployee/accessOf/requireEmployee` untuk dipakai ulang.
+
 ---
 
 ## Catatan (Notes)
@@ -202,3 +208,6 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Zona waktu usaha: API absensi memakai `provinces.time_zone` (feature 14); `/me` & `/me/attendance` memakai `timeZone` dari API. Halaman lain (header AppShell, `/settings/attendance`) masih WIB via `lib/datetime.ts` (TODO).
 - Total test API 134 per feature 14 (e2e absensi memalsukan jam dengan `vi.useFakeTimers({ toFake: ["Date"] })` + login ulang setelah jam digeser). Data dev: Rudi (`atasan@exapay.local`) punya absen 30 Sep 2026 telat 821 menit dari verifikasi feature 14.
 - Karyawan nonaktif masih bisa membuka portal, tapi absen ditolak (feature 14). `karyawan@exapay.local` (dev) belum tertaut data karyawan.
+- Test API butuh container **storage** (SeaweedFS) selain postgres/redis/mailpit — `docker compose up -d postgres redis mailpit storage`. Total test API 143 per feature 15.
+- Data dev: `karyawan@exapay.local` kini tertaut ke karyawan **Dewi Lestari** (bawahan Rudi) + satu pengajuan Sakit 28–29 Sep 2026 disetujui Andi Atasan (verifikasi feature 15).
+- Belum ada: hitungan pengajuan tertunda di sidebar; izin di rekap `/attendance` (feature 16) & potongan (feature 17/27).
