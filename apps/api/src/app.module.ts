@@ -16,6 +16,7 @@ import { KpiModule } from "./modules/kpi/kpi.module.js";
 import { OrganizationModule } from "./modules/organization/organization.module.js";
 import { RegionsModule } from "./modules/regions/regions.module.js";
 import { StorageModule } from "./modules/storage/storage.module.js";
+import { TasksModule } from "./modules/tasks/tasks.module.js";
 import { TenantsModule } from "./modules/tenants/tenants.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { RedisModule } from "./redis/redis.module.js";
@@ -39,6 +40,7 @@ import { RedisModule } from "./redis/redis.module.js";
     EmployeesModule,
     AttendanceModule,
     KpiModule,
+    TasksModule,
     RedisModule,
     HealthModule,
   ],

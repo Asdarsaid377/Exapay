@@ -116,6 +116,7 @@ describe("role runtime app_user", () => {
       "provinces",
       "refresh_tokens",
       "regencies",
+      "task_logs",
       "tenants",
       "users",
       "work_schedule_days",

@@ -479,3 +479,24 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola FormSection + action bar EmployeeForm (feature 18, izin user)
 - **Pola kelas kunci:** 2 FormSection (Template, Indikator); indikator `li border-t border-border-subtle py-5 first:border-t-0` judul `text-[15px] font-bold` + tombol hapus ikon `size-10 rounded-field hover:bg-danger/8`; grid Tipe|Bobot `sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`, Target|Satuan|Waktu `sm:grid-cols-3`; akhiran "%" lewat `trailing` TextField; footer section: "Total bobot N%" `text-[14.5px] font-bold tabular-nums` + catatan `text-success-text` (pas) / `text-warning-text` (kurang/lebih) + Button secondary "Tambah indikator"; pemilih jabatan = `fieldset` + `ul rounded-field border border-border-control bg-control`, baris `label min-h-12` checkbox native `size-4.5 accent-accent`, template lain = caption `text-text-tertiary` (dicentang → `text-warning-text` "Dipindahkan dari …"); action bar `glass-data sticky bottom-2.5 … lg:static` sama dengan EmployeeForm
 - **Catatan:** Form client; draf teks (target tampil "1.500.000,5", bobot string) ↔ input API di `lib/kpiTemplateLabels.ts` (`draftFromTemplate` edit/copy, `templateInputFromDraft`, `sanitizeTargetInput`, `weightTotal`, `formatIndicatorTarget`, label tipe/waktu). Validasi `kpiTemplateInputSchema`, error dipetakan per indikator (kunci `key`). Belum ada komponen Checkbox umum — ekstrak ke `common/` saat dipakai kedua kalinya
+
+### TaskSummaryCard / TaskIndicatorRow / LogTaskButton
+- **Path:** apps/web/components/tasks/TaskSummaryCard.tsx, TaskIndicatorRow.tsx, LogTaskButton.tsx
+- **Dipakai di:** /me (kartu "Tugas hari ini"), /me/tasks (ringkasan tanggal terpilih + tombol header)
+- **Referensi desain:** context/designs/me.html ("Tugas hari ini")
+- **Pola kelas kunci:** card `surface-solid rounded-[22px] px-4.5 pt-4.5 pb-2` (bukan kaca — portal maks 3 blur); judul `font-display text-[17px] font-bold` + "Template X" `text-[13px] text-text-secondary`; baris `border-t border-border-subtle py-3.5 gap-2.25` nama `text-[14.5px] font-bold` + nilai `font-display text-[15px] font-extrabold tabular-nums` ("86 / 120" target harian, total saja untuk mingguan/bulanan); bar `h-2 rounded-full bg-fill` isi `bg-accent` / `bg-success` / `bg-danger` (lebar inline style); Badge status (neutral Belum dicatat / warning Menunggu verifikasi / success / danger) + keterangan `text-[13px] text-text-secondary`; baris "Pekerjaan lain" N catatan
+- **Catatan:** Card & Row server-safe; LogTaskButton client (`placement="home"` secondary `lg fullWidth`, `"header"` primary `max-sm:w-full`; `disabled` bila belum absen masuk). Label/format di `lib/taskLogLabels.ts` (`formatQuantity`, `targetLabel`, `dailyProgress`, `longDate`, `myTasksHref`, `myTaskPhotoHref`, `normalizeQuantityInput`)
+
+### TaskLogFormDialog / TaskPhotoRow
+- **Path:** apps/web/components/tasks/TaskLogFormDialog.tsx, TaskPhotoRow.tsx
+- **Dipakai di:** LogTaskButton (catat), TaskLogActions (ubah)
+- **Referensi desain:** tanpa referensi — pola LeaveRequestFormDialog (feature 19, izin user)
+- **Pola kelas kunci:** SelectField "Yang dikerjakan" (indikator template + "Pekerjaan lain (di luar indikator)"), TextField realisasi `inputMode` numeric/decimal + hint target, TextAreaField catatan/deskripsi, foto = FileDropzone → TaskPhotoRow (`rounded-field border-border-control bg-control`, pratinjau `size-12 rounded-inner object-cover` + nama + ukuran + X 44px)
+- **Catatan:** client. Validasi `taskLogInputSchema` + cek bulat untuk count; koma desimal dinormalisasi. Foto diperkecil `lib/imageResize.ts` ("Menyiapkan foto…"). Mode ubah: prop `log` → foto tersimpan bisa dihapus (`removePhoto`) atau diganti. Server Action `submitTaskLog` / `updateTaskLog` (`actions/taskLogs.ts`)
+
+### TaskDayStrip / TaskLogList / TaskLogActions
+- **Path:** apps/web/components/tasks/TaskDayStrip.tsx, TaskLogList.tsx, TaskLogActions.tsx
+- **Dipakai di:** /me/tasks
+- **Referensi desain:** tanpa referensi — pola AttendanceMonthNav + MyLeaveRequestList (feature 19, izin user)
+- **Pola kelas kunci:** strip `surface-solid grid grid-cols-8 gap-1 rounded-[20px] p-1.5`, chip Link `min-h-14 rounded-[14px]` hari `text-xs` + tanggal `font-display text-[17px] font-extrabold`, terpilih `bg-accent-soft text-accent-strong`, tanpa absen `text-text-muted`; daftar `surface-solid rounded-card px-4.5 pt-4.5` baris = jam `w-11 font-display text-[15px] font-extrabold` + judul + realisasi + catatan + foto `size-20 rounded-inner` (tautan tab baru) + Badge status; aksi teks "Ubah" `text-accent-strong` / "Hapus" `text-danger-text` → Dialog konfirmasi Button `dark`
+- **Catatan:** Strip & List server-safe, Actions client (`deleteTaskLog` + `router.refresh()`). Tanggal di URL `?date=YYYY-MM-DD` (hari ini tanpa param). Foto lewat Route Handler `/me/tasks/[id]/photo?v=<updatedAt>`

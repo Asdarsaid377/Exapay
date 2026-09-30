@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 4 — Tugas Harian & KPI
-**Terakhir selesai:** 18 Template KPI per Jabatan (2026-10-01)
-**Berikutnya:** 19 Log Tugas Harian Karyawan
+**Terakhir selesai:** 19 Log Tugas Harian Karyawan (2026-10-01)
+**Berikutnya:** 20 Verifikasi Atasan
 
 ---
 
@@ -39,7 +39,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ### Phase 4 — Tugas Harian & KPI
 - [x] 18 Template KPI per Jabatan
-- [ ] 19 Log Tugas Harian Karyawan
+- [x] 19 Log Tugas Harian Karyawan
 - [ ] 20 Verifikasi Atasan
 - [ ] 21 Skor Ad-hoc
 
@@ -186,6 +186,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Tipe indikator: `numeric` (angka, target ≤2 desimal) · `count` (jumlah, target bulat) — keduanya satuan + waktu target per hari/minggu/bulan (diprorata per hari kerja di feature 21) · `rating` (penilaian atasan) · `system` (`attendance_rate`, target persen, dari rekap absensi). Bobot bilangan bulat, total **tepat 100%** (zod `kpiTemplateInputSchema`, 400), maks. 10 indikator, nama indikator unik per template, maks. satu indikator otomatis per metrik. CHECK DB menjaga isian per tipe.
 - 2026-10-01 — Migration `0016_kpi_templates`: `kpi_templates` (nama unik per usaha, `builtin_key` unik parsial) + `kpi_indicators` (FK komposit ke template `ON DELETE CASCADE`, unique `(tenant_id, id)` untuk FK log tugas feature 19, `target numeric(18,2)`). Template diubah **di tempat, tanpa versi** — indikator ber-id diubah, tanpa id = baru, tidak dikirim = dihapus; snapshot nilai saat itu disimpan penilaian periodik (feature 22). Audit `kpi_template` create/update/delete (isi lengkap). **TODO feature 19:** tolak hapus/ganti tipe indikator & hapus template yang sudah punya log tugas (TODO di `kpi-templates.service.ts`).
 - 2026-10-01 — Template bawaan (`kpi-builtin-templates.ts`): Sales, Kasir, Admin Gudang, Staf Produksi — disalin lewat `seedTenantDefaults`; `POST /kpi/templates/builtin` menambahkan kembali bawaan yang belum ada (usaha lama / terhapus). Target di respons API tanpa nol di belakang (`"80.00"` → `"80"`) agar bisa dikirim balik apa adanya. Endpoint hanya owner/admin (`GET/POST /kpi/templates`, `PUT/DELETE /kpi/templates/:id`); satu `GET` memuat semua template + jabatan (editor mencari template dari situ).
+- 2026-10-01 — **Log tugas harian (feature 19):** `/me/tasks` & form "Catat tugas" dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola me.html + /me/attendance + LeaveRequestFormDialog; kartu "Tugas hari ini" di `/me` mengikuti snapshot me.html. Diverifikasi user ("sudah sesuai").
+- 2026-10-01 — Keputusan user: **banyak catatan per indikator per hari** (realisasi harian = jumlah entri yang tidak ditolak), karyawan boleh mencatat **pekerjaan lain** tanpa indikator (deskripsi wajib, diverifikasi atasan, **tidak masuk skor KPI**); **jendela catat hari ini + 7 hari ke belakang** (zona waktu usaha, tidak sebelum tanggal masuk); **wajib absen masuk** di tanggal itu. Hanya indikator `numeric`/`count` template jabatan saat ini yang dicatat karyawan (rating dinilai atasan, system dari absensi); `count` bilangan bulat; maks. 50 catatan/hari. Ubah/hapus hanya selama `pending` & tanggal di jendela; semua peran yang akunnya tertaut karyawan aktif boleh mencatat. Pencatatan tanpa audit log (verifikasi feature 20 yang diaudit).
+- 2026-10-01 — Migration `0017_task_logs`: `task_logs` (enum `task_log_status` pending/approved/rejected — kolom keputusan ditambah feature 20), `quantity numeric(18,2)`, CHECK jenis (indikator ⇔ quantity; tanpa indikator ⇒ note), foto opsional (metadata, jenis JPG/PNG/WebP). **FK komposit `(tenant_id, employee_id, work_date)` → `attendance_records`** = wajib absen masuk di DB; FK `(tenant_id, indicator_id)` → `kpi_indicators` **RESTRICT**. app_user SELECT/INSERT/UPDATE/DELETE. Unique `(tenant_id, id)` untuk feature 20.
+- 2026-10-01 — TODO feature 18 selesai: `KpiTemplatesService` menolak (409) hapus indikator / ganti tipe indikator yang sudah punya log, dan hapus template yang indikatornya punya log (FK violation `task_logs_indicator_fk` juga dipetakan 409). `trimDecimal` dipindah ke `@exapay/shared` (money.ts). Modul API `tasks/` (`task-logs.service`, `my-task-logs.controller` `/tasks/me`, `task-logs.controller` `GET /tasks/logs/:id/photo` — pemilik, atasan langsung, owner/admin; dipakai ulang feature 20); `AttendanceService` kini diekspor `AttendanceModule`. Foto: key `tenants/<tenant_id>/task-logs/<log_id>/<uuid>.<ext>`, diperkecil di browser (`lib/imageResize.ts`, sisi maks 1600px JPEG) sebelum dikirim.
 
 ---
 
@@ -230,3 +234,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 158 + 25 unit test payroll-engine (`pnpm --filter @exapay/payroll-engine test`) per feature 17. Sekali terlihat flake 401 dengan body `{"_tag":"UnauthorizedError"}` (bukan format API kita — kemungkinan koneksi nyasar ke proses lain di localhost); tidak terulang di 3 run berikutnya.
 - Data dev: belum ada versi aturan potongan tersimpan kecuali yang dibuat user saat verifikasi feature 17. Pratinjau di `/settings/attendance` memakai karyawan dari rekap bulan berjalan.
 - Total test API 166 per feature 18. Data dev "Kopi Nusantara" dibuat sebelum feature 18 — template bawaan baru muncul setelah tombol "Pakai template bawaan" diklik di `/kpi/templates`. Urutan indikator belum bisa diatur ulang (mengikuti urutan tambah).
+- Total test API 170 per feature 19 (`task-logs.e2e.test.ts`). Data dev: Dewi (`karyawan@exapay.local`, template Sales) punya absen masuk 1 Okt 2026 04:03 WITA + 3 catatan tugas uji (Kunjungan pelanggan 3 + foto, Nilai penjualan 1.250.000,5, pekerjaan lain). Status catatan di kartu `/me` = gabungan (ada ditolak → Ditolak, ada menunggu → Menunggu verifikasi). "Diubah HH:MM" memakai `updatedAt ≠ createdAt` — sesuaikan di feature 20 agar verifikasi tidak terbaca sebagai perubahan karyawan.

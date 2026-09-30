@@ -1,22 +1,18 @@
-import { kpiIndicators, kpiTemplates, positions } from "@exapay/db";
-import type { KpiIndicator, KpiTemplate, KpiTemplateData, KpiTemplateOverview } from "@exapay/shared";
+import { kpiIndicators, kpiTemplates, positions, taskLogs } from "@exapay/db";
+import { type KpiIndicator, type KpiTemplate, type KpiTemplateData, type KpiTemplateOverview, trimDecimal } from "@exapay/shared";
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, eq, inArray, notInArray } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
-import { isUniqueViolation } from "../../database/errors.js";
+import { foreignKeyViolationConstraint, isUniqueViolation } from "../../database/errors.js";
 import { type Database, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
 import { BUILTIN_KPI_TEMPLATES, indicatorColumns, seedBuiltinKpiTemplates } from "./kpi-builtin-templates.js";
 
 const ENTITY = "kpi_template";
-
-// numeric(18,2) → string tanpa nol di belakang ("80.00" → "80", "1500000.50" → "1500000.5"),
-// sehingga target bisa dikirim balik apa adanya (target count harus bilangan bulat)
-function trimDecimal(value: string): string {
-  return value.includes(".") ? value.replace(/\.?0+$/, "") : value;
-}
+// Kiriman bersamaan yang lolos pemeriksaan (log baru dicatat saat template disimpan) — FK task_logs_indicator_fk RESTRICT
+const LOGGED_CONFLICT = "Indikator template ini baru saja dipakai mencatat tugas. Muat ulang halaman lalu coba lagi.";
 
 // Isi template untuk audit log (before/after)
 type TemplateSnapshot = {
@@ -54,7 +50,7 @@ export class KpiTemplatesService {
 
   async create(user: AuthUser, input: KpiTemplateData): Promise<{ id: string }> {
     const ctx = tenantContextOf(user);
-    return this.mapDuplicate(() =>
+    return this.mapConstraintErrors(() =>
       withTenant(this.db, ctx, async (tx) => {
         await this.assertPositionsExist(tx, input.positionIds);
         const [row] = await tx
@@ -76,22 +72,33 @@ export class KpiTemplatesService {
   }
 
   // Indikator ber-id = diubah, tanpa id = baru, yang tidak dikirim = dihapus.
-  // TODO feature 19: indikator yang sudah punya log tugas tidak boleh dihapus/diganti tipenya (FK restrict dari log → 409).
+  // Indikator yang sudah punya log tugas (feature 19) tidak boleh dihapus/diganti tipenya → 409 (FK task_logs RESTRICT sebagai pengaman).
   async update(user: AuthUser, id: string, input: KpiTemplateData): Promise<{ id: string }> {
     const ctx = tenantContextOf(user);
-    return this.mapDuplicate(() =>
+    return this.mapConstraintErrors(() =>
       withTenant(this.db, ctx, async (tx) => {
         const [current] = await tx.select({ id: kpiTemplates.id }).from(kpiTemplates).where(eq(kpiTemplates.id, id)).for("update");
         if (!current) throw new NotFoundException("Template KPI tidak ditemukan");
         await this.assertPositionsExist(tx, input.positionIds);
         const before = await this.snapshot(tx, id);
 
-        const existingIds = new Set(
-          (await tx.select({ id: kpiIndicators.id }).from(kpiIndicators).where(eq(kpiIndicators.templateId, id))).map((row) => row.id),
-        );
+        const existing = await tx
+          .select({ id: kpiIndicators.id, name: kpiIndicators.name, type: kpiIndicators.type })
+          .from(kpiIndicators)
+          .where(eq(kpiIndicators.templateId, id));
+        const existingIds = new Set(existing.map((row) => row.id));
         const keptIds = input.indicators.flatMap((indicator) => (indicator.id ? [indicator.id] : []));
         if (keptIds.some((indicatorId) => !existingIds.has(indicatorId))) {
           throw new BadRequestException("Indikator tidak ditemukan. Muat ulang halaman lalu coba lagi.");
+        }
+        const logged = await this.loggedIndicatorIds(tx, [...existingIds]);
+        for (const indicator of existing) {
+          if (!logged.has(indicator.id)) continue;
+          const kept = input.indicators.find((candidate) => candidate.id === indicator.id);
+          if (!kept) throw new ConflictException(`Indikator "${indicator.name}" sudah dipakai mencatat tugas karyawan sehingga tidak bisa dihapus`);
+          if (kept.type !== indicator.type) {
+            throw new ConflictException(`Tipe indikator "${indicator.name}" tidak bisa diganti karena sudah dipakai mencatat tugas karyawan`);
+          }
         }
 
         await tx
@@ -117,16 +124,22 @@ export class KpiTemplatesService {
   }
 
   // Indikator ikut terhapus (FK cascade); jabatan yang memakai template menjadi tanpa template (FK SET NULL).
-  // TODO feature 19: template dengan indikator yang sudah punya log tugas tidak boleh dihapus.
+  // Template yang indikatornya sudah punya log tugas (feature 19) tidak bisa dihapus → 409.
   async remove(user: AuthUser, id: string): Promise<void> {
     const ctx = tenantContextOf(user);
-    await withTenant(this.db, ctx, async (tx) => {
-      const [current] = await tx.select({ id: kpiTemplates.id }).from(kpiTemplates).where(eq(kpiTemplates.id, id)).for("update");
-      if (!current) throw new NotFoundException("Template KPI tidak ditemukan");
-      const before = await this.snapshot(tx, id);
-      await tx.delete(kpiTemplates).where(eq(kpiTemplates.id, id));
-      await this.audit.record(tx, ctx, { entity: ENTITY, entityId: id, action: "delete", before });
-    });
+    await this.mapConstraintErrors(() =>
+      withTenant(this.db, ctx, async (tx) => {
+        const [current] = await tx.select({ id: kpiTemplates.id }).from(kpiTemplates).where(eq(kpiTemplates.id, id)).for("update");
+        if (!current) throw new NotFoundException("Template KPI tidak ditemukan");
+        const indicatorIds = (await tx.select({ id: kpiIndicators.id }).from(kpiIndicators).where(eq(kpiIndicators.templateId, id))).map((row) => row.id);
+        if ((await this.loggedIndicatorIds(tx, indicatorIds)).size > 0) {
+          throw new ConflictException("Template ini sudah dipakai mencatat tugas karyawan sehingga tidak bisa dihapus. Lepas jabatannya jika tidak dipakai lagi.");
+        }
+        const before = await this.snapshot(tx, id);
+        await tx.delete(kpiTemplates).where(eq(kpiTemplates.id, id));
+        await this.audit.record(tx, ctx, { entity: ENTITY, entityId: id, action: "delete", before });
+      }),
+    );
   }
 
   // Tambahkan kembali template bawaan yang belum ada (terhapus / usaha dibuat sebelum feature 18)
@@ -208,12 +221,20 @@ export class KpiTemplatesService {
     if (positionIds.length) await tx.update(positions).set({ kpiTemplateId: templateId }).where(inArray(positions.id, positionIds));
   }
 
-  // Nama template unik per usaha (index lower(name)) — termasuk dua permintaan bersamaan
-  private async mapDuplicate<T>(fn: () => Promise<T>): Promise<T> {
+  // Indikator (dari daftar) yang sudah punya log tugas
+  private async loggedIndicatorIds(tx: Transaction, indicatorIds: string[]): Promise<Set<string>> {
+    if (indicatorIds.length === 0) return new Set();
+    const rows = await tx.selectDistinct({ id: taskLogs.indicatorId }).from(taskLogs).where(inArray(taskLogs.indicatorId, indicatorIds));
+    return new Set(rows.flatMap((row) => (row.id ? [row.id] : [])));
+  }
+
+  // Nama template unik per usaha (index lower(name)) — termasuk dua permintaan bersamaan; indikator yang baru dipakai log tugas
+  private async mapConstraintErrors<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
     } catch (error: unknown) {
       if (isUniqueViolation(error)) throw new ConflictException("Template dengan nama ini sudah ada");
+      if (foreignKeyViolationConstraint(error) === "task_logs_indicator_fk") throw new ConflictException(LOGGED_CONFLICT);
       throw error;
     }
   }

@@ -15,6 +15,8 @@ import {
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
+  TASK_LOG_STATUSES,
+  TASK_PHOTO_TYPES,
   WORKING_DAY_DIVISOR_MODES,
 } from "@exapay/shared";
 import { sql } from "drizzle-orm";
@@ -727,6 +729,63 @@ export const attendanceDeductionRules = pgTable(
       "attendance_deduction_rules_allowance",
       sql`(${t.allowanceMode} = 'forfeit') = (${t.allowanceMinAbsentDays} IS NOT NULL) AND coalesce(${t.allowanceMinAbsentDays} BETWEEN 1 AND 31, true)
         AND (${t.allowanceMode} = 'reduce_per_day') = (${t.allowanceAmountPerDay} IS NOT NULL) AND coalesce(${t.allowanceAmountPerDay} > 0, true)`,
+    ),
+  ],
+);
+
+export const taskLogStatus = pgEnum("task_log_status", TASK_LOG_STATUSES);
+
+// Log tugas harian karyawan (feature 19). Satu baris = satu catatan pekerjaan di satu tanggal kerja: realisasi indikator
+// template jabatan (numeric/count, quantity terisi) ATAU pekerjaan lain (indicator_id null, note wajib — tidak masuk skor).
+// Boleh banyak baris per indikator per hari. FK komposit ke attendance_records (tenant, karyawan, tanggal) = wajib sudah
+// absen masuk di tanggal itu (baris absensi tidak pernah dihapus). FK ke indikator RESTRICT: indikator yang sudah punya log
+// tidak bisa dihapus (template KPI → 409). Diverifikasi atasan di feature 20 (status; kolom keputusan menyusul).
+// Foto bukti opsional di storage S3 (key diawali tenant_id); hanya metadata di sini.
+export const taskLogs = pgTable(
+  "task_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    indicatorId: uuid("indicator_id"),
+    quantity: numeric("quantity", { precision: 18, scale: 2 }),
+    note: text("note"),
+    photoKey: text("photo_key"),
+    photoType: text("photo_type", { enum: TASK_PHOTO_TYPES }),
+    photoSize: integer("photo_size"),
+    status: taskLogStatus("status").notNull().default("pending"),
+    // Akun yang mencatat (akun tertaut karyawan saat itu)
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Target FK komposit verifikasi (feature 20)
+    unique("task_logs_tenant_id_id_key").on(t.tenantId, t.id),
+    // Log per karyawan per tanggal; juga melayani filter tenant
+    index("task_logs_tenant_employee_date_idx").on(t.tenantId, t.employeeId, t.workDate),
+    // Pemeriksaan FK RESTRICT saat indikator dihapus
+    index("task_logs_tenant_indicator_idx").on(t.tenantId, t.indicatorId),
+    foreignKey({
+      name: "task_logs_attendance_fk",
+      columns: [t.tenantId, t.employeeId, t.workDate],
+      foreignColumns: [attendanceRecords.tenantId, attendanceRecords.employeeId, attendanceRecords.workDate],
+    }).onDelete("restrict"),
+    foreignKey({ name: "task_logs_indicator_fk", columns: [t.tenantId, t.indicatorId], foreignColumns: [kpiIndicators.tenantId, kpiIndicators.id] }).onDelete(
+      "restrict",
+    ),
+    check(
+      "task_logs_kind",
+      sql`(${t.indicatorId} IS NULL) = (${t.quantity} IS NULL) AND (${t.indicatorId} IS NOT NULL OR ${t.note} IS NOT NULL)`,
+    ),
+    check("task_logs_quantity_positive", sql`${t.quantity} IS NULL OR ${t.quantity} > 0`),
+    check("task_logs_note_length", sql`${t.note} IS NULL OR char_length(${t.note}) BETWEEN 1 AND 500`),
+    check(
+      "task_logs_photo",
+      sql`(${t.photoKey} IS NULL) = (${t.photoType} IS NULL) AND (${t.photoKey} IS NULL) = (${t.photoSize} IS NULL) AND coalesce(${t.photoSize} > 0, true)`,
     ),
   ],
 );

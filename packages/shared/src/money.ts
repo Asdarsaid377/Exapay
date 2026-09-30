@@ -19,3 +19,8 @@ export function formatRupiah(value: string): string {
   const cents = fraction.padEnd(2, "0").slice(0, 2);
   return `${negative ? "-" : ""}Rp ${grouped}${cents === "00" ? "" : `,${cents}`}`;
 }
+
+// Desimal dari numeric Postgres → tanpa nol di belakang ("80.00" → "80", "1500000.50" → "1500000.5")
+export function trimDecimal(value: string): string {
+  return value.includes(".") ? value.replace(/\.?0+$/, "") : value;
+}
