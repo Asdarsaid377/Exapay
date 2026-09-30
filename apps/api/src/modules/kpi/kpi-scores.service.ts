@@ -24,7 +24,7 @@ import { averageScore, kpiPredicate, kpiScore, type ScoreIndicator } from "./kpi
 
 const PERIOD_NOT_STARTED = "Periode belum dimulai. Pilih tanggal mulai paling lambat hari ini.";
 
-type ScoredEmployee = {
+export type ScoredEmployee = {
   id: string;
   joinDate: string;
   endDate: string | null;
@@ -39,7 +39,7 @@ type EmployeeRow = ScoredEmployee & {
   departmentName: string;
 };
 
-type Scored = { template: { id: string; name: string } | null; result: KpiScoreResult | null };
+export type Scored = { template: { id: string; name: string } | null; result: KpiScoreResult | null };
 
 const employeeColumns = {
   id: employees.id,
@@ -164,7 +164,14 @@ export class KpiScoresService {
       .orderBy(asc(employees.fullName));
   }
 
-  private async scoreEmployees(tx: Transaction, rows: readonly ScoredEmployee[], period: Period, today: string): Promise<Map<string, Scored>> {
+  // Dipakai ulang penilaian periodik (feature 22) dengan nilai atasan per karyawan (id karyawan → id indikator → nilai)
+  async scoreEmployees(
+    tx: Transaction,
+    rows: readonly ScoredEmployee[],
+    period: Period,
+    today: string,
+    ratings: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map(),
+  ): Promise<Map<string, Scored>> {
     const withTemplate = rows.filter((row) => row.templateId !== null);
     const scored = new Map<string, Scored>(rows.map((row) => [row.id, { template: null, result: null }]));
     if (withTemplate.length === 0) return scored;
@@ -203,8 +210,8 @@ export class KpiScoresService {
       const actuals = new Map(totals.filter((total) => total.employeeId === row.id).map((total) => [total.indicatorId, total.total]));
       scored.set(row.id, {
         template: { id: row.templateId, name: row.templateName },
-        // Penilaian atasan baru ada di penilaian periodik (feature 22) — skor ad-hoc selalu "belum dinilai"
-        result: kpiScore({ calendar, days: recap.days, indicators: indicatorsOf(row.templateId), actuals, ratings: new Map() }),
+        // Nilai atasan hanya ada di penilaian periodik (feature 22) — skor ad-hoc selalu "belum dinilai"
+        result: kpiScore({ calendar, days: recap.days, indicators: indicatorsOf(row.templateId), actuals, ratings: ratings.get(row.id) ?? new Map() }),
       });
     }
     return scored;

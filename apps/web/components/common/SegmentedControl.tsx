@@ -34,6 +34,7 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
     refs.current[next]?.focus();
   }
 
+  const hasSelection = options.some((option) => option.value === value);
   return (
     <div
       id={id}
@@ -53,7 +54,8 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             type="button"
             role="radio"
             aria-checked={selected}
-            tabIndex={selected ? 0 : -1}
+            // Belum ada pilihan (mis. nilai belum diisi) → opsi pertama tetap bisa difokus dengan Tab
+            tabIndex={selected || (!hasSelection && index === 0) ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKey(event, index)}

@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 4 — Tugas Harian & KPI
-**Terakhir selesai:** 21 Skor Ad-hoc (2026-10-01)
-**Berikutnya:** 22 Siklus & Penilaian Periodik
+**Phase:** 5 — Penilaian Periodik & AI
+**Terakhir selesai:** 22 Siklus & Penilaian Periodik (2026-10-01)
+**Berikutnya:** 23 Ringkasan AI
 
 ---
 
@@ -44,7 +44,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 21 Skor Ad-hoc
 
 ### Phase 5 — Penilaian Periodik & AI
-- [ ] 22 Siklus & Penilaian Periodik
+- [x] 22 Siklus & Penilaian Periodik
 - [ ] 23 Ringkasan AI
 - [ ] ⏸ Titik uji coba dengan 1–2 klien
 
@@ -200,6 +200,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Rumus murni `apps/api/src/modules/kpi/kpi-score.ts` (decimal.js — dependency baru `apps/api`, `Decimal.clone` HALF_UP): hari target dari status `recapEmployee` (on_time/late/absent/pending); prorata harian × 1 · mingguan ÷ hari kerja jadwal per minggu · bulanan ÷ hari kerja bulan tanggal itu (kalender dimuat bulan penuh); kehadiran = hadir ÷ (hadir + alpa). Pembulatan bertahap agar bisa dihitung tangan: target periode 2 desimal → capaian 1 desimal → poin eksak → skor 1 desimal. Predikat ≥90/75/60 (`KPI_PREDICATE_MIN` di shared). Input `ratings` sudah ada (kosong) untuk feature 22.
 - 2026-10-01 — Skor **tidak disimpan** — dihitung saat dibaca dari template KPI jabatan **saat ini** + `verifiedTaskTotals` + rekap absensi (snapshot baru di penilaian periodik feature 22). Endpoint: `GET /kpi/scores?month|from&to&departmentId` (owner/admin semua, atasan bawahan langsung, peran dibaca ulang; rata-rata & predikat rata-rata dari API) dan `GET /kpi/scores/me?month` (semua peran). `AttendanceRecapService.recapEmployees()` baru + diekspor `AttendanceModule`; `KpiModule` mengimpor `AttendanceModule`. Web: `AttendancePeriodNav` prop `rangeHint`, `AttendanceMonthNav` prop `basePath` (`myAttendanceHref` → `monthHref`); tim di URL `?team=`.
 
+- 2026-10-01 — **Siklus & penilaian periodik (feature 22):** `/settings/kpi`, `/kpi/reviews`, `/kpi/reviews/[id]` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola /settings/attendance (FormSection + SegmentedControl) + /kpi/scores (StatTile + KpiIndicatorBreakdown + daftar glass-data). Diverifikasi user ("sudah sesuai").
+- 2026-10-01 — Keputusan user: **penilaian dibuat manual** oleh owner/admin per periode yang sudah berakhir (tanpa job terjadwal — otomatisasi bisa ditambah nanti); alur **atasan isi → owner/admin final**: draft (nilai indikator penilaian 1–5) → kirim = `reviewed` → owner/admin finalkan atau kembalikan ke draf. Keputusan sendiri: **owner/admin juga boleh mengisi nilai semua karyawan** (sama dengan pemutus feature 15/20; disampaikan ke user), tidak ada yang menilai/memfinalkan penilaiannya sendiri (403), kirim wajib semua indikator penilaian dinilai, final boleh tanpa skor (mis. cuti sepanjang periode).
+- 2026-10-01 — Siklus = kolom `tenants.kpi_review_cycle` (enum weekly/monthly/quarterly, default monthly — tanpa backfill); mingguan Senin–Minggu, triwulanan kalender. Mengganti siklus hanya memengaruhi periode berikutnya. Periode (`kpi_review_periods`, menyimpan `cycle` saat dibuat) ditawarkan dari siklus saat ini: sudah berakhir, tidak beririsan, maks. 8 minggu / 6 bulan / 4 triwulan ke belakang (`kpi-review-periods.ts` murni). Exclusion constraint `kpi_review_periods_no_overlap` → 409. Membuat ulang periode yang sudah ada (dikenali dari tanggal mulai, walau siklus sudah diganti) = menambahkan karyawan yang belum punya penilaian (karyawan masa kerja beririsan + jabatan ber-template).
+- 2026-10-01 — Migration `0019_kpi_reviews`: `kpi_review_periods` (app_user SELECT/INSERT), `kpi_reviews` (unik per periode+karyawan, CHECK status ↔ submitted/finalized/snapshot, skor final `numeric(4,1)` + predikat, snapshot jsonb `KpiReviewSnapshot`; app_user tanpa DELETE; **trigger `kpi_reviews_guard_final` menolak UPDATE/DELETE baris final**), `kpi_review_ratings` (PK tenant+review+indikator, nilai 1–5, FK indikator **CASCADE** — indikator dihapus dari template menghapus nilai draf, final aman karena snapshot). Skor draft/reviewed dihitung saat dibaca lewat `KpiScoresService.scoreEmployees(…, ratings)` (kini publik); final = snapshot saat finalisasi, tidak pernah dihitung ulang. Versi `updated_at` mikrodetik mencegah menimpa perubahan (409). Audit `kpi_settings` update, `kpi_review_period` create/add_employees, `kpi_review` rate/submit/return/finalize. `SegmentedControl`: tanpa pilihan → opsi pertama tetap bisa difokus Tab.
 ---
 
 ## Catatan (Notes)
@@ -246,3 +250,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 170 per feature 19 (`task-logs.e2e.test.ts`). Data dev: Dewi (`karyawan@exapay.local`, template Sales) punya absen masuk 1 Okt 2026 04:03 WITA + 3 catatan tugas uji (Kunjungan pelanggan 3 + foto, Nilai penjualan 1.250.000,5, pekerjaan lain). Status catatan di kartu `/me` = gabungan (ada ditolak → Ditolak, ada menunggu → Menunggu verifikasi). "Diubah HH:MM" kini memakai `editedAt` (feature 20).
 - Total test API 172 per feature 20 (`task-verification.e2e.test.ts`). Data dev: 3 catatan tugas Dewi 1 Okt 2026 diputuskan user saat verifikasi feature 20 (Rudi/`atasan@exapay.local`). Belum ada: hitungan menunggu verifikasi di sidebar; filter per karyawan di `/kpi/verification`.
 - Total test API 190 per feature 21 (`kpi-score.test.ts` 17 skenario murni + `kpi-scores.e2e.test.ts`). Sekali terlihat 2 test lama gagal di full suite (employee-import, kpi-templates validasi) — lulus saat diulang (flake timing). Data dev 1 Okt 2026: skor Dewi 30,9; karyawan lain 0 (hari ini ikut dihitung, belum ada catatan disetujui).
+- Total test API 197 per feature 22 (`kpi-review-periods.test.ts` murni + `kpi-reviews.e2e.test.ts`). Belum ada: penilaian final di portal karyawan `/me/performance` (feature 37), hapus periode yang salah dibuat, pembuatan penilaian otomatis terjadwal. Ringkasan AI (feature 23) menempel di detail `/kpi/reviews/[id]`.

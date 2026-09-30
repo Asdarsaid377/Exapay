@@ -293,7 +293,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### SegmentedControl
 - **Path:** apps/web/components/common/SegmentedControl.tsx
-- **Dipakai di:** /employees (filter Aktif/Nonaktif/Semua), form karyawan (status kerja)
+- **Dipakai di:** /employees (filter Aktif/Nonaktif/Semua), form karyawan (status kerja), /settings/kpi (siklus), /kpi/reviews/[id] (nilai 1–5 — tanpa pilihan, opsi pertama tetap bisa difokus Tab)
 - **Referensi desain:** context/designs/design-tokens.html ("segmented"), employees.html
 - **Pola kelas kunci:** track `rounded-full bg-segment-track p-1 gap-0.5`; opsi `h-9 (lg: h-10) px-4 rounded-full text-sm`; terpilih `bg-surface-solid font-bold shadow-segment`, lainnya `font-medium text-text-secondary`
 - **Catatan:** client, generik `<T extends string>`. Radio group (panah kiri/kanan, satu tab stop). `fullWidth` = kolom sama rata (mobile). Untuk **filter/pilihan**, bukan navigasi (navigasi antar-bagian = tab bar)
@@ -528,4 +528,25 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tile "Skor bulan ini" `context/designs/me.html`; Card diturunkan darinya (feature 21)
 - **Pola kelas kunci:** Tile = Link `surface-solid rounded-[20px] p-4` (label `text-[13px]`, angka `font-display text-[30px] font-extrabold` + predikat teks berwarna `text-[13px] font-bold`, periode `text-[12.5px] text-text-tertiary`, kanan "Rincian ›" `text-accent-strong`); Card = `surface-solid rounded-[22px] p-4.5`, angka `text-[44px] font-extrabold` + Badge predikat
 - **Catatan:** server component. Tile hanya tampil jika akun tertaut & jabatan punya template. Rincian di /me/performance = KpiIndicatorBreakdown di card `surface-solid rounded-[22px]`; navigasi bulan = AttendanceMonthNav `basePath="/me/performance"`
+
+### KpiCycleForm
+- **Path:** apps/web/components/kpi/KpiCycleForm.tsx
+- **Dipakai di:** /settings/kpi (di dalam FormSection "Siklus penilaian")
+- **Referensi desain:** tanpa referensi — pola WorkScheduleForm + SegmentedControl design-tokens.html (feature 22, izin user)
+- **Pola kelas kunci:** SegmentedControl `fullWidth size="lg"` + deskripsi `text-small text-text-secondary`; FormAlert info saat pilihan berubah; bilah bawah `border-t border-border-subtle pt-5` (periode berjalan `text-caption` kiri, tombol "Simpan siklus" kanan, nonaktif jika tidak berubah)
+- **Catatan:** client; label/deskripsi siklus di `lib/kpiReviewLabels.ts` (`CYCLE_DESCRIPTIONS`, `reviewPeriodLabel`, `reviewPeriodRange`)
+
+### CreateKpiReviewsButton / MissingReviewsBanner / KpiReviewPeriodSelect / KpiReviewList
+- **Path:** apps/web/components/kpi/CreateKpiReviewsButton.tsx, MissingReviewsBanner.tsx, KpiReviewPeriodSelect.tsx, KpiReviewList.tsx
+- **Dipakai di:** /kpi/reviews
+- **Referensi desain:** tanpa referensi — pola /kpi/scores (KpiScoreTeamSelect, KpiScoreList) + InviteUserDialog + Banner (feature 22, izin user)
+- **Pola kelas kunci:** Create = Button primary + Plus → Dialog berisi SelectField periode (kandidat dari API); PeriodSelect = `glass rounded-card p-2 lg:w-96` + SelectField labelHidden (`?period=`); MissingBanner = Banner warning (danger saat gagal) + tombol secondary "Tambahkan"; List = `glass-data rounded-card`, baris `<Link>` grid desktop Karyawan · Template · Status Badge · Skor `text-[22px] font-extrabold` · Predikat · ChevronRight, mobile status + predikat di baris kedua
+- **Catatan:** List server component, sisanya client. Status tone `REVIEW_STATUS_TONES` (Draf neutral, Direview warning, Final info). Di halaman: 3 StatTile (Draf, Direview, Final n/total) `grid-cols-3`
+
+### KpiReviewRatingForm / KpiReviewStatusActions / KpiReviewsBackLink
+- **Path:** apps/web/components/kpi/KpiReviewRatingForm.tsx, KpiReviewStatusActions.tsx, KpiReviewsBackLink.tsx
+- **Dipakai di:** /kpi/reviews/[id]
+- **Referensi desain:** tanpa referensi — SegmentedControl + action bar form + pola TaskDecisionActions (feature 22, izin user)
+- **Pola kelas kunci:** RatingForm = card `glass-strong rounded-card p-5 lg:p-6`, per indikator SegmentedControl 1–5 `fullWidth size="lg"` + keterangan skala caption, tombol "Simpan nilai" (secondary) + "Kirim untuk difinalkan" (primary); StatusActions = "Kembalikan ke draf" (secondary) + "Finalkan" (primary) → Dialog konfirmasi (FormAlert warning jika ada catatan tugas belum diverifikasi); BackLink = pola KpiTemplatesBackLink ke `/kpi/reviews?period=`
+- **Catatan:** client (kecuali BackLink). Layout detail: kiri StatTile skor (sementara/final + badge predikat) + RatingForm/Finalisasi, kanan card "Rincian skor" berisi KpiIndicatorBreakdown (`lg:grid-cols-[1fr_1.85fr]`); Banner untuk final (Lock), direview, tanpa template, catatan tugas menunggu verifikasi
 

@@ -4,6 +4,10 @@ import {
   EMPLOYMENT_STATUSES,
   GENDERS,
   KPI_INDICATOR_TYPES,
+  KPI_PREDICATES,
+  KPI_RATING_SCALE_MAX,
+  KPI_REVIEW_CYCLES,
+  KPI_REVIEW_STATUSES,
   KPI_SYSTEM_METRICS,
   KPI_TARGET_PERIODS,
   LEAVE_ATTACHMENT_TYPES,
@@ -50,6 +54,7 @@ const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull(
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
 
 export const membershipRole = pgEnum("membership_role", MEMBERSHIP_ROLES);
+export const kpiReviewCycle = pgEnum("kpi_review_cycle", KPI_REVIEW_CYCLES);
 
 // Data referensi wilayah (feature 09) — tingkat platform, bukan data tenant: tanpa tenant_id, baca-saja untuk app_user.
 // Kode & nama sesuai Kepmendagri No 300.2.2-2138 Tahun 2025 (di-seed lewat migration 0007).
@@ -89,6 +94,8 @@ export const tenants = pgTable(
     regencyCode: text("regency_code").references(() => regencies.code, { onDelete: "restrict" }),
     // Tanggal gajian 1–31; bulan yang lebih pendek memakai hari terakhir bulan itu
     payday: smallint("payday"),
+    // Siklus penilaian KPI periodik (feature 22, /settings/kpi) — hanya memengaruhi periode yang dibuat berikutnya
+    kpiReviewCycle: kpiReviewCycle("kpi_review_cycle").notNull().default("monthly"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -815,5 +822,111 @@ export const taskLogs = pgTable(
       "task_logs_decision_note",
       sql`(${t.decisionNote} IS NULL OR char_length(${t.decisionNote}) BETWEEN 1 AND 500) AND (${t.status} <> 'rejected' OR ${t.decisionNote} IS NOT NULL) AND (${t.verifiedQuantity} IS NULL OR ${t.verifiedQuantity} = ${t.quantity} OR ${t.decisionNote} IS NOT NULL)`,
     ),
+  ],
+);
+
+export const kpiReviewStatus = pgEnum("kpi_review_status", KPI_REVIEW_STATUSES);
+
+// Periode penilaian KPI periodik (feature 22). Dibuat owner/admin dari periode siklus usaha yang sudah berakhir;
+// cycle = siklus saat dibuat (siklus usaha bisa berubah sesudahnya). Periode satu usaha tidak boleh beririsan —
+// exclusion constraint kpi_review_periods_no_overlap (GiST) ditulis di migration. Tanpa UPDATE/DELETE untuk app_user.
+export const kpiReviewPeriods = pgTable(
+  "kpi_review_periods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    cycle: kpiReviewCycle("cycle").notNull(),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Target FK komposit kpi_reviews
+    unique("kpi_review_periods_tenant_id_id_key").on(t.tenantId, t.id),
+    // Daftar periode terbaru dulu; juga melayani filter tenant
+    index("kpi_review_periods_tenant_start_idx").on(t.tenantId, t.startDate),
+    check("kpi_review_periods_date_order", sql`${t.endDate} >= ${t.startDate}`),
+  ],
+);
+
+// Penilaian KPI satu karyawan untuk satu periode (feature 22). draft → reviewed (dikirim atasan/owner/admin) → final
+// (owner/admin). Skor draft/reviewed dihitung saat dibaca; final menyimpan snapshot (skor + rincian + nama) dan TERKUNCI —
+// trigger kpi_reviews_guard_final menolak UPDATE/DELETE baris final. Nilai indikator penilaian atasan di kpi_review_ratings.
+export const kpiReviews = pgTable(
+  "kpi_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    periodId: uuid("period_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    status: kpiReviewStatus("status").notNull().default("draft"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    submittedByUserId: uuid("submitted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Snapshot nama (tetap terbaca walau akses pengguna dicabut)
+    submittedByName: text("submitted_by_name"),
+    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    finalizedByUserId: uuid("finalized_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    finalizedByName: text("finalized_by_name"),
+    // Skor final 0–100 (1 desimal); null = final tanpa indikator yang bisa dihitung (mis. cuti sepanjang periode)
+    finalScore: numeric("final_score", { precision: 4, scale: 1 }),
+    finalPredicate: text("final_predicate", { enum: KPI_PREDICATES }),
+    // KpiReviewSnapshot (@exapay/shared) — divalidasi zod saat dibaca
+    snapshot: jsonb("snapshot"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("kpi_reviews_tenant_id_id_key").on(t.tenantId, t.id),
+    // Satu penilaian per karyawan per periode; juga melayani filter tenant & daftar per periode
+    unique("kpi_reviews_tenant_period_employee_key").on(t.tenantId, t.periodId, t.employeeId),
+    index("kpi_reviews_tenant_employee_idx").on(t.tenantId, t.employeeId),
+    foreignKey({ name: "kpi_reviews_period_fk", columns: [t.tenantId, t.periodId], foreignColumns: [kpiReviewPeriods.tenantId, kpiReviewPeriods.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({ name: "kpi_reviews_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete("restrict"),
+    // Dikirim ⇔ bukan draft; final ⇔ finalized_at + snapshot terisi; skor & predikat hanya di final, terisi bersamaan
+    check("kpi_reviews_submitted", sql`(${t.status} <> 'draft') = (${t.submittedAt} IS NOT NULL)`),
+    check(
+      "kpi_reviews_final",
+      sql`(${t.status} = 'final') = (${t.finalizedAt} IS NOT NULL) AND (${t.status} = 'final') = (${t.snapshot} IS NOT NULL)
+        AND (${t.finalScore} IS NULL) = (${t.finalPredicate} IS NULL) AND (${t.status} = 'final' OR ${t.finalScore} IS NULL)
+        AND coalesce(${t.finalScore} BETWEEN 0 AND 100, true)`,
+    ),
+    check("kpi_reviews_final_predicate", sql`${t.finalPredicate} IS NULL OR ${t.finalPredicate} IN ('very_good', 'good', 'fair', 'needs_improvement')`),
+  ],
+);
+
+// Nilai atasan per indikator penilaian (tipe rating) untuk penilaian yang belum final (feature 22). Indikator dihapus dari
+// template → nilainya ikut terhapus (CASCADE); penilaian final tidak terpengaruh karena memakai snapshot.
+export const kpiReviewRatings = pgTable(
+  "kpi_review_ratings",
+  {
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    reviewId: uuid("review_id").notNull(),
+    indicatorId: uuid("indicator_id").notNull(),
+    rating: smallint("rating").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Juga melayani filter tenant
+    primaryKey({ name: "kpi_review_ratings_pkey", columns: [t.tenantId, t.reviewId, t.indicatorId] }),
+    // Pemeriksaan CASCADE saat indikator dihapus
+    index("kpi_review_ratings_tenant_indicator_idx").on(t.tenantId, t.indicatorId),
+    foreignKey({ name: "kpi_review_ratings_review_fk", columns: [t.tenantId, t.reviewId], foreignColumns: [kpiReviews.tenantId, kpiReviews.id] }).onDelete(
+      "cascade",
+    ),
+    foreignKey({ name: "kpi_review_ratings_indicator_fk", columns: [t.tenantId, t.indicatorId], foreignColumns: [kpiIndicators.tenantId, kpiIndicators.id] }).onDelete(
+      "cascade",
+    ),
+    check("kpi_review_ratings_range", sql`${t.rating} BETWEEN 1 AND ${sql.raw(String(KPI_RATING_SCALE_MAX))}`),
   ],
 );
