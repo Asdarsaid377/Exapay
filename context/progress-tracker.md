@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 1 — Foundation
-**Terakhir selesai:** 07 Panel Super-Admin (2026-09-30)
-**Berikutnya:** 08 Undang Pengguna & Kelola Peran
+**Phase:** 2 — Master Data
+**Terakhir selesai:** 08 Undang Pengguna & Kelola Peran (2026-09-30)
+**Berikutnya:** 09 Profil Usaha
 
 ---
 
@@ -22,7 +22,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 05 Signup Owner & Verifikasi Email
 - [x] 06 App Shell & Navigasi
 - [x] 07 Panel Super-Admin
-- [ ] 08 Undang Pengguna & Kelola Peran
+- [x] 08 Undang Pengguna & Kelola Peran
 
 ### Phase 2 — Master Data
 - [ ] 09 Profil Usaha
@@ -131,6 +131,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — **Tenant nonaktif:** `tenants.deactivated_at` (trigger: hanya super-admin/`app_owner`). Tenant nonaktif disaring dari sesi; login ditolak 403 `TENANT_DEACTIVATED` jika semua usaha user nonaktif; refresh ditolak. Access token yang sudah terbit masih berlaku ≤ 15 menit untuk panggilan API langsung (web memutus lebih cepat). Ditambah "Aktifkan kembali" agar penonaktifan bisa dibatalkan.
 - 2026-09-30 — Respons error API punya `code` opsional (`API_ERROR_CODES`: `EMAIL_UNVERIFIED`, `TENANT_DEACTIVATED`) — web tidak lagi menebak dari status 403.
 - 2026-09-30 — **Sesi di web:** `getSession()` → `null` hanya jika API menolak (401/403); API tidak terjangkau/5xx → `SessionUnavailableError` → `app/error.tsx` (tombol coba lagi, sesi tetap). Proxy tidak menghapus cookie saat refresh gagal karena API tidak terjangkau. Sesi ditolak → layout me-render `SessionEnded` → Server Action `logout` (POST). **Logout tidak boleh lewat route GET**: route `/signout` (GET) sempat dibuat lalu dihapus — Chrome "Preload pages" memuatnya dari riwayat dan mengeluarkan super-admin setiap kali login.
+- 2026-09-30 — **Kelola pengguna (feature 08):** modul `users` (`GET /users`, `POST /users/invitations`, `/users/invitations/:id/resend|cancel`, `/users/:membershipId/role|revoke`, semua `@Roles("owner","admin")`). Wewenang = `MANAGEABLE_ROLES` di `@exapay/shared` (sumber tunggal api & web): owner → semua peran, admin → atasan & karyawan; tidak ada yang mengubah/mencabut dirinya sendiri; usaha minimal satu owner (dicek setelah perubahan di transaksi yang sama). Peran pengelola **dibaca ulang dari DB** di setiap aksi (klaim JWT bisa basi 15 menit). Tanpa migration.
+- 2026-09-30 — Query `memberships` wajib difilter `tenant_id` walau ada RLS: policy `own_memberships_select` juga memperlihatkan membership user sendiri di usaha lain.
+- 2026-09-30 — Cabut akses = hapus membership (akun tetap, bisa diundang lagi). Sesi pengguna tsb kehilangan usaha saat refresh berikutnya; access token lama masih berlaku ≤ 15 menit untuk endpoint lain (sama dengan tenant nonaktif). Undang email yang sudah anggota → 409; undang ulang email tertunda menggantikan undangan lama (cooldown 60 detik); admin tidak bisa menimpa/mengelola undangan owner/admin. `InvitationsService.create` kini mengembalikan `{ id, token }`.
+- 2026-09-30 — `/settings/users` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola feature 07 (TenantTable, Dialog, Badge). `Dialog` kini `text-left` (dialog di dalam sel tabel rata kanan ikut mewarisi perataan).
 - 2026-09-30 — Super-admin production dibuat dengan `pnpm --filter @exapay/api admin:create-super-admin -- --email … --name …` (password dari env `SUPER_ADMIN_PASSWORD`, role `app_owner`; akun lama cukup dipromosikan).
 
 ---
@@ -148,17 +152,17 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - `pnpm-workspace.yaml` berisi `minimumReleaseAgeExclude` untuk next@16.3.7 (ditambahkan otomatis pnpm 11 karena rilis masih baru) — boleh dihapus setelah umur rilis melewati batas.
 - Bucket S3 belum dibuat — dibuat saat fitur pertama yang menyimpan file.
 - Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
-- Undang user (08): fondasi sudah ada (feature 07) — `InvitationsService.create(tx, ctx, { email, fullName, role })` + `sendEmail`, halaman `/invite/[token]`. User baru dibuat saat undangan diterima dengan konteks user itu sendiri (policy `users_insert_self`), jadi tidak perlu policy baru. Sisa untuk 08: `/settings/users`, undangan dari owner/admin, ubah peran, cabut akses, pembatalan undangan.
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 68 test per feature 07.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 78 test per feature 08.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
 - Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.
 - `db.execute()` (SQL mentah Drizzle) mengembalikan `timestamptz` sebagai string, bukan `Date`.
 - Test e2e: jangan `await` request supertest lain di dalam argumen request yang sedang dibangun (`.set(..., await tokenOf())`) — keduanya berbagi `http.Server` dan request pertama kena `ECONNREFUSED`. Hitung token lebih dulu.
 - Headless Chrome (verifikasi visual): halaman auth tidak pernah memicu event `load` (gambar tersembunyi AuthShell) — pakai `waitUntil: "commit"` + jeda hydration.
-- Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07 — boleh dinonaktifkan/diabaikan.
+- Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07, dan akun `*@contoh.local` tanpa usaha dari verifikasi feature 08 — boleh diabaikan.
+- Component yang dirender dua kali (tabel desktop + daftar mobile) tidak boleh memakai `name`/`id` statis — pakai `useId` (grup radio bernama sama saling menimpa status checked).

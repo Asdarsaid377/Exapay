@@ -70,7 +70,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### DropdownMenu
 - **Path:** apps/web/components/common/DropdownMenu.tsx
-- **Dipakai di:** TenantSwitcher, UserMenu
+- **Dipakai di:** TenantSwitcher, UserMenu, MemberActions
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Dropdown)
 - **Pola kelas kunci:** panel `glass-overlay absolute top-full z-30 mt-2 rounded-[18px] p-2 flex flex-col gap-0.5`; item di dalam: `rounded-inner` hover `bg-accent/10`, terpilih `bg-accent/10` + Check `text-accent-strong`; pemisah `mx-2 border-t border-border-subtle`
 - **Catatan:** props `label` (aria), `trigger`, `triggerClassName`, `align` start|end, `panelClassName` (lebar, default `w-80`), `children(close)`. Tertutup saat klik di luar / Escape. Pakai ini untuk dropdown berikutnya
@@ -174,7 +174,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### Badge
 - **Path:** apps/web/components/common/Badge.tsx
-- **Dipakai di:** /admin/tenants, /admin/tenants/[id]
+- **Dipakai di:** /admin/tenants, /admin/tenants/[id], /settings/users (peran = neutral, Menunggu = warning, Kedaluwarsa = danger)
 - **Referensi desain:** context/designs/design-tokens.html (badge status) + ui-rules "Badge Status"
 - **Pola kelas kunci:** `inline-flex h-6.5 rounded-full px-2.75 text-[12.5px] font-bold`; tone warning `bg-warning-soft text-warning-text` · success `bg-success-soft text-success-text` · danger `bg-danger-soft text-danger-text` · accent `bg-accent-soft text-accent-deep` · neutral `bg-text-primary/6 text-text-secondary` · info `bg-info-soft text-info-text`
 - **Catatan:** prop `tone` (`BadgeTone`). Tanpa titik/ikon. Pakai untuk semua badge status berikutnya (izin, payroll, predikat KPI)
@@ -188,10 +188,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### Dialog
 - **Path:** apps/web/components/common/Dialog.tsx
-- **Dipakai di:** CreateTenantDialog, TenantStatusActions
+- **Dipakai di:** CreateTenantDialog, TenantStatusActions, InviteUserDialog, ChangeRoleDialog, RevokeMemberDialog, InvitationActions
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — surface-glass-overlay untuk modal (ui-rules)
 - **Pola kelas kunci:** native `<dialog>` `glass-overlay rounded-t-sheet sm:rounded-sheet sm:max-w-lg backdrop:bg-inverse/32`; mobile menempel di bawah layar; isi `p-6 sm:p-7 gap-5`; judul `font-display text-xl font-extrabold`; tombol tutup `size-11 rounded-field`; footer `flex-col-reverse sm:flex-row sm:justify-end gap-3`
-- **Catatan:** client. Props `open`, `onClose`, `title`, `description?`, `footer?`, `dismissible` (false saat aksi berjalan → Escape/klik luar/X nonaktif). Fokus terkunci oleh browser (`showModal`). Pakai untuk semua modal & konfirmasi
+- **Catatan:** client. Props `open`, `onClose`, `title`, `description?`, `footer?`, `dismissible` (false saat aksi berjalan → Escape/klik luar/X nonaktif). Fokus terkunci oleh browser (`showModal`). `text-left` wajib — dialog bisa dirender di dalam sel tabel rata kanan. Pakai untuk semua modal & konfirmasi
 
 ### Pagination
 - **Path:** apps/web/components/common/Pagination.tsx
@@ -205,7 +205,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /admin/tenants
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — pola daftar di card (ui-rules "Cards")
 - **Pola kelas kunci:** tabel (≥lg) di `glass-strong rounded-card overflow-hidden`: header `text-caption font-bold text-text-tertiary`, sel `px-4 py-3.5 first:pl-6 last:pr-6`, baris `border-t border-border-subtle hover:bg-glass-hover`, tautan menutupi baris (`after:absolute after:inset-0`, `tr relative`); mobile `ul` baris `px-5 py-4` (judul `text-[15px] font-bold` + Badge, sub `text-small`, caption). Filter: tab `h-10 rounded-full px-4`, aktif `bg-accent-soft font-bold text-accent-strong` + jumlah `tabular-nums`; cari = form GET `h-11 rounded-field` + ikon Search `left-3.5`
-- **Catatan:** server component (filter tanpa JS). **Pola acuan untuk tabel data berikutnya** (/employees, /settings/users) — ekstrak `DataTable` umum saat dipakai kedua kalinya
+- **Catatan:** server component (filter tanpa JS). **Pola acuan untuk tabel data berikutnya** (/employees). MemberTable (feature 08) mengikuti pola ini tanpa ekstraksi — ekstrak `DataTable` umum saat dipakai ketiga kalinya (feature 11)
 
 ### CreateTenantDialog / TenantStatusActions / ResendOwnerInvitationButton
 - **Path:** apps/web/components/admin/CreateTenantDialog.tsx, TenantStatusActions.tsx, ResendOwnerInvitationButton.tsx
@@ -234,3 +234,31 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — pola EmptyState
 - **Pola kelas kunci:** `BackdropShapes variant="auth"` + card `glass-strong rounded-card px-6 py-12 text-center`; ikon CloudOff `size-7 text-accent-strong`; tombol Coba lagi (primary)
 - **Catatan:** Next 16: prop `retry` (bukan `reset`). Sesi tidak diakhiri. Kode `error.digest` ditampilkan sebagai caption
+
+### RoleOptions
+- **Path:** apps/web/components/users/RoleOptions.tsx
+- **Dipakai di:** InviteUserDialog, ChangeRoleDialog (/settings/users)
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 08, izin user) — pola Input + item dropdown terpilih
+- **Pola kelas kunci:** `fieldset` + legend `text-[13px] font-bold`; kartu `label` `rounded-field border border-border-control bg-control px-3.5 py-3 hover:border-border-control-hover has-checked:border-accent has-checked:bg-accent/10 has-focus-visible:ring-3 has-focus-visible:ring-accent/45`; radio native `size-4.5 accent-accent-strong`; judul `text-sm font-bold` + penjelasan `text-small text-text-secondary`; error `border-danger` + `text-caption text-danger-text`
+- **Catatan:** props `legend`, `roles`, `value`, `onChange`, `error?`, `disabled?`. Nama grup dari `useId` (component bisa ada dua kali di DOM). Label & penjelasan dari `ROLE_LABELS` / `ROLE_DESCRIPTIONS` (`lib/roleLabels.ts`). Pola acuan untuk pilihan tunggal berpenjelasan berikutnya
+
+### InviteUserDialog
+- **Path:** apps/web/components/users/InviteUserDialog.tsx
+- **Dipakai di:** /settings/users (aksi PageHeader)
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 08, izin user) — pola CreateTenantDialog
+- **Pola kelas kunci:** Button primary + ikon UserPlus; Dialog + form `flex flex-col gap-4` (TextField nama, email, RoleOptions); state sukses = ikon MailCheck `size-11 rounded-field bg-success-soft text-success` + teks, tombol "Undang orang lain" (secondary) / "Selesai"
+- **Catatan:** client; prop `assignableRoles` (dari API). Validasi `inviteUserSchema`; memanggil `actions/users.ts` lalu `router.refresh()`
+
+### MemberTable / MemberActions / ChangeRoleDialog / RevokeMemberDialog
+- **Path:** apps/web/components/users/MemberTable.tsx, MemberActions.tsx, ChangeRoleDialog.tsx, RevokeMemberDialog.tsx
+- **Dipakai di:** /settings/users
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 08, izin user) — pola TenantTable + Dialog + DropdownMenu
+- **Pola kelas kunci:** card `glass-strong rounded-card` **tanpa overflow-hidden** (dropdown di baris bawah tidak terpotong) + judul `font-display text-h2 font-bold` + sub `text-small`; tabel ≥lg (header `text-caption font-bold text-text-tertiary`, baris `border-t border-border-subtle`, tanpa hover karena baris bukan tautan); sel nama = UserAvatar + nama `text-[15px] font-bold` + "(Anda)" `text-caption text-text-tertiary` + email `text-small`; mobile `ul` baris `px-5 py-4`, badge + caption `pl-13 flex-wrap`; tombol aksi `size-10 rounded-field` ikon MoreHorizontal; item menu `min-h-11 rounded-inner`, "Cabut akses" `font-bold text-danger-text hover:bg-danger/8`; konfirmasi cabut = Button `dark`
+- **Catatan:** MemberTable server component (props `members`, `tenantName`, `assignableRoles`); aksi hanya jika `member.canManage`. MemberActions client, membuka ChangeRoleDialog (tombol simpan nonaktif jika peran sama) / RevokeMemberDialog
+
+### PendingInvitations / InvitationActions
+- **Path:** apps/web/components/users/PendingInvitations.tsx, InvitationActions.tsx
+- **Dipakai di:** /settings/users (tampil hanya jika ada undangan tertunda)
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 08, izin user) — pola card daftar + ResendOwnerInvitationButton
+- **Pola kelas kunci:** card `glass-strong rounded-card` + judul `text-h2`; baris `border-t border-border-subtle px-5 py-4 lg:flex-row lg:justify-between`; nama `text-[15px] font-bold` + Badge peran (neutral) + status (warning "Menunggu" / danger "Kedaluwarsa"); caption "Dikirim … oleh … · berlaku sampai …"; aksi dua Button secondary (Kirim ulang, Batalkan) + FormAlert hasil
+- **Catatan:** undangan yang tidak boleh dikelola (`canManage` false, mis. admin melihat undangan owner) menampilkan caption "Hanya pemilik yang bisa mengelola undangan ini". Batalkan lewat Dialog konfirmasi

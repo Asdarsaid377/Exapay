@@ -61,8 +61,9 @@
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
 │   │           ├── email/            → abstraksi pengirim email (SMTP)
-│   │           ├── invitations/      → undangan bergabung ke tenant (buat, lookup, terima) — dipakai tenants & feature 08
+│   │           ├── invitations/      → undangan bergabung ke tenant (buat, lookup, terima) — dipakai tenants & users
 │   │           ├── tenants/          → panel super-admin (/admin/tenants), data bawaan tenant baru
+│           ├── users/            → pengguna & undangan usaha aktif (/users — owner/admin, feature 08)
 │   │           ├── employees/
 │   │           ├── tasks/
 │   │           ├── kpi/
@@ -84,6 +85,7 @@
 │       │   ├── (admin)/layout.tsx    → AppShell panel super-admin (menu ADMIN_MENU)
 │       │   ├── (admin)/admin/tenants/ → daftar & detail tenant
 │       │   ├── (auth)/invite/[token]/ → terima undangan
+│       │   ├── (main)/settings/users/ → pengguna & undangan usaha (feature 08)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
@@ -91,9 +93,9 @@
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)
 │       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)

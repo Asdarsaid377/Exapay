@@ -63,13 +63,15 @@ export class InvitationsService {
   ) {}
 
   // Buat undangan di transaksi pemanggil (konteks tenant tujuan). Undangan lama yang belum diterima untuk email
-  // yang sama di tenant ini dihapus — hanya tautan terbaru yang berlaku. Mengembalikan token asli (hanya untuk email).
-  async create(tx: Transaction, ctx: TenantContext, input: NewInvitation): Promise<string> {
+  // yang sama di tenant ini dihapus — hanya tautan terbaru yang berlaku. Mengembalikan id + token asli (token hanya untuk email).
+  async create(tx: Transaction, ctx: TenantContext, input: NewInvitation): Promise<{ id: string; token: string }> {
     const token = randomBytes(32).toString("base64url");
     await tx
       .delete(invitations)
       .where(and(eq(invitations.tenantId, ctx.tenantId), sql`lower(${invitations.email}) = lower(${input.email})`, isNull(invitations.acceptedAt)));
-    await tx.insert(invitations).values({
+    const [row] = await tx
+      .insert(invitations)
+      .values({
       tenantId: ctx.tenantId,
       email: input.email,
       fullName: input.fullName,
@@ -77,8 +79,10 @@ export class InvitationsService {
       tokenHash: hashToken(token),
       invitedByUserId: ctx.userId,
       expiresAt: new Date(Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000),
-    });
-    return token;
+      })
+      .returning({ id: invitations.id });
+    if (!row) throw new Error("[invitations/create] insert tidak mengembalikan baris");
+    return { id: row.id, token };
   }
 
   // Dikirim di latar agar respons tidak menunggu SMTP.

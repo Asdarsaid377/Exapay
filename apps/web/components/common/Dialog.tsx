@@ -17,6 +17,7 @@ type Props = {
 
 // Modal kaca overlay (ui-rules: surface-glass-overlay untuk modal). Native <dialog>: fokus terkunci di dalam,
 // Escape menutup, konten di belakang tidak bisa diklik. Mobile: menempel di bawah layar.
+// text-left: dialog bisa dirender di dalam sel tabel rata kanan — perataan induk tidak boleh terwarisi.
 export function Dialog({ open, onClose, title, description, children, footer, dismissible = true }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -40,7 +41,7 @@ export function Dialog({ open, onClose, title, description, children, footer, di
         // Klik di luar panel (area ::backdrop) mengenai elemen <dialog> itu sendiri
         if (event.target === event.currentTarget && dismissible) onClose();
       }}
-      className="glass-overlay m-0 mt-auto w-full max-w-none rounded-t-sheet p-0 text-text-primary backdrop:bg-inverse/32 sm:m-auto sm:w-[calc(100vw-2rem)] sm:max-w-lg sm:rounded-sheet"
+      className="glass-overlay m-0 mt-auto w-full max-w-none rounded-t-sheet p-0 text-left text-text-primary backdrop:bg-inverse/32 sm:m-auto sm:w-[calc(100vw-2rem)] sm:max-w-lg sm:rounded-sheet"
     >
       <div className="flex max-h-[calc(100dvh-2rem)] flex-col gap-5 overflow-y-auto p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:p-7">
         <div className="flex items-start justify-between gap-4">

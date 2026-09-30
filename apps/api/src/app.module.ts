@@ -9,6 +9,7 @@ import { EmailModule } from "./modules/email/email.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { InvitationsModule } from "./modules/invitations/invitations.module.js";
 import { TenantsModule } from "./modules/tenants/tenants.module.js";
+import { UsersModule } from "./modules/users/users.module.js";
 import { RedisModule } from "./redis/redis.module.js";
 
 @Module({
@@ -21,6 +22,7 @@ import { RedisModule } from "./redis/redis.module.js";
     AuthModule,
     InvitationsModule,
     TenantsModule,
+    UsersModule,
     RedisModule,
     HealthModule,
   ],

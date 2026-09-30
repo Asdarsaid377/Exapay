@@ -159,7 +159,8 @@ export class TenantsAdminService {
         action: "create_by_super_admin",
         after: { name: input.name, ownerEmail: input.ownerEmail },
       });
-      return this.invitationsService.create(tx, ctx, { email: input.ownerEmail, fullName: input.ownerFullName, role: "owner" });
+      const { token } = await this.invitationsService.create(tx, ctx, { email: input.ownerEmail, fullName: input.ownerFullName, role: "owner" });
+      return token;
     });
     this.invitationsService.sendEmail({ to: input.ownerEmail, fullName: input.ownerFullName, tenantName: input.name, role: "owner", token });
     return { id: ctx.tenantId };
@@ -212,7 +213,7 @@ export class TenantsAdminService {
         throw new HttpException("Undangan baru saja dikirim. Tunggu sebentar sebelum mengirim ulang.", HttpStatus.TOO_MANY_REQUESTS);
       }
 
-      const token = await this.invitationsService.create(tx, ctx, { email: invitation.email, fullName: invitation.fullName, role: "owner" });
+      const { token } = await this.invitationsService.create(tx, ctx, { email: invitation.email, fullName: invitation.fullName, role: "owner" });
       await this.audit.record(tx, ctx, { entity: "invitation", entityId: tenantId, action: "resend_owner", after: { email: invitation.email } });
       return { token, email: invitation.email, fullName: invitation.fullName, tenantName: tenant.name };
     });
