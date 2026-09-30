@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 3 — Absensi
-**Terakhir selesai:** 15 Izin, Sakit, Cuti (2026-09-30)
-**Berikutnya:** 16 Rekap & Koreksi Absensi
+**Terakhir selesai:** 16 Rekap & Koreksi Absensi (2026-09-30)
+**Berikutnya:** 17 Aturan Potongan Absensi
 
 ---
 
@@ -34,7 +34,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 13 Jadwal Kerja & Hari Libur
 - [x] 14 Absen Masuk/Pulang (Portal Karyawan)
 - [x] 15 Izin, Sakit, Cuti
-- [ ] 16 Rekap & Koreksi Absensi
+- [x] 16 Rekap & Koreksi Absensi
 - [ ] 17 Aturan Potongan Absensi
 
 ### Phase 4 — Tugas Harian & KPI
@@ -172,6 +172,12 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — **Storage file dimulai** (fitur pertama yang menyimpan file): modul `apps/api/src/modules/storage/` (`FileStorage` abstrak + `S3FileStorage`, `@aws-sdk/client-s3`), env `S3_*` wajib, bucket dibuat otomatis saat start. Key `tenants/<tenant_id>/leave-requests/<id>/<uuid>.<ext>`; jenis file dari magic bytes; unduh lewat `GET /attendance/leave-requests/:id/attachment` (pemilik, atasan langsung, owner/admin) diteruskan Route Handler web `/me/attendance/requests/[id]/attachment` & `/attendance/requests/[id]/attachment`. `serverActions.bodySizeLimit` dinaikkan ke `6mb`.
 - 2026-09-30 — Ringkasan hari izin per bulan (`leaveDays`, `summary`) ada di respons `GET /attendance/me/leave-requests`, bukan di riwayat absensi (hindari import melingkar shared). `AttendanceService` membuka helper `tenantTimeZone/ownEmployee/accessOf/requireEmployee` untuk dipakai ulang.
 
+- 2026-09-30 — **Rekap & koreksi absensi (feature 16):** `/attendance` & `/attendance/corrections` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola EmployeeTable + StatTile + daftar CalendarDate + Dialog.
+- 2026-09-30 — Keputusan user: **koreksi = ubah/isi jam masuk & pulang** (termasuk hari alpa → absen dibuat, lupa pulang), alasan wajib; izin/sakit/cuti tetap lewat pengajuan; koreksi **tidak bisa menghapus kehadiran**. **Periode rekap = bulan + rentang bebas** (maks. 92 hari); periode payroll (cut-off gajian) diputuskan di feature 27/29.
+- 2026-09-30 — Rekap dihitung saat dibaca oleh fungsi murni `attendance-recap.ts` (`recapEmployee`, dipakai ulang payroll feature 27): alpa = hari kerja **sebelum hari ini** tanpa absen & tanpa izin disetujui; absen menang atas izin di tanggal yang sama; absen di hari libur dihitung terpisah (`offDayPresent`); `missingCheckOut` hanya hari lampau. Hari kerja dari kalender kerja saat ini (tidak berversi); menit telat dari snapshot absen. **Tanggal keluar karyawan = hari kerja terakhir (inklusif, tetap dihitung)** — dikonfirmasi user; berlaku juga untuk potongan/prorata payroll (feature 27).
+- 2026-09-30 — Migration `0014_attendance_corrections`: riwayat koreksi **append-only** (app_user SELECT/INSERT), before/after jam & telat, nama pengoreksi di-snapshot; `attendance_records` dapat unique `(tenant_id, id)` untuk FK komposit. Koreksi: owner/admin saja (peran dibaca ulang), **tidak ada yang mengoreksi absensinya sendiri** (403), tanggal/jam mendatang & di luar masa kerja ditolak, baris dikunci `FOR UPDATE`; jam dibaca di zona waktu baris (`zonedInstant` di `attendance-clock.ts`); lokasi GPS jam yang diubah dikosongkan; audit `attendance_record`/`correct` (alasan di `after`).
+- 2026-09-30 — Endpoint: `GET /attendance/recap` (owner/admin/atasan, cakupan bawahan), `GET /attendance/recap/:employeeId` (rincian harian + `canCorrect`), `GET|POST /attendance/corrections` (owner/admin). Logika penglihat (owner/admin semua, atasan bawahan langsung) dipindah ke `attendance-viewer.ts`, dipakai bersama `LeaveRequestsService`.
+
 ---
 
 ## Catatan (Notes)
@@ -210,4 +216,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Karyawan nonaktif masih bisa membuka portal, tapi absen ditolak (feature 14). `karyawan@exapay.local` (dev) belum tertaut data karyawan.
 - Test API butuh container **storage** (SeaweedFS) selain postgres/redis/mailpit — `docker compose up -d postgres redis mailpit storage`. Total test API 143 per feature 15.
 - Data dev: `karyawan@exapay.local` kini tertaut ke karyawan **Dewi Lestari** (bawahan Rudi) + satu pengajuan Sakit 28–29 Sep 2026 disetujui Andi Atasan (verifikasi feature 15).
-- Belum ada: hitungan pengajuan tertunda di sidebar; izin di rekap `/attendance` (feature 16) & potongan (feature 17/27).
+- Belum ada: hitungan pengajuan tertunda di sidebar; potongan absensi (feature 17/27); alpa di portal `/me/attendance` (ringkasan portal belum memakai `recapEmployee`).
+- Total test API 154 per feature 16. Data dev: Dewi Lestari punya satu koreksi uji 25 Sep 2026 (08:10–17:05, oleh Budi Pemilik); di data dev Siti Rahmawati kini ber-atasan Rudi.

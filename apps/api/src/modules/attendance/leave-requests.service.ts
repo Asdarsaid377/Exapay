@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { employees, leaveRequests, memberships, positions, users } from "@exapay/db";
+import { employees, leaveRequests, positions, users } from "@exapay/db";
 import {
   type LeaveAttachmentType,
   type LeaveDecisionData,
@@ -13,7 +13,6 @@ import {
   LEAVE_REQUESTS_PAGE_SIZE,
   type LeaveRequestStatus,
   type LeaveType,
-  type MembershipRole,
   type MyLeaveRequests,
 } from "@exapay/shared";
 import {
@@ -26,7 +25,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { and, asc, count, desc, eq, gte, lte, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, lte, or } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
@@ -35,6 +34,7 @@ import { type Database, type TenantContext, type Transaction, withTenant } from 
 import { AuditService } from "../audit/audit.service.js";
 import { FileStorage, tenantFileKey } from "../storage/file-storage.js";
 import { localClock, monthRange } from "./attendance-clock.js";
+import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
 import { ATTACHMENT_EXTENSIONS, detectAttachmentType, safeAttachmentName } from "./leave-attachment.js";
 import { countWorkingDays, type WorkCalendar, workingDatesBetween } from "./work-calendar.js";
@@ -44,9 +44,6 @@ import { WorkCalendarService } from "./work-calendar.service.js";
 export type UploadedAttachment = { buffer: Buffer; size: number; originalname: string };
 
 export type AttachmentFile = { buffer: Buffer; name: string; contentType: LeaveAttachmentType };
-
-// Penglihat halaman persetujuan: owner/admin → semua; atasan → bawahan langsung (supervisor_id = data karyawan miliknya)
-type Viewer = { role: MembershipRole; manage: boolean; ownEmployeeId: string | null };
 
 const NOT_FOUND = "Pengajuan tidak ditemukan";
 const OVERLAP = "Tanggal tersebut sudah tercakup pengajuan lain yang menunggu atau disetujui";
@@ -240,7 +237,7 @@ export class LeaveRequestsService {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
       const viewer = await this.requireViewer(tx, ctx);
-      const scope = this.scopeCondition(viewer);
+      const scope = viewerEmployeeScope(viewer);
       const statusCondition = query.status === "all" ? undefined : eq(leaveRequests.status, query.status);
       const where = and(scope, statusCondition);
 
@@ -289,7 +286,7 @@ export class LeaveRequestsService {
         .from(leaveRequests)
         .innerJoin(employees, eq(employees.id, leaveRequests.employeeId))
         .where(eq(leaveRequests.id, id));
-      if (!row || !this.inScope(viewer, row.supervisorId)) throw new NotFoundException(NOT_FOUND);
+      if (!row || !viewerCanSee(viewer, row.supervisorId)) throw new NotFoundException(NOT_FOUND);
       if (row.employeeId === viewer.ownEmployeeId) throw new ForbiddenException("Anda tidak dapat memutuskan pengajuan Anda sendiri");
       if (row.status !== "pending") throw new ConflictException(`Pengajuan ini sudah ${LEAVE_REQUEST_STATUS_LABELS[row.status].toLowerCase()}`);
 
@@ -332,8 +329,8 @@ export class LeaveRequestsService {
         .where(eq(leaveRequests.id, id));
       if (!row) throw new NotFoundException(NOT_FOUND);
       if (row.employeeUserId !== user.userId) {
-        const viewer = await this.viewer(tx, ctx);
-        if (!viewer || !this.inScope(viewer, row.supervisorId)) throw new NotFoundException(NOT_FOUND);
+        const viewer = await loadAttendanceViewer(tx, ctx);
+        if (!viewer || !viewerCanSee(viewer, row.supervisorId)) throw new NotFoundException(NOT_FOUND);
       }
       if (!row.key || !row.name || !row.contentType) throw new NotFoundException("Pengajuan ini tidak memiliki lampiran");
       return { key: row.key, name: row.name, contentType: row.contentType };
@@ -388,32 +385,9 @@ export class LeaveRequestsService {
     return this.workCalendar.loadCalendar(tx, from, to);
   }
 
-  // Peran dibaca ulang dari DB (klaim JWT bisa basi 15 menit). karyawan / bukan anggota → null.
-  private async viewer(tx: Transaction, ctx: TenantContext): Promise<Viewer | null> {
-    if (!ctx.userId) return null;
-    // Filter tenant wajib: policy own_memberships_select juga memperlihatkan membership user di usaha lain
-    const [membership] = await tx
-      .select({ role: memberships.role })
-      .from(memberships)
-      .where(and(eq(memberships.tenantId, ctx.tenantId), eq(memberships.userId, ctx.userId)));
-    if (!membership || membership.role === "karyawan") return null;
-    const [own] = await tx.select({ id: employees.id }).from(employees).where(eq(employees.userId, ctx.userId));
-    return { role: membership.role, manage: membership.role === "owner" || membership.role === "admin", ownEmployeeId: own?.id ?? null };
-  }
-
-  private async requireViewer(tx: Transaction, ctx: TenantContext): Promise<Viewer> {
-    const viewer = await this.viewer(tx, ctx);
+  private async requireViewer(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {
+    const viewer = await loadAttendanceViewer(tx, ctx);
     if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke pengajuan izin");
     return viewer;
-  }
-
-  // Atasan tanpa data karyawan tertaut tidak punya bawahan → tidak melihat apa pun
-  private scopeCondition(viewer: Viewer): SQL | undefined {
-    if (viewer.manage) return undefined;
-    return viewer.ownEmployeeId ? eq(employees.supervisorId, viewer.ownEmployeeId) : sql`false`;
-  }
-
-  private inScope(viewer: Viewer, supervisorId: string | null): boolean {
-    return viewer.manage || (viewer.ownEmployeeId !== null && supervisorId === viewer.ownEmployeeId);
   }
 }

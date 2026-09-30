@@ -414,7 +414,8 @@ export const companyHolidays = pgTable(
 
 // Absen masuk/pulang (feature 14): satu baris per karyawan per tanggal kerja (tanggal lokal zona waktu usaha).
 // Jam selalu dari server. Jadwal & menit telat disimpan saat absen masuk (snapshot) — jadwal kerja tidak berversi,
-// jadi perubahan jadwal kemudian tidak mengubah status telat hari yang sudah lewat. Koreksi admin menyusul (feature 16).
+// jadi perubahan jadwal kemudian tidak mengubah status telat hari yang sudah lewat. Koreksi owner/admin (feature 16) mengubah
+// jam di baris ini (atau membuat baris untuk hari tanpa absen) + riwayat di attendance_corrections + audit log.
 // Lokasi GPS opsional: dicatat bila browser memberi izin, tidak memblokir absen.
 export const attendanceRecords = pgTable(
   "attendance_records",
@@ -443,6 +444,8 @@ export const attendanceRecords = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
+    // Target FK komposit attendance_corrections
+    unique("attendance_records_tenant_id_id_key").on(t.tenantId, t.id),
     // Juga melayani filter tenant & riwayat per karyawan per rentang tanggal
     uniqueIndex("attendance_records_tenant_employee_date_key").on(t.tenantId, t.employeeId, t.workDate),
     foreignKey({ name: "attendance_records_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
@@ -464,6 +467,47 @@ export const attendanceRecords = pgTable(
       "attendance_records_check_out_location_needs_time",
       sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutLatitude} IS NULL`,
     ),
+  ],
+);
+
+// Riwayat koreksi absensi oleh owner/admin (feature 16) — append-only (app_user hanya SELECT/INSERT).
+// before_* null = hari itu belum ada absen (koreksi membuat baris absensi). Nama pengoreksi di-snapshot.
+export const attendanceCorrections = pgTable(
+  "attendance_corrections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    attendanceRecordId: uuid("attendance_record_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    beforeCheckInAt: timestamp("before_check_in_at", { withTimezone: true }),
+    beforeCheckOutAt: timestamp("before_check_out_at", { withTimezone: true }),
+    beforeLateMinutes: integer("before_late_minutes"),
+    afterCheckInAt: timestamp("after_check_in_at", { withTimezone: true }).notNull(),
+    afterCheckOutAt: timestamp("after_check_out_at", { withTimezone: true }),
+    afterLateMinutes: integer("after_late_minutes").notNull(),
+    reason: text("reason").notNull(),
+    correctedByUserId: uuid("corrected_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    correctedByName: text("corrected_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Riwayat per karyawan per tanggal; juga melayani filter tenant
+    index("attendance_corrections_tenant_employee_date_idx").on(t.tenantId, t.employeeId, t.workDate),
+    index("attendance_corrections_tenant_created_idx").on(t.tenantId, t.createdAt),
+    foreignKey({
+      name: "attendance_corrections_record_fk",
+      columns: [t.tenantId, t.attendanceRecordId],
+      foreignColumns: [attendanceRecords.tenantId, attendanceRecords.id],
+    }).onDelete("restrict"),
+    foreignKey({ name: "attendance_corrections_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    check("attendance_corrections_reason", sql`length(${t.reason}) > 0`),
+    check("attendance_corrections_before_pair", sql`${t.beforeCheckInAt} IS NOT NULL OR (${t.beforeCheckOutAt} IS NULL AND ${t.beforeLateMinutes} IS NULL)`),
   ],
 );
 

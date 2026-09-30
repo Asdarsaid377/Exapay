@@ -96,6 +96,7 @@ describe("role runtime app_user", () => {
        where n.nspname = 'public' and c.relkind = 'r'`,
     );
     expect(rows.map((r) => r.relname).sort()).toEqual([
+      "attendance_corrections",
       "attendance_records",
       "audit_logs",
       "company_holidays",

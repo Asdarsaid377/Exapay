@@ -69,7 +69,7 @@
 │           ├── regions/          → referensi provinsi & kabupaten/kota Kemendagri (/regions, data platform)
 │           ├── organization/     → departemen & jabatan (/organization, feature 10)
 │   │           ├── employees/        → data karyawan (/employees, feature 11) + impor Excel (employee-import.*: parser, template, service, controller — feature 12)
-│   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14); pengajuan izin/sakit/cuti /attendance/me/leave-requests + persetujuan /attendance/leave-requests (leave-requests.service, my-leave-requests.controller, leave-requests.controller, leave-attachment.ts murni — feature 15)
+│   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14); pengajuan izin/sakit/cuti /attendance/me/leave-requests + persetujuan /attendance/leave-requests (leave-requests.service, my-leave-requests.controller, leave-requests.controller, leave-attachment.ts murni — feature 15; rekap /attendance/recap + koreksi /attendance/corrections (attendance-recap.ts murni, attendance-recap.service/controller, attendance-corrections.service/controller, attendance-viewer.ts cakupan penglihat — feature 16))
 │   │           ├── storage/          → abstraksi FileStorage (put/get/remove) + S3FileStorage (SeaweedFS), StorageModule global; key `tenants/<tenant_id>/…`, bucket dibuat saat start (feature 15)
 │   │           ├── tasks/
 │   │           ├── kpi/
@@ -90,6 +90,7 @@
 │       │   ├── (portal)/me/[...slug]/ → "Segera hadir" portal
 │       │   ├── (portal)/me/page.tsx, me/attendance/ → kartu absen & riwayat absensi (feature 14) + pengajuan izin (feature 15; requests/[id]/attachment/route.ts buka lampiran)
 │       │   ├── (main)/attendance/requests/ → persetujuan izin/sakit/cuti (feature 15; [id]/attachment/route.ts buka lampiran)
+│       │   ├── (main)/attendance/ → rekap per periode (page.tsx) + corrections/ koreksi owner/admin (feature 16)
 │       │   ├── (admin)/layout.tsx    → AppShell panel super-admin (menu ADMIN_MENU)
 │       │   ├── (admin)/admin/tenants/ → daftar & detail tenant
 │       │   ├── (auth)/invite/[token]/ → terima undangan
@@ -105,9 +106,9 @@
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceCorrections.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceRecap.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   ├── geolocation.ts        → lokasi browser saat absen (tidak memblokir)
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)

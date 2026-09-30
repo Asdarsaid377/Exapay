@@ -49,3 +49,28 @@ export function monthRange(month: string): { from: string; to: string } {
   const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
   return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, "0")}` };
 }
+
+// Selisih jam lokal terhadap UTC (ms) pada saat `instant` — mengikuti aturan zona waktu (DST di luar Indonesia ikut benar)
+function zoneOffsetMs(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(instant));
+  const value = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((p) => p.type === type)?.value ?? Number.NaN);
+  const asUtc = Date.UTC(value("year"), value("month") - 1, value("day"), value("hour"), value("minute"), value("second"));
+  return asUtc - (instant - (instant % 1000));
+}
+
+// Jam lokal "HH:MM" pada tanggal YYYY-MM-DD di zona waktu usaha → instant (koreksi absensi, feature 16)
+export function zonedInstant(date: string, time: string, timeZone: string): Date {
+  const naive = Date.parse(`${date}T${time}:00Z`);
+  // Dua langkah: offset dihitung ulang di sekitar hasil pertama agar benar di sekitar pergantian offset
+  const first = naive - zoneOffsetMs(naive, timeZone);
+  return new Date(naive - zoneOffsetMs(first, timeZone));
+}

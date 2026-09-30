@@ -408,7 +408,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /me/attendance
 - **Referensi desain:** tanpa snapshot — diturunkan dari pola me.html (tile "Kehadiran bulan ini", card solid) (feature 14, izin user)
 - **Pola kelas kunci:** nav bulan `surface-solid rounded-[20px] p-1.5` + panah `size-11 rounded-field hover:bg-fill-subtle` + label `font-display text-[17px] font-bold` (bulan depan dari bulan berjalan = panah `text-text-muted` nonaktif); tile `surface-solid rounded-[20px] p-4 gap-1.5` grid 2 kolom (label `text-[13px]`, angka `font-display text-[30px] font-extrabold tabular-nums` + satuan `text-[13px] font-bold`, catatan `text-[12.5px] text-text-tertiary`); daftar `surface-solid rounded-card px-4.5 pt-4.5` judul `text-[17px] font-bold`, baris `border-t border-border-subtle py-3.5` = CalendarDate + hari `text-[14.5px] font-bold` + jam `text-small tabular-nums` + Badge status (success Tepat waktu / warning Telat / neutral Di luar hari kerja)
-- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hadir, telat, + tile "Izin & cuti" (grid 3 kolom, prop `leave`, feature 15); riwayat menggabungkan hari izin disetujui (Badge `info` jenis). Alpa menyusul feature 16. Pola acuan halaman daftar portal berikutnya (slip, tugas)
+- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hadir, telat, + tile "Izin & cuti" (grid 3 kolom, prop `leave`, feature 15); riwayat menggabungkan hari izin disetujui (Badge `info` jenis). Alpa belum tampil di portal (rekap staf feature 16 memakai `recapEmployee` di API). Pola acuan halaman daftar portal berikutnya (slip, tugas)
 
 ### NewLeaveRequestButton / LeaveRequestFormDialog
 - **Path:** apps/web/components/attendance/NewLeaveRequestButton.tsx, LeaveRequestFormDialog.tsx
@@ -430,3 +430,24 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola EmployeeTable + Dialog (feature 15, izin user)
 - **Pola kelas kunci:** tabel `glass-data rounded-card` kolom Karyawan (EmployeeAvatar + nama + jabatan) · Jenis · Tanggal · Alasan (`line-clamp-3` + lampiran) · Status (Badge + tombol Tolak secondary / Setujui primary, atau catatan keputusan `text-small text-text-secondary`), sel `align-top py-3.5`; mobile card `glass-data rounded-[20px]` + tombol grid 2 kolom; filter SegmentedControl "Menunggu (n) / Disetujui / Ditolak / Semua"
 - **Catatan:** Table server-safe; Actions client (dirender dua kali → id textarea pakai `useId`): dialog menampilkan ringkasan + alasan karyawan, catatan opsional saat setuju, alasan wajib saat tolak (Button `danger`). Filter client, `?status=` via `leaveRequestsHref`
+
+### AttendancePeriodNav
+- **Path:** apps/web/components/attendance/AttendancePeriodNav.tsx
+- **Dipakai di:** /attendance, /attendance/corrections
+- **Referensi desain:** tanpa referensi — pola AttendanceMonthNav + panel filter EmployeeFilters (feature 16, izin user)
+- **Pola kelas kunci:** panel `glass rounded-card p-2 sm:p-2.5 flex flex-wrap sm:flex-nowrap`; panah `size-11 rounded-field hover:bg-fill-subtle`; label periode `font-display text-[17px] font-bold tabular-nums sm:min-w-44`; kanan tautan teks "Per bulan" (`text-accent-strong font-bold`, hanya mode rentang) + Button secondary CalendarRange "Pilih/Ubah rentang" (mobile `w-full` di baris kedua); dialog grid 2 kolom TextField `type="date"`
+- **Catatan:** client. Props `view` (`PeriodView` month|range dari `lib/attendanceRecapLabels.ts`), `currentMonth` (bulan setelahnya = panah nonaktif `text-text-muted`), `from`/`to` (isi awal dialog), `basePath`, `keep` (param lain yang dipertahankan, mis. `employee`). Validasi `attendancePeriodQuerySchema` (maks. 92 hari). URL: bulan berjalan tanpa param, `?month=YYYY-MM`, `?from=&to=`
+
+### AttendanceRecapTable
+- **Path:** apps/web/components/attendance/AttendanceRecapTable.tsx
+- **Dipakai di:** /attendance
+- **Referensi desain:** tanpa referensi — pola EmployeeTable (feature 16, izin user)
+- **Pola kelas kunci:** tabel `glass-data rounded-card`, thead `bg-table-head h-11`, baris `h-16`; kolom Karyawan (EmployeeAvatar + nama + jabatan, "· Nonaktif") · Hadir `present/workingDays` (penyebut `text-small text-text-tertiary`, "+N hari libur") · Telat (jumlah + durasi caption) · Alpa · Izin · Sakit · Cuti · Tanpa pulang · "Rincian ›"; angka `font-display text-[17px] font-bold tabular-nums` — 0 `text-text-tertiary`, alpa `text-danger-text`, telat/tanpa pulang `text-warning-text`; mobile card `glass-data rounded-[20px]` + `dl` grid 4 kolom (Hadir, Telat, Alpa, Izin·Sakit·Cuti) + catatan `text-small`
+- **Catatan:** server component. Props `rows`, `detailHref` (fungsi → null untuk atasan = tanpa kolom Rincian), `footer`. Di halaman: di atasnya 4 StatTile (Alpa, Telat, Izin/sakit/cuti, Tanpa absen pulang) grid `grid-cols-2 lg:grid-cols-4`
+
+### CorrectionEmployeeSelect / AttendanceDayList / CorrectAttendanceButton / AttendanceCorrectionList
+- **Path:** apps/web/components/attendance/CorrectionEmployeeSelect.tsx, AttendanceDayList.tsx, CorrectAttendanceButton.tsx, AttendanceCorrectionList.tsx
+- **Dipakai di:** /attendance/corrections
+- **Referensi desain:** tanpa referensi — pola AttendanceHistoryList (CalendarDate + judul + sub + Badge) di card glass-data + Dialog (feature 16, izin user)
+- **Pola kelas kunci:** select = panel `glass rounded-card p-2 sm:p-2.5 lg:w-96` + SelectField `labelHidden`; daftar harian `glass-data rounded-card px-4.5 pt-4.5 lg:px-6` dengan kepala EmployeeAvatar `md` + nama `text-[17px] font-bold` + ringkasan `text-small tabular-nums`, baris `border-t py-3` = CalendarDate (redup jika bukan hari kerja) + hari bold + jam `text-small` + Badge status (`DAY_STATUS_TONES`: success tepat waktu, warning telat, danger alpa, info izin/sakit/cuti, neutral libur/belum absen) + "Dikoreksi" `text-caption text-text-tertiary` + Button secondary "Koreksi"; dialog: kotak "Sekarang: …" `rounded-inner bg-fill-subtle`, grid 2 kolom TextField `type="time"` (masuk wajib, pulang opsional), TextAreaField alasan; riwayat = card `glass-data` baris CalendarDate + "Absen ditambahkan · Masuk …" / "Masuk 08:30 → 08:00" + alasan + "Oleh … · tanggal" caption
+- **Catatan:** Select client (navigasi `correctionsHref`, periode dipertahankan). DayList server: tanggal > hari ini & di luar masa kerja disembunyikan, terbaru di atas; tombol hanya jika `canCorrect` dari API. Button client (`useId`), validasi `attendanceCorrectionInputSchema`, Server Action `correctAttendance` + `router.refresh()`. Label status di `lib/attendanceRecapLabels.ts` (`dayStatusLabel`)
