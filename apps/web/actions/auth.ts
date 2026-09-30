@@ -69,8 +69,8 @@ export async function login(input: { email: string; password: string }): Promise
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
   const result = await apiRequest("/auth/login", (data) => authSessionSchema.parse(data), { method: "POST", body: parsed.data });
-  // 403: password benar tapi email belum diverifikasi
-  if (!result.ok && result.status === 403) return { kind: "unverified", email: parsed.data.email, message: result.error };
+  // Password benar tapi email belum diverifikasi → tawarkan kirim ulang. 403 lain (mis. usaha dinonaktifkan) = error biasa.
+  if (!result.ok && result.code === "EMAIL_UNVERIFIED") return { kind: "unverified", email: parsed.data.email, message: result.error };
   if (!result.ok) return { kind: "error", message: result.error };
 
   const session = result.data;

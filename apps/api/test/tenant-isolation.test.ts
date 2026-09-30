@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { auditLogs, memberships, refreshTokens, tenants, users } from "@exapay/db";
+import { auditLogs, invitations, memberships, refreshTokens, tenants, users } from "@exapay/db";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -98,6 +98,7 @@ describe("role runtime app_user", () => {
     expect(rows.map((r) => r.relname).sort()).toEqual([
       "audit_logs",
       "email_verification_tokens",
+      "invitations",
       "memberships",
       "password_reset_tokens",
       "refresh_tokens",
@@ -202,12 +203,12 @@ describe("isolasi tulis antar tenant", () => {
 describe("tanpa konteks tenant", () => {
   it("query tanpa konteks tidak mengembalikan baris", async () => {
     const counts = await Promise.all(
-      ["tenants", "users", "memberships", "audit_logs", "refresh_tokens", "password_reset_tokens", "email_verification_tokens"].map(async (table) => {
+      ["tenants", "users", "memberships", "audit_logs", "refresh_tokens", "password_reset_tokens", "email_verification_tokens", "invitations"].map(async (table) => {
         const { rows } = await pool.query<{ count: string }>(`select count(*) as count from ${table}`);
         return rows[0]?.count;
       }),
     );
-    expect(counts).toEqual(["0", "0", "0", "0", "0", "0", "0"]);
+    expect(counts).toEqual(["0", "0", "0", "0", "0", "0", "0", "0"]);
   });
 
   it("koneksi pool bekas transaksi ber-tenant tidak membawa konteks lama", async () => {
@@ -340,5 +341,60 @@ describe("akses level user (auth)", () => {
       ),
       /is_super_admin hanya boleh diubah oleh app_owner/,
     );
+  });
+});
+
+describe("undangan & panel super-admin (feature 07)", () => {
+  it("undangan hanya terlihat di tenantnya sendiri", async () => {
+    await withTenant(db, tenantA.ctx, (tx) =>
+      tx.insert(invitations).values({
+        tenantId: tenantA.tenantId,
+        email: "undangan-a@test.exapay.local",
+        fullName: "Undangan A",
+        role: "karyawan",
+        tokenHash: `hash-${randomUUID()}`,
+        expiresAt: new Date(Date.now() + 60_000),
+      }),
+    );
+    const fromA = await withTenant(db, tenantA.ctx, (tx) => tx.select({ email: invitations.email }).from(invitations));
+    expect(fromA.map((r) => r.email)).toContain("undangan-a@test.exapay.local");
+    const fromB = await withTenant(db, tenantB.ctx, (tx) => tx.select({ email: invitations.email }).from(invitations));
+    expect(fromB.map((r) => r.email)).not.toContain("undangan-a@test.exapay.local");
+    await expectDbError(
+      withTenant(db, tenantA.ctx, (tx) =>
+        tx.insert(invitations).values({
+          tenantId: tenantB.tenantId,
+          email: "nyusup@test.exapay.local",
+          fullName: "Nyusup",
+          role: "owner",
+          tokenHash: `hash-${randomUUID()}`,
+          expiresAt: new Date(Date.now() + 60_000),
+        }),
+      ),
+      /row-level security/,
+    );
+  });
+
+  it("ringkasan tenant lintas tenant ditolak untuk non-super-admin", async () => {
+    await expectDbError(
+      withTenant(db, tenantA.ctx, (tx) => tx.execute(sql`select id from admin_tenant_overview()`)),
+      /hanya super-admin/,
+    );
+    const { rows } = await withUser(db, tenantA.userId, (tx) => tx.execute<{ ok: boolean }>(sql`select current_app_is_super_admin() as ok`));
+    expect(rows[0]?.ok).toBe(false);
+  });
+
+  it("anggota tenant tidak bisa mengubah status aktif tenantnya sendiri", async () => {
+    await expectDbError(
+      withTenant(db, tenantA.ctx, (tx) => tx.update(tenants).set({ deactivatedAt: new Date() }).where(eq(tenants.id, tenantA.tenantId))),
+      /hanya boleh diubah super-admin/,
+    );
+    const newId = randomUUID();
+    await expectDbError(
+      withTenant(db, { tenantId: newId, userId: tenantA.userId }, (tx) => tx.insert(tenants).values({ id: newId, name: "Lahir Nonaktif", deactivatedAt: new Date() })),
+      /hanya boleh diubah super-admin/,
+    );
+    // Kolom lain tetap boleh diubah anggota tenant
+    await withTenant(db, tenantA.ctx, (tx) => tx.update(tenants).set({ name: "Toko A" }).where(eq(tenants.id, tenantA.tenantId)));
   });
 });

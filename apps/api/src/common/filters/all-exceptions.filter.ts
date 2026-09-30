@@ -1,4 +1,4 @@
-import type { ApiResponse } from "@exapay/shared";
+import { API_ERROR_CODES, type ApiErrorCode, type ApiResponse } from "@exapay/shared";
 import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import type { Response } from "express";
 
@@ -12,7 +12,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const body: ApiResponse<never> = { success: false, error: this.messageOf(exception) };
+      const code = this.codeOf(exception);
+      const body: ApiResponse<never> = { success: false, error: this.messageOf(exception), ...(code ? { code } : {}) };
       response.status(status).json(body);
       return;
     }
@@ -25,9 +26,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(body);
   }
 
+  // Kode error opsional: throw new ForbiddenException({ message, code: "TENANT_DEACTIVATED" })
+  private codeOf(exception: HttpException): ApiErrorCode | null {
+    const payload: unknown = exception.getResponse();
+    if (typeof payload !== "object" || payload === null) return null;
+    const code: unknown = Reflect.get(payload, "code");
+    return API_ERROR_CODES.find((known) => known === code) ?? null;
+  }
+
   // Pesan HttpException buatan kita sudah human-readable; pesan bawaan Nest (mis. 404) diganti
   private messageOf(exception: HttpException): string {
-    if (exception.getStatus() === HttpStatus.NOT_FOUND) return "Halaman atau data tidak ditemukan";
+    // Route tidak ada: pesan bawaan Nest "Cannot GET /path" (berbahasa Inggris, membocorkan path)
+    if (exception.getStatus() === HttpStatus.NOT_FOUND && /^Cannot [A-Z]+ /.test(exception.message)) return "Halaman atau data tidak ditemukan";
     return exception.message;
   }
 }

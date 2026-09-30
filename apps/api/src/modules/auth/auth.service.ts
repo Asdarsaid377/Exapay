@@ -38,6 +38,14 @@ export type IssuedSession = {
   tokens: AuthTokens;
 };
 
+type LoadedSession = {
+  session: AuthSession;
+  // Punya membership di tenant yang dinonaktifkan super-admin (tenant tsb tidak masuk session.tenants)
+  hasDeactivatedTenant: boolean;
+};
+
+export const TENANT_DEACTIVATED_MESSAGE = "Usaha Anda sedang dinonaktifkan. Hubungi tim Exapay untuk informasi lebih lanjut.";
+
 type RotationOutcome = { kind: "issued"; issued: IssuedSession } | { kind: "rejected"; revokeFamily: boolean };
 
 @Injectable()
@@ -67,11 +75,18 @@ export class AuthService {
     }
     // Dicek SETELAH password benar: status verifikasi tidak bocor ke orang yang tidak tahu password
     if (!account.email_verified_at) {
-      throw new ForbiddenException("Email Anda belum diverifikasi. Buka tautan verifikasi yang kami kirim ke email Anda.");
+      throw new ForbiddenException({
+        message: "Email Anda belum diverifikasi. Buka tautan verifikasi yang kami kirim ke email Anda.",
+        code: "EMAIL_UNVERIFIED",
+      });
     }
 
     return withUser(this.db, account.id, async (tx) => {
-      const session = await this.loadSession(tx, account.id, null);
+      const { session, hasDeactivatedTenant } = await this.loadSession(tx, account.id, null);
+      // Semua usaha user dinonaktifkan super-admin → login ditolak (super-admin tetap bisa masuk ke panelnya)
+      if (hasDeactivatedTenant && session.tenants.length === 0 && !session.user.isSuperAdmin) {
+        throw new ForbiddenException({ message: TENANT_DEACTIVATED_MESSAGE, code: "TENANT_DEACTIVATED" });
+      }
       // Otomatis memilih tenant jika user hanya tergabung di satu tenant
       const onlyTenant = session.tenants.length === 1 ? (session.tenants[0] ?? null) : null;
       const activeSession: AuthSession = { ...session, activeTenant: onlyTenant };
@@ -96,7 +111,7 @@ export class AuthService {
   }
 
   async getSession(user: AuthUser): Promise<AuthSession> {
-    return withUser(this.db, user.userId, (tx) => this.loadSession(tx, user.userId, user.tenantId));
+    return withUser(this.db, user.userId, async (tx) => (await this.loadSession(tx, user.userId, user.tenantId)).session);
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -136,7 +151,11 @@ export class AuthService {
       }
 
       const requestedTenantId = target.kind === "switch" ? target.tenantId : row.activeTenantId;
-      const session = await this.loadSession(tx, payload.sub, requestedTenantId);
+      const { session, hasDeactivatedTenant } = await this.loadSession(tx, payload.sub, requestedTenantId);
+      // Usaha dinonaktifkan sejak login: sesi berakhir (login berikutnya menampilkan alasannya)
+      if (hasDeactivatedTenant && session.tenants.length === 0 && !session.user.isSuperAdmin) {
+        return { kind: "rejected", revokeFamily: false };
+      }
       if (target.kind === "switch" && !session.activeTenant) {
         throw new ForbiddenException("Anda bukan anggota usaha tersebut");
       }
@@ -155,23 +174,26 @@ export class AuthService {
     throw new UnauthorizedException("Sesi berakhir, silakan login kembali");
   }
 
-  // Profil + semua membership user. activeTenant = membership yang cocok dengan tenantId (jika masih anggota).
-  private async loadSession(tx: Transaction, userId: string, tenantId: string | null): Promise<AuthSession> {
+  // Profil + semua membership user di tenant yang AKTIF. activeTenant = membership yang cocok dengan tenantId (jika masih anggota).
+  private async loadSession(tx: Transaction, userId: string, tenantId: string | null): Promise<LoadedSession> {
     const [user] = await tx
       .select({ id: users.id, email: users.email, fullName: users.fullName, isSuperAdmin: users.isSuperAdmin })
       .from(users)
       .where(eq(users.id, userId));
     if (!user) throw new UnauthorizedException("Akun tidak ditemukan");
 
-    const tenantList: TenantMembership[] = await tx
-      .select({ tenantId: memberships.tenantId, tenantName: tenants.name, role: memberships.role })
+    const rows = await tx
+      .select({ tenantId: memberships.tenantId, tenantName: tenants.name, role: memberships.role, deactivatedAt: tenants.deactivatedAt })
       .from(memberships)
       .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
       .where(eq(memberships.userId, userId))
       .orderBy(asc(tenants.name));
+    const tenantList: TenantMembership[] = rows
+      .filter((row) => !row.deactivatedAt)
+      .map(({ tenantId: id, tenantName, role }) => ({ tenantId: id, tenantName, role }));
 
     const activeTenant = tenantId ? (tenantList.find((t) => t.tenantId === tenantId) ?? null) : null;
-    return { user, activeTenant, tenants: tenantList };
+    return { session: { user, activeTenant, tenants: tenantList }, hasDeactivatedTenant: rows.some((row) => row.deactivatedAt) };
   }
 
   private async issueTokens(tx: Transaction, session: AuthSession, familyId: string): Promise<AuthTokens> {

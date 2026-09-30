@@ -7,7 +7,7 @@ import type { MembershipRole } from "@exapay/shared";
 // Peran yang memakai area sidebar (karyawan memakai portal /me)
 export type StaffRole = Exclude<MembershipRole, "karyawan">;
 
-export type NavIconKey = "dashboard" | "employees" | "organization" | "attendance" | "kpi" | "payroll" | "compliance" | "settings";
+export type NavIconKey = "dashboard" | "employees" | "organization" | "attendance" | "kpi" | "payroll" | "compliance" | "settings" | "tenants";
 
 export type NavLink = {
   label: string;
@@ -80,6 +80,10 @@ export const STAFF_MENU: readonly NavSection[] = [
     ],
   },
 ];
+
+// Area super-admin /admin (navigasi terpisah, project-overview "Navigasi"). `roles` tidak dipakai —
+// akses /admin ditentukan flag super-admin (proxy + API), bukan peran tenant.
+export const ADMIN_MENU: readonly NavSection[] = [{ label: "Tenant", icon: "tenants", href: "/admin/tenants", roles: [] }];
 
 export type PortalIconKey = "home" | "tasks" | "attendance" | "payslips" | "profile";
 

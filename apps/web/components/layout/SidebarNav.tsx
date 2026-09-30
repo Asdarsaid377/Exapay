@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Building2,
   CalendarCheck,
   ChevronDown,
   LayoutDashboard,
@@ -34,6 +35,7 @@ const ICONS: Record<NavIconKey, typeof LayoutDashboard> = {
   payroll: Wallet,
   compliance: ShieldCheck,
   settings: Settings,
+  tenants: Building2,
 };
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45";

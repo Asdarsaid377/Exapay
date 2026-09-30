@@ -36,7 +36,7 @@ export const forgotPasswordSchema = z.object({
 });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
-const newPasswordSchema = z
+export const newPasswordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Password minimal ${PASSWORD_MIN_LENGTH} karakter`)
   .max(128, "Password maksimal 128 karakter");

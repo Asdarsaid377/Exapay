@@ -14,6 +14,8 @@ export const membershipRole = pgEnum("membership_role", MEMBERSHIP_ROLES);
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  // Diisi super-admin (feature 07): anggota tenant tidak bisa login. Hanya super-admin yang boleh mengubah (trigger).
+  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -138,5 +140,32 @@ export const emailVerificationTokens = pgTable(
   (t) => [
     uniqueIndex("email_verification_tokens_token_hash_key").on(t.tokenHash),
     index("email_verification_tokens_user_id_idx").on(t.userId),
+  ],
+);
+
+// Undangan bergabung ke tenant (feature 07: undangan pemilik oleh super-admin; feature 08: undangan dari tenant).
+// Pola token sama dengan reset password: hanya hash SHA-256 disimpan. Tabel tenant biasa (RLS tenant_isolation);
+// lookup by hash sebelum ada konteks lewat fungsi SECURITY DEFINER.
+export const invitations = pgTable(
+  "invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    email: text("email").notNull(),
+    // Nama dari pengundang — dipakai sebagai nama akun baru (bisa diubah penerima)
+    fullName: text("full_name").notNull(),
+    role: membershipRole("role").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    invitedByUserId: uuid("invited_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("invitations_token_hash_key").on(t.tokenHash),
+    index("invitations_tenant_email_idx").on(t.tenantId, sql`lower(${t.email})`),
   ],
 );

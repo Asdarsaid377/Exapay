@@ -51,17 +51,18 @@
 │   │       ├── app.module.ts
 │   │       ├── app.setup.ts          → konfigurasi HTTP bersama (cookie-parser, filter) untuk main.ts & test e2e
 │   │       ├── common/               → guard, interceptor, filter, decorator bersama
-│   │       │   ├── auth/             → JwtAuthGuard, RolesGuard (global), @Public, @Roles, @CurrentUser
+│   │       │   ├── auth/             → JwtAuthGuard, RolesGuard (global), @Public, @Roles, @SuperAdmin, @CurrentUser
 │   │       │   ├── validation/       → ZodValidationPipe
 │   │       │   ├── filters/          → AllExceptionsFilter → { success: false, error }
 │   │       │   └── config/           → skema env (zod) untuk ConfigModule
-│   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext)
+│   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext), errors.ts
 │   │       ├── redis/                → koneksi Redis global (health, antrean)
-│   │       ├── scripts/              → skrip dev (seed-dev.ts → `pnpm --filter @exapay/api db:seed`)
+│   │       ├── scripts/              → seed-dev.ts (`db:seed`), create-super-admin.ts (`admin:create-super-admin`)
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
 │   │           ├── email/            → abstraksi pengirim email (SMTP)
-│   │           ├── tenants/
+│   │           ├── invitations/      → undangan bergabung ke tenant (buat, lookup, terima) — dipakai tenants & feature 08
+│   │           ├── tenants/          → panel super-admin (/admin/tenants), data bawaan tenant baru
 │   │           ├── employees/
 │   │           ├── tasks/
 │   │           ├── kpi/
@@ -79,16 +80,20 @@
 │       │   ├── (main)/dashboard/page.tsx
 │       │   ├── (main)/[...slug]/     → "Segera hadir" untuk menu yang belum dibangun (selain itu 404)
 │       │   ├── (portal)/layout.tsx   → PortalShell (bottom nav) portal karyawan
-│       │   └── (portal)/me/[...slug]/ → "Segera hadir" portal
+│       │   ├── (portal)/me/[...slug]/ → "Segera hadir" portal
+│       │   ├── (admin)/layout.tsx    → AppShell panel super-admin (menu ADMIN_MENU)
+│       │   ├── (admin)/admin/tenants/ → daftar & detail tenant
+│       │   ├── (auth)/invite/[token]/ → terima undangan
+│       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
-│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, DropdownMenu, EmptyState)
+│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, DropdownMenu, EmptyState, Badge, StatTile, Dialog, Pagination)
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie), mis. auth.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)
 │       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)

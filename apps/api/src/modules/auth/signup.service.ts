@@ -9,6 +9,7 @@ import type { Redis } from "ioredis";
 
 import type { Env } from "../../common/config/env.js";
 import { DRIZZLE } from "../../database/database.module.js";
+import { isUniqueViolation } from "../../database/errors.js";
 import { type Database, type TenantContext, withTenant } from "../../database/tenant-transaction.js";
 import { REDIS_CLIENT } from "../../redis/redis.module.js";
 import { AuditService } from "../audit/audit.service.js";
@@ -21,14 +22,6 @@ import { EmailVerificationService } from "./email-verification.service.js";
 const EXISTING_NOTICE_COOLDOWN_SECONDS = 60 * 60;
 
 type AccountLookup = { id: string; email_verified_at: Date | null };
-
-// Error Postgres unique_violation — drizzle membungkus error driver di `cause`
-function isUniqueViolation(error: unknown): boolean {
-  for (let current: unknown = error; current instanceof Error; current = current.cause) {
-    if (Reflect.get(current, "code") === "23505") return true;
-  }
-  return false;
-}
 
 @Injectable()
 export class SignupService {

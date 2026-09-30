@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** 06 App Shell & Navigasi (2026-09-30)
-**Berikutnya:** 07 Panel Super-Admin
+**Terakhir selesai:** 07 Panel Super-Admin (2026-09-30)
+**Berikutnya:** 08 Undang Pengguna & Kelola Peran
 
 ---
 
@@ -21,7 +21,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 04 Halaman Login & Lupa Password
 - [x] 05 Signup Owner & Verifikasi Email
 - [x] 06 App Shell & Navigasi
-- [ ] 07 Panel Super-Admin
+- [x] 07 Panel Super-Admin
 - [ ] 08 Undang Pengguna & Kelola Peran
 
 ### Phase 2 — Master Data
@@ -125,6 +125,14 @@ _Format: tanggal — keputusan — alasan._
 
 - 2026-09-30 — **Redesign glassmorphism diterapkan** (sebelum feature 07, atas permintaan user): `globals.css` diganti token glassmorphism (nama lama dipertahankan jika perannya sama — pemetaan di `ui-tokens.md` "Nama Token di Kode"; `surface`, `surface-secondary`, `border`, `border-strong`, `shadow-card`, `shadow-accent` dihapus) + utilitas `glass`, `glass-strong`, `glass-overlay`, `surface-solid`, `animate-exa-pulse`, fallback solid (`@supports not backdrop-filter` + `prefers-reduced-transparency`). Semua component feature 04–06 disesuaikan. Baru: `BackdropShapes` (latar bentuk flat, `fixed -z-10`), `UserAvatar`, `buttonClassName()` (tautan bergaya tombol), `lib/datetime.ts` (`formatLongDate`, `greetingFor`, `firstNameOf`; zona waktu sementara `Asia/Jakarta` — TODO feature 09/13). Sidebar: grup dibuka/ditutup dengan klik (desain), bukan navigasi. Logo mengikuti placeholder desain ("e" + "exapay"). Halaman auth **tanpa snapshot** — diturunkan: panel foto mengambang `rounded-sheet` + card `glass-strong` di atas bentuk latar. `TenantPicker`: ikon kotak per baris dihapus.
 
+- 2026-09-30 — Panel super-admin (feature 07) dibangun **tanpa referensi visual** (opsi 5 ui-workflow, izin user) — diturunkan dari pola snapshot glassmorphism (stat tile, card, badge, dropdown). `/admin` memakai `AppShell` yang sama dengan area usaha: sisi kiri header kini slot `headerStart` (TenantSwitcher / judul "Panel Super-admin"), menu `ADMIN_MENU`. Komponen dasar baru: `Badge`, `StatTile`, `Dialog` (native `<dialog>`), `Pagination`. `SessionPlaceholder` dihapus.
+- 2026-09-30 — **Super-admin tanpa policy RLS.** Rencana awal (policy yang memanggil `current_app_is_super_admin()`) ditolak karena risiko rekursi policy (fungsi membaca `users` → policy `users` membaca `memberships` → policy `memberships` memanggil fungsi). Baca lintas tenant hanya lewat `admin_tenant_overview()` (SECURITY DEFINER) yang mengembalikan kolom tingkat platform — batas "tanpa data karyawan/gaji" dijaga database. Tulis lewat `withTenant(tenant target)` + cek flag super-admin dari DB di transaksi (klaim JWT bisa basi 15 menit). Migration `0005`.
+- 2026-09-30 — **Undangan dibangun di feature 07** (bukan 08, atas persetujuan user): tabel `invitations`, `/invite/[token]`, `POST /invitations/lookup|accept`. Berlaku 7 hari, hanya undangan terbaru per (tenant, email) berlaku, cooldown kirim ulang 60 detik. Email terdaftar → cukup terima (password lama). Menerima undangan men-set `email_verified_at`. Feature 08 memakai ulang `InvitationsService`.
+- 2026-09-30 — **Tenant nonaktif:** `tenants.deactivated_at` (trigger: hanya super-admin/`app_owner`). Tenant nonaktif disaring dari sesi; login ditolak 403 `TENANT_DEACTIVATED` jika semua usaha user nonaktif; refresh ditolak. Access token yang sudah terbit masih berlaku ≤ 15 menit untuk panggilan API langsung (web memutus lebih cepat). Ditambah "Aktifkan kembali" agar penonaktifan bisa dibatalkan.
+- 2026-09-30 — Respons error API punya `code` opsional (`API_ERROR_CODES`: `EMAIL_UNVERIFIED`, `TENANT_DEACTIVATED`) — web tidak lagi menebak dari status 403.
+- 2026-09-30 — **Sesi di web:** `getSession()` → `null` hanya jika API menolak (401/403); API tidak terjangkau/5xx → `SessionUnavailableError` → `app/error.tsx` (tombol coba lagi, sesi tetap). Proxy tidak menghapus cookie saat refresh gagal karena API tidak terjangkau. Sesi ditolak → layout me-render `SessionEnded` → Server Action `logout` (POST). **Logout tidak boleh lewat route GET**: route `/signout` (GET) sempat dibuat lalu dihapus — Chrome "Preload pages" memuatnya dari riwayat dan mengeluarkan super-admin setiap kali login.
+- 2026-09-30 — Super-admin production dibuat dengan `pnpm --filter @exapay/api admin:create-super-admin -- --email … --name …` (password dari env `SUPER_ADMIN_PASSWORD`, role `app_owner`; akun lama cukup dipromosikan).
+
 ---
 
 ## Catatan (Notes)
@@ -140,12 +148,17 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - `pnpm-workspace.yaml` berisi `minimumReleaseAgeExclude` untuk next@16.3.7 (ditambahkan otomatis pnpm 11 karena rilis masih baru) — boleh dihapus setelah umur rilis melewati batas.
 - Bucket S3 belum dibuat — dibuat saat fitur pertama yang menyimpan file.
 - Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
-- Undang user (08): insert `users` untuk orang lain ditolak policy saat ini — perlu desain (fungsi definer/policy) di feature itu.
+- Undang user (08): fondasi sudah ada (feature 07) — `InvitationsService.create(tx, ctx, { email, fullName, role })` + `sendEmail`, halaman `/invite/[token]`. User baru dibuat saat undangan diterima dengan konteks user itu sendiri (policy `users_insert_self`), jadi tidak perlu policy baru. Sisa untuk 08: `/settings/users`, undangan dari owner/admin, ubah peran, cabut akses, pembatalan undangan.
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 56 test per feature 05.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 68 test per feature 07.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
+- Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.
+- `db.execute()` (SQL mentah Drizzle) mengembalikan `timestamptz` sebagai string, bukan `Date`.
+- Test e2e: jangan `await` request supertest lain di dalam argumen request yang sedang dibangun (`.set(..., await tokenOf())`) — keduanya berbagi `http.Server` dan request pertama kena `ECONNREFUSED`. Hitung token lebih dulu.
+- Headless Chrome (verifikasi visual): halaman auth tidak pernah memicu event `load` (gambar tersembunyi AuthShell) — pakai `waitUntil: "commit"` + jeda hydration.
+- Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07 — boleh dinonaktifkan/diabaikan.

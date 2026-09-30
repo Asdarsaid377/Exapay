@@ -1,21 +1,20 @@
 "use client";
 
-import type { SessionUser, TenantMembership } from "@exapay/shared";
+import type { SessionUser } from "@exapay/shared";
 import { Menu, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { ExapayLogo } from "@/components/auth/ExapayLogo";
 import { BackdropShapes } from "@/components/layout/BackdropShapes";
 import { SidebarNav } from "@/components/layout/SidebarNav";
-import { TenantSwitcher } from "@/components/layout/TenantSwitcher";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { UserMenu } from "@/components/layout/UserMenu";
 import type { NavSection } from "@/lib/navigation";
 
 type Props = {
   user: SessionUser;
-  activeTenant: TenantMembership;
-  tenants: TenantMembership[];
+  // Sisi kiri header: TenantSwitcher (area usaha) atau judul panel (super-admin)
+  headerStart: ReactNode;
   // Menu yang sudah disaring per peran (server)
   sections: NavSection[];
   // "Senin, 30 September 2026" — dihitung di server agar tidak berbeda saat hydration
@@ -26,9 +25,9 @@ type Props = {
 const ICON_BUTTON =
   "grid size-11 shrink-0 place-items-center rounded-field text-text-primary transition-colors hover:bg-glass-hover focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45";
 
-// Kerangka area owner/admin/atasan (snapshot context/designs/dashboard.html):
+// Kerangka area owner/admin/atasan dan panel super-admin (snapshot context/designs/dashboard.html):
 // sidebar & header = panel kaca mengambang di atas bentuk latar; drawer kaca di mobile.
-export function AppShell({ user, activeTenant, tenants, sections, todayLabel, children }: Props) {
+export function AppShell({ user, headerStart, sections, todayLabel, children }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Drawer terbuka: kunci scroll halaman + Escape menutup
@@ -99,9 +98,7 @@ export function AppShell({ user, activeTenant, tenants, sections, todayLabel, ch
             >
               <Menu aria-hidden className="size-5.5" />
             </button>
-            <div className="min-w-0 flex-1">
-              <TenantSwitcher activeTenant={activeTenant} tenants={tenants} />
-            </div>
+            <div className="min-w-0 flex-1">{headerStart}</div>
             <span className="hidden text-sm text-text-secondary lg:block">{todayLabel}</span>
             <UserMenu user={user} />
           </header>

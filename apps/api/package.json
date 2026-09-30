@@ -9,7 +9,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "db:seed": "node --env-file-if-exists=../../.env dist/scripts/seed-dev.js"
+    "db:seed": "node --env-file-if-exists=../../.env dist/scripts/seed-dev.js",
+    "admin:create-super-admin": "node --env-file-if-exists=../../.env dist/scripts/create-super-admin.js"
   },
   "dependencies": {
     "@exapay/db": "workspace:*",

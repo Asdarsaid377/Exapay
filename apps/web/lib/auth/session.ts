@@ -2,6 +2,10 @@ import { MEMBERSHIP_ROLES, type MembershipRole } from "@exapay/shared";
 
 // Isi access token yang relevan untuk routing di web. Token TIDAK diverifikasi di sini —
 // verifikasi & otorisasi sesungguhnya selalu di API. Web hanya memakainya untuk memilih halaman.
+// Header yang di-set proxy ke request saat refresh sesi gagal karena API tidak terjangkau (bukan karena ditolak).
+// getSession() lalu melempar SessionUnavailableError alih-alih mengakhiri sesi.
+export const SESSION_UNAVAILABLE_HEADER = "x-exapay-session-unavailable";
+
 export type SessionClaims = {
   userId: string;
   tenantId: string | null;

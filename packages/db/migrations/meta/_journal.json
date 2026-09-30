@@ -36,6 +36,13 @@
       "when": 1790724577826,
       "tag": "0004_email_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790736601232,
+      "tag": "0005_super_admin_panel_invitations",
+      "breakpoints": true
     }
   ]
 }

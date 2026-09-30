@@ -2,7 +2,7 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "@exapay/shared";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { apiRequest } from "@/lib/api/server";
-import { homePathFor, readSessionClaims, type SessionClaims } from "@/lib/auth/session";
+import { homePathFor, readSessionClaims, SESSION_UNAVAILABLE_HEADER, type SessionClaims } from "@/lib/auth/session";
 import { parseSetCookie } from "@/lib/auth/setCookieHeader";
 import { canAccessStaffPath } from "@/lib/navigation";
 
@@ -18,7 +18,8 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-type Refreshed = { claims: SessionClaims | null; setCookies: string[] };
+// unavailable: API tidak terjangkau / error 5xx — sesi belum tentu berakhir, cookie JANGAN dihapus
+type Refreshed = { claims: SessionClaims | null; setCookies: string[]; unavailable: boolean };
 
 async function refreshSession(refreshToken: string): Promise<Refreshed> {
   const result = await apiRequest("/auth/refresh", () => null, {
@@ -26,9 +27,9 @@ async function refreshSession(refreshToken: string): Promise<Refreshed> {
     body: { client: "web" },
     cookieHeader: `${REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}`,
   });
-  if (!result.ok) return { claims: null, setCookies: [] };
+  if (!result.ok) return { claims: null, setCookies: [], unavailable: result.status === 0 || result.status >= 500 };
   const access = result.setCookies.map(parseSetCookie).find((c) => c?.name === ACCESS_COOKIE);
-  return { claims: readSessionClaims(access?.value), setCookies: result.setCookies };
+  return { claims: readSessionClaims(access?.value), setCookies: result.setCookies, unavailable: false };
 }
 
 // Allowed-list per area: null = boleh lanjut, string = redirect ke path tsb
@@ -52,6 +53,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
   if (!claims && refreshToken) {
     const refreshed = await refreshSession(refreshToken);
+    if (refreshed.unavailable) {
+      // Halaman publik tetap tampil; halaman lain menampilkan "server tidak dapat dihubungi" (app/error.tsx) tanpa logout
+      if (isPublic(pathname)) return NextResponse.next();
+      request.headers.set(SESSION_UNAVAILABLE_HEADER, "1");
+      return NextResponse.next({ request: { headers: request.headers } });
+    }
     claims = refreshed.claims;
     setCookies = refreshed.setCookies;
     // Teruskan token baru ke Server Component pada request yang sama

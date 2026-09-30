@@ -19,3 +19,20 @@ export function greetingFor(date: Date, timeZone: string = DEFAULT_TIME_ZONE): s
 export function firstNameOf(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? "";
 }
+
+// "30 September 2026"
+export function formatDate(date: Date | string, timeZone: string = DEFAULT_TIME_ZONE): string {
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone }).format(new Date(date));
+}
+
+// "30 Sep 2026"
+export function formatShortDate(date: Date | string, timeZone: string = DEFAULT_TIME_ZONE): string {
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone }).format(new Date(date));
+}
+
+// "30 September 2026 pukul 14.05"
+export function formatDateTime(date: Date | string, timeZone: string = DEFAULT_TIME_ZONE): string {
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone }).format(
+    new Date(date),
+  );
+}

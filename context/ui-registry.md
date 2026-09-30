@@ -84,17 +84,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### AppShell
 - **Path:** apps/web/components/layout/AppShell.tsx
-- **Dipakai di:** app/(main)/layout.tsx — semua halaman owner/admin/atasan
+- **Dipakai di:** app/(main)/layout.tsx — semua halaman owner/admin/atasan; app/(admin)/layout.tsx — panel super-admin
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Desktop 1440, Mobile 390, drawer)
 - **Pola kelas kunci:** wrapper `px-3.5 pt-3 lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-5 lg:p-5`; sidebar `glass sticky top-5 h-[calc(100dvh-2.5rem)] rounded-card px-3.5 py-5`; header `glass sticky top-3 h-15 rounded-[20px] lg:top-5 lg:h-17 lg:rounded-card` (tenant switcher · tanggal · UserMenu); drawer `glass-overlay w-75 rounded-[26px]` + overlay `bg-inverse/32` + kartu user `border-t border-border-subtle`; konten `flex flex-col gap-4 lg:gap-5`
-- **Catatan:** client (state drawer). Props `user`, `activeTenant`, `tenants`, `sections` (`staffMenuFor(role)`), `todayLabel` (dari server, `formatLongDate`). Drawer: kunci scroll, tutup via X / overlay / Escape / klik menu
+- **Catatan:** client (state drawer). Props `user`, `headerStart` (sisi kiri header: `<TenantSwitcher>` di area usaha, judul "Panel Super-admin" di /admin — feature 07), `sections` (`staffMenuFor(role)` / `ADMIN_MENU`), `todayLabel` (dari server, `formatLongDate`). Drawer: kunci scroll, tutup via X / overlay / Escape / klik menu
 
 ### SidebarNav
 - **Path:** apps/web/components/layout/SidebarNav.tsx
 - **Dipakai di:** AppShell (sidebar & drawer)
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Item sidebar)
 - **Pola kelas kunci:** item `h-11 rounded-field px-3 gap-3 text-[14.5px]` (drawer `touch`: `h-11.5 text-[15px]`) + ikon `size-4.75`; aktif `bg-accent-soft font-bold text-accent-strong`; hover `bg-glass-hover`; grup = tombol + chevron berputar, label grup `text-accent-strong` jika berisi halaman aktif; sub `h-9.5 pl-10.75 rounded-inner text-sm font-medium`, aktif `bg-accent/12 text-accent-strong`
-- **Catatan:** grup dibuka/ditutup dengan klik (terbuka otomatis jika berisi halaman aktif). Aktif = tautan paling spesifik (`findStaffLink`). Prop `onNavigate` menutup drawer. Hitungan tertunda (pill `bg-inverse`) belum ada — tambah saat data tersedia (feature 15/20)
+- **Catatan:** ikon `tenants` (Building2) untuk menu super-admin. Grup dibuka/ditutup dengan klik (terbuka otomatis jika berisi halaman aktif). Aktif = tautan paling spesifik (`findStaffLink`). Prop `onNavigate` menutup drawer. Hitungan tertunda (pill `bg-inverse`) belum ada — tambah saat data tersedia (feature 15/20)
 
 ### TenantSwitcher
 - **Path:** apps/web/components/layout/TenantSwitcher.tsx
@@ -172,9 +172,65 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** Button secondary `size="lg" fullWidth` + FormAlert success/danger di atasnya (`flex flex-col gap-3`)
 - **Catatan:** props `email`, `startWithCooldown`. Hitung mundur 60 detik (sama dengan cooldown API). Pola cooldown bisa dipakai ulang untuk kirim ulang undangan (feature 08)
 
-### SessionPlaceholder (SEMENTARA)
-- **Path:** apps/web/components/auth/SessionPlaceholder.tsx
+### Badge
+- **Path:** apps/web/components/common/Badge.tsx
+- **Dipakai di:** /admin/tenants, /admin/tenants/[id]
+- **Referensi desain:** context/designs/design-tokens.html (badge status) + ui-rules "Badge Status"
+- **Pola kelas kunci:** `inline-flex h-6.5 rounded-full px-2.75 text-[12.5px] font-bold`; tone warning `bg-warning-soft text-warning-text` · success `bg-success-soft text-success-text` · danger `bg-danger-soft text-danger-text` · accent `bg-accent-soft text-accent-deep` · neutral `bg-text-primary/6 text-text-secondary` · info `bg-info-soft text-info-text`
+- **Catatan:** prop `tone` (`BadgeTone`). Tanpa titik/ikon. Pakai untuk semua badge status berikutnya (izin, payroll, predikat KPI)
+
+### StatTile
+- **Path:** apps/web/components/common/StatTile.tsx
+- **Dipakai di:** /admin/tenants (nanti dashboard feature 35/36)
+- **Referensi desain:** context/designs/dashboard.html (stat tile)
+- **Pola kelas kunci:** `glass-strong min-h-30 lg:min-h-34 rounded-card p-5 gap-2.5`; label `text-sm text-text-secondary`; angka `font-display text-[26px] lg:text-num font-extrabold tabular-nums`; catatan `text-[13px] text-text-tertiary`
+- **Catatan:** props `label`, `value` (string terformat), `note?`, `badge?`. Prefix "Rp" untuk uang belum ada — tambahkan prop saat dashboard dibangun
+
+### Dialog
+- **Path:** apps/web/components/common/Dialog.tsx
+- **Dipakai di:** CreateTenantDialog, TenantStatusActions
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — surface-glass-overlay untuk modal (ui-rules)
+- **Pola kelas kunci:** native `<dialog>` `glass-overlay rounded-t-sheet sm:rounded-sheet sm:max-w-lg backdrop:bg-inverse/32`; mobile menempel di bawah layar; isi `p-6 sm:p-7 gap-5`; judul `font-display text-xl font-extrabold`; tombol tutup `size-11 rounded-field`; footer `flex-col-reverse sm:flex-row sm:justify-end gap-3`
+- **Catatan:** client. Props `open`, `onClose`, `title`, `description?`, `footer?`, `dismissible` (false saat aksi berjalan → Escape/klik luar/X nonaktif). Fokus terkunci oleh browser (`showModal`). Pakai untuk semua modal & konfirmasi
+
+### Pagination
+- **Path:** apps/web/components/common/Pagination.tsx
 - **Dipakai di:** /admin/tenants
-- **Referensi desain:** tanpa — halaman sementara (feature 04)
-- **Pola kelas kunci:** `BackdropShapes variant="auth"` + card `glass-strong rounded-card` + `dl grid grid-cols-[auto_1fr]` (label `text-text-tertiary`)
-- **Catatan:** server component; logout via `<form action={logout}>`. **Hapus** saat panel super-admin dibangun (feature 07)
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user)
+- **Pola kelas kunci:** `flex justify-between`; rentang "1–20 dari 45" `text-small text-text-secondary tabular-nums`; tautan `buttonClassName({ variant: "secondary" })`, nonaktif `<Button variant="secondary" disabled>`
+- **Catatan:** server component. Props `page`, `pageSize`, `total`, `hrefFor(page)`. Tidak tampil jika hanya 1 halaman
+
+### TenantTable / TenantFilters
+- **Path:** apps/web/components/admin/TenantTable.tsx, TenantFilters.tsx
+- **Dipakai di:** /admin/tenants
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — pola daftar di card (ui-rules "Cards")
+- **Pola kelas kunci:** tabel (≥lg) di `glass-strong rounded-card overflow-hidden`: header `text-caption font-bold text-text-tertiary`, sel `px-4 py-3.5 first:pl-6 last:pr-6`, baris `border-t border-border-subtle hover:bg-glass-hover`, tautan menutupi baris (`after:absolute after:inset-0`, `tr relative`); mobile `ul` baris `px-5 py-4` (judul `text-[15px] font-bold` + Badge, sub `text-small`, caption). Filter: tab `h-10 rounded-full px-4`, aktif `bg-accent-soft font-bold text-accent-strong` + jumlah `tabular-nums`; cari = form GET `h-11 rounded-field` + ikon Search `left-3.5`
+- **Catatan:** server component (filter tanpa JS). **Pola acuan untuk tabel data berikutnya** (/employees, /settings/users) — ekstrak `DataTable` umum saat dipakai kedua kalinya
+
+### CreateTenantDialog / TenantStatusActions / ResendOwnerInvitationButton
+- **Path:** apps/web/components/admin/CreateTenantDialog.tsx, TenantStatusActions.tsx, ResendOwnerInvitationButton.tsx
+- **Dipakai di:** /admin/tenants, /admin/tenants/[id]
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user)
+- **Pola kelas kunci:** Dialog + form `flex flex-col gap-4` (TextField) + tombol Batal (secondary) / aksi (primary; nonaktifkan = `dark`); hasil aksi = FormAlert success/danger
+- **Catatan:** client; memanggil Server Action `actions/adminTenants.ts` lalu `router.refresh()` / `router.push`. Buat tenant sukses → detail `?created=1` (alert sukses). Konfirmasi wajib untuk nonaktifkan & aktifkan kembali
+
+### AcceptInvitationForm
+- **Path:** apps/web/components/auth/AcceptInvitationForm.tsx
+- **Dipakai di:** /invite/[token]
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — pola form auth (AuthShell)
+- **Pola kelas kunci:** sama dengan ResetPasswordForm: AuthHeading + form `gap-4` + submit `size="lg" fullWidth mt-2`; email `TextField disabled`; state hasil = ikon status `size-11 rounded-field bg-<tone>-soft` + AuthHeading + tautan `buttonClassName({ size: "lg", fullWidth: true })`; caption masa berlaku `text-caption text-text-tertiary`
+- **Catatan:** props `token`, `invitation` (`InvitationPreview | null`). State: akun baru (nama + password + konfirmasi), akun lama (cukup "Terima undangan"), kedaluwarsa, tidak valid, sukses. Dipakai juga undangan feature 08
+
+### SessionEnded
+- **Path:** apps/web/components/auth/SessionEnded.tsx
+- **Dipakai di:** layout (main), (portal), (admin) — saat API menolak sesi
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user)
+- **Pola kelas kunci:** `BackdropShapes variant="auth"` + pill `glass-strong rounded-card px-6 py-4` + spinner `text-accent-strong`
+- **Catatan:** client; memanggil Server Action `logout` (POST) sekali saat mount. **Jangan** ganti dengan route GET — browser bisa prefetch/prerender URL dari riwayat
+
+### AppError (error boundary)
+- **Path:** apps/web/app/error.tsx
+- **Dipakai di:** semua halaman (error tak terduga, terutama API tidak terjangkau — `SessionUnavailableError`)
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user) — pola EmptyState
+- **Pola kelas kunci:** `BackdropShapes variant="auth"` + card `glass-strong rounded-card px-6 py-12 text-center`; ikon CloudOff `size-7 text-accent-strong`; tombol Coba lagi (primary)
+- **Catatan:** Next 16: prop `retry` (bukan `reset`). Sesi tidak diakhiri. Kode `error.digest` ditampilkan sebagai caption

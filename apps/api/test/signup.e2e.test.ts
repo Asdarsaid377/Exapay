@@ -112,6 +112,7 @@ describe("signup owner", () => {
     const before = await login(email);
     expect(before.status).toBe(403);
     expect(before.body.error).toContain("belum diverifikasi");
+    expect(before.body.code).toBe("EMAIL_UNVERIFIED");
     // Password salah tetap 401 — status verifikasi tidak bocor tanpa password
     expect((await login(email, "password-salah-999")).status).toBe(401);
 

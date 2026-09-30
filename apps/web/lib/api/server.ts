@@ -1,11 +1,11 @@
-import { ACCESS_COOKIE, type ApiResponse, REFRESH_COOKIE } from "@exapay/shared";
+import { ACCESS_COOKIE, type ApiErrorCode, type ApiResponse, REFRESH_COOKIE } from "@exapay/shared";
 
 // Pemanggil API NestJS dari sisi server Next.js (Server Component, Server Action, proxy).
 // Jangan diimport dari Client Component.
 
 export type ApiResult<T> =
   | { ok: true; status: number; data: T; setCookies: string[] }
-  | { ok: false; status: number; error: string; setCookies: string[] };
+  | { ok: false; status: number; error: string; code?: ApiErrorCode; setCookies: string[] };
 
 type RequestOptions = {
   method?: "GET" | "POST";
@@ -56,7 +56,7 @@ export async function apiRequest<T>(path: string, parse: (data: unknown) => T, o
     return { ok: false, status: response.status, error: NETWORK_ERROR, setCookies };
   }
   if (!json.success) {
-    return { ok: false, status: response.status, error: json.error, setCookies };
+    return { ok: false, status: response.status, error: json.error, code: json.code, setCookies };
   }
   try {
     return { ok: true, status: response.status, data: parse(json.data), setCookies };
