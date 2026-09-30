@@ -31,10 +31,11 @@ Jika `PROJECT_BRIEF.md` ada, baca dulu dan jadikan titik awal — jangan menanya
 8. Setelah dikonfirmasi, tulis `context/project-overview.md` — isi semua bagian template ([ISI]): Tentang Project, Masalah, Halaman, Navigasi, Alur User Inti, Fitur Utama (tandai MVP vs fase berikutnya), Out of Scope.
 9. Tulis `context/build-plan.md` — pecah MVP menjadi feature bernomor (01, 02, ...) per fase. Setiap feature harus: selesai dalam satu sesi kerja, bisa diverifikasi visual/fungsional, dan mengikuti prinsip "UI dengan mock data dulu, logic belakangan". Feature awal standar project ini: 01 Setup monorepo + Docker Compose, 02 fondasi multi-tenant RLS (dibangun & diuji paling awal), 03 Auth, lalu fitur domain sesuai urutan MVP di brief.
 10. Salin daftar feature ke checklist di `context/progress-tracker.md` dan isi bagian Status (Phase: 1, Berikutnya: 01).
-11. Ingatkan user langkah selanjutnya: taruh referensi desain di `context/designs/` untuk halaman pertama, lalu jalankan `/new-feature 01`.
+11. **Prompt Claude Design** — tanyakan satu hal: arah visual/tema yang diinginkan (plus referensi gaya jika ada). Lalu susun prompt Claude Design mengikuti `context/ui-workflow.md` bagian "Jalur Claude Design" langkah 1: konteks produk, peran, semua fitur MVP, peta halaman, navigasi per peran, arah visual, batasan, dan 2 halaman preview dengan data contoh realistis (satu per kerangka utama). Simpan ke `context/designs/claude-design-prompt.md` dan tampilkan ke user siap salin. Jika tema bertentangan dengan batasan yang sudah diputuskan, sampaikan sebelum menulis prompt.
+12. Ingatkan user langkah selanjutnya: generate desain di Claude Design dengan prompt tersebut lalu kirim link-nya (Claude Code yang membaca, menyimpan snapshot, dan mengisi `ui-tokens.md` + `ui-rules.md`), lalu jalankan `/new-feature 01`.
 
 ## Larangan
 
 - Jangan menulis kode aplikasi apapun di workflow ini — output hanya dokumen context.
-- Jangan mengisi ui-tokens.md / ui-rules.md di sini — itu diisi setelah desain tersedia.
+- Jangan mengisi ui-tokens.md / ui-rules.md di sini — itu diisi setelah desain dari Claude Design (atau referensi lain) tersedia. Prompt Claude Design (langkah 11) adalah satu-satunya output desain workflow ini.
 - Jangan menulis file sebelum user mengkonfirmasi rangkuman (langkah 7).

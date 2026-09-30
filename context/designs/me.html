@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:40px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Exapay — Beranda Portal Karyawan /me</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:900px;text-wrap:pretty">Dewi Lestari · Barista · Kopi Nusantara. Hanya 3 lapisan blur (header, kartu absen, bottom nav); kartu lain solid agar ringan di HP kelas bawah.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="dashboard.html">← Dashboard Owner</a>
+      <a href="design-tokens.html">Token &amp; komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ f.caption }}</div>
+        <div data-screen-label="{{ f.caption }}" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+          <sc-if value="{{ f.glass }}">
+            <div style="position:absolute;inset:0;overflow:hidden">
+              <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+              <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:#EADCCB;top:180px;left:-130px"></div>
+              <div style="position:absolute;width:320px;height:200px;border-radius:44px;background:#F6B27A;top:700px;left:-40px"></div>
+            </div>
+          </sc-if>
+
+          <div style="position:relative;height:100%;overflow-y:auto;box-sizing:border-box;padding:12px 14px 112px;display:flex;flex-direction:column;gap:14px">
+            <header style="position:sticky;top:0;z-index:3;flex:none;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:{{ f.barBg }};backdrop-filter:{{ f.blur }};-webkit-backdrop-filter:{{ f.blur }};border:1px solid rgba(255,255,255,0.65);box-shadow:0 10px 30px -14px rgba(74,42,16,0.2);display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;flex-direction:column">
+                <span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span>
+                <span style="font-size:12.5px;color:#5B4636">Dewi Lestari · Barista</span>
+              </div>
+              <button style="width:44px;height:44px;border:none;border-radius:50%;background:#221208;color:#FBF8F3;cursor:pointer;font:700 14px 'Plus Jakarta Sans',sans-serif">DL</button>
+            </header>
+
+            <section style="flex:none;padding:20px;border-radius:24px;background:{{ f.cardBg }};backdrop-filter:{{ f.blur }};-webkit-backdrop-filter:{{ f.blur }};border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 18px 40px -16px rgba(74,42,16,0.24);display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13.5px;color:#5B4636">Jam server · WITA</span>
+                <span style="font-size:13.5px;color:#5B4636">Shift pagi</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font:800 68px/0.95 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">{{ f.time }}</span>
+                <span style="font:700 15px 'DM Sans',sans-serif">Senin, 30 September 2026</span>
+                <span style="font-size:14px;color:#5B4636">Jadwal 08:00–17:00</span>
+              </div>
+              <sc-if value="{{ f.notChecked }}">
+                <button onClick="{{ f.checkIn }}" style="height:58px;border:none;border-radius:999px;background:#F2790F;color:#221208;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font:800 17px 'Plus Jakarta Sans',sans-serif;transition:background .15s,transform .1s" style-hover="background:#D9600A" style-active="transform:scale(0.98);background:#D9600A">
+                  <span style="width:20px;height:20px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat"></span>Absen Masuk
+                </button>
+              </sc-if>
+              <sc-if value="{{ f.checked }}">
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(21,128,61,0.1)">
+                    <span style="width:18px;height:18px;flex:none;background:#15803D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat"></span>
+                    <span style="font:700 14.5px 'DM Sans',sans-serif;color:#166534">Masuk 07:52 · Tepat waktu</span>
+                  </div>
+                  <button onClick="{{ f.reset }}" style="height:58px;border:none;border-radius:999px;background:#221208;color:#FBF8F3;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font:800 17px 'Plus Jakarta Sans',sans-serif;transition:background .15s,transform .1s" style-hover="background:#3A2415" style-active="transform:scale(0.98)">
+                    <span style="width:20px;height:20px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat"></span>Absen Pulang
+                  </button>
+                </div>
+              </sc-if>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:#5B4636">
+                <span style="width:14px;height:14px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/map-pin.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/map-pin.svg) center / contain no-repeat"></span>Lokasi dicatat saat absen
+              </div>
+            </section>
+
+            <section style="flex:none;padding:18px 18px 8px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);box-shadow:0 8px 24px -16px rgba(74,42,16,0.2);display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                <h2 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.01em">Tugas hari ini</h2>
+                <span style="font-size:13px;color:#5B4636">Template Barista</span>
+              </div>
+              <sc-for list="{{ f.tasks }}" as="t" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:9px;padding:14px 0;border-top:{{ t.border }}">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                    <span style="font:700 14.5px/1.35 'DM Sans',sans-serif">{{ t.name }}</span>
+                    <span style="flex:none;font:800 15px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ t.value }}</span>
+                  </div>
+                  <sc-if value="{{ t.hasProgress }}">
+                    <div style="height:8px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ t.pct }};border-radius:999px;background:{{ t.barColor }}"></div></div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ t.sBg }};color:{{ t.sFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ t.status }}</span>
+                    <span style="font-size:13px;color:#5B4636">{{ t.note }}</span>
+                  </div>
+                </div>
+              </sc-for>
+              <button style="margin:6px 0 10px;height:50px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font:700 15px 'Plus Jakarta Sans',sans-serif" style-hover="background:#FBF8F3;border-color:rgba(34,18,8,0.24)" style-active="transform:scale(0.98)">
+                <span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span>Catat tugas
+              </button>
+            </section>
+
+            <div style="flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="padding:16px;border-radius:20px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;color:#5B4636">Skor bulan ini</span>
+                <div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 30px/1 'Plus Jakarta Sans',sans-serif">88</span><span style="font:700 13px 'DM Sans',sans-serif;color:#8A3A06">Baik</span></div>
+                <span style="font-size:12.5px;color:#75604D">1–30 Sep 2026</span>
+              </div>
+              <div style="padding:16px;border-radius:20px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;color:#5B4636">Kehadiran bulan ini</span>
+                <div style="display:flex;align-items:baseline;gap:6px"><span style="font:800 30px/1 'Plus Jakarta Sans',sans-serif">20</span><span style="font:700 13px 'DM Sans',sans-serif">hadir</span></div>
+                <span style="font-size:12.5px;color:#75604D">1 telat · 0 alpa</span>
+              </div>
+              <button onClick="{{ f.toggleSlip }}" style="grid-column:span 2;min-height:64px;padding:12px 16px;border-radius:20px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;color:#221208" style-active="transform:scale(0.99)">
+                <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                  <span style="font-size:13px;color:#5B4636">Slip gaji terakhir · Agustus 2026</span>
+                  <span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:{{ f.slipTrack }}">{{ f.slipValue }}</span>
+                </div>
+                <span style="display:flex;align-items:center;gap:6px;font:700 13px 'DM Sans',sans-serif;color:#B34C08">
+                  <span style="width:18px;height:18px;background:currentColor;-webkit-mask:{{ f.eye }};mask:{{ f.eye }}"></span>{{ f.slipAction }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <nav style="position:absolute;left:12px;right:12px;bottom:12px;height:72px;box-sizing:border-box;padding:6px;border-radius:24px;background:{{ f.barBg }};backdrop-filter:{{ f.blur }};-webkit-backdrop-filter:{{ f.blur }};border:1px solid rgba(255,255,255,0.7);box-shadow:0 14px 34px -12px rgba(74,42,16,0.3);display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+            <sc-for list="{{ tabs }}" as="b" hint-placeholder-count="5">
+              <button style="border:none;border-radius:18px;background:{{ b.bg }};color:{{ b.fg }};cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:{{ b.font }}" style-active="transform:scale(0.95)">
+                <span style="width:22px;height:22px;background:currentColor;-webkit-mask:{{ b.mask }};mask:{{ b.mask }}"></span>{{ b.label }}
+              </button>
+            </sc-for>
+          </nav>
+        </div>
+      </div>
+    </sc-for>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">4 · Memuat (skeleton)</div>
+      <div data-screen-label="Portal Skeleton" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+        <div style="position:relative;padding:12px 14px;display:flex;flex-direction:column;gap:14px">
+          <div style="height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.65);display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="width:120px;height:12px;border-radius:999px;background:rgba(34,18,8,0.1)"></div><div style="width:90px;height:10px;border-radius:999px;background:rgba(34,18,8,0.07)"></div></div>
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(34,18,8,0.1)"></div>
+          </div>
+          <div style="height:300px;box-sizing:border-box;padding:20px;border-radius:24px;background:rgba(255,253,249,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:14px;animation:exaPulse 1.4s ease-in-out infinite">
+            <div style="width:40%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div>
+            <div style="width:60%;height:58px;border-radius:14px;background:rgba(34,18,8,0.1)"></div>
+            <div style="width:70%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div>
+            <div style="flex:1"></div>
+            <div style="height:58px;border-radius:999px;background:rgba(34,18,8,0.1)"></div>
+          </div>
+          <div style="padding:18px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;flex-direction:column;gap:18px;animation:exaPulse 1.4s ease-in-out .2s infinite">
+            <div style="width:45%;height:14px;border-radius:999px;background:rgba(34,18,8,0.1)"></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><div style="width:70%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div><div style="height:8px;border-radius:999px;background:rgba(34,18,8,0.06)"></div></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><div style="width:55%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div><div style="height:8px;border-radius:999px;background:rgba(34,18,8,0.06)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { checked: false, slip: {} };
+  renderVals() {
+    const st = this.state;
+    const I = 'https://unpkg.com/lucide-static@0.460.0/icons/';
+    const m = n => `url(${I}${n}.svg) center / contain no-repeat`;
+    const line = '1px solid rgba(34,18,8,0.08)';
+    const S = {
+      wait: ['rgba(217,119,6,0.14)', '#92400E'], ok: ['rgba(21,128,61,0.12)', '#166534'],
+      no: ['rgba(220,38,38,0.1)', '#B91C1C'], idle: ['rgba(34,18,8,0.06)', '#5B4636'],
+    };
+    const mk = rows => rows.map((t, i) => ({ ...t, hasProgress: !!t.pct, sBg: S[t.s][0], sFg: S[t.s][1], border: i ? line : 'none', barColor: t.s === 'no' ? '#DC2626' : t.s === 'ok' ? '#15803D' : '#F2790F' }));
+    const tasksA = mk([
+      { name: 'Jumlah cup terjual', value: '86 / 120', pct: '72%', s: 'wait', status: 'Menunggu verifikasi', note: 'Dicatat 07:58' },
+      { name: 'Kebersihan area bar', value: 'Dinilai atasan', s: 'idle', status: 'Belum dinilai', note: 'Dinilai di akhir shift' },
+      { name: 'Stok bahan dicek', value: '1 / 1', pct: '100%', s: 'ok', status: 'Disetujui', note: 'oleh Budi S.' },
+    ]);
+    const tasksB = mk([
+      { name: 'Jumlah cup terjual', value: '86 / 120', pct: '72%', s: 'no', status: 'Ditolak', note: 'Foto struk tidak terbaca · perbaiki' },
+      { name: 'Kebersihan area bar', value: 'Dinilai atasan', s: 'ok', status: 'Disetujui', note: 'Nilai 90 dari Budi S.' },
+      { name: 'Stok bahan dicek', value: '1 / 1', pct: '100%', s: 'ok', status: 'Disetujui', note: 'oleh Budi S.' },
+    ]);
+    const defs = [
+      { id: 'a', caption: '1 · Sebelum absen (interaktif)', interactive: true, glass: true, time: '07:52', tasks: tasksA },
+      { id: 'b', caption: '2 · Sesudah absen masuk', checked: true, glass: true, time: '13:05', tasks: tasksB },
+      { id: 'c', caption: '3 · Mode solid (fallback HP murah)', checked: true, glass: false, time: '13:05', tasks: tasksA },
+    ];
+    const frames = defs.map(d => {
+      const checked = d.interactive ? st.checked : !!d.checked;
+      const shown = !!st.slip[d.id];
+      return {
+        caption: d.caption, glass: d.glass, time: d.time, tasks: d.tasks,
+        checked, notChecked: !checked,
+        barBg: d.glass ? 'rgba(255,251,245,0.7)' : '#FFFDF9',
+        cardBg: d.glass ? 'rgba(255,253,249,0.8)' : '#FFFDF9',
+        blur: d.glass ? 'blur(18px)' : 'none',
+        checkIn: () => d.interactive && this.setState({ checked: true }),
+        reset: () => d.interactive && this.setState({ checked: false }),
+        toggleSlip: () => this.setState(s => ({ slip: { ...s.slip, [d.id]: !s.slip[d.id] } })),
+        slipValue: shown ? 'Rp 4.125.000' : 'Rp ••••••••',
+        slipTrack: shown ? '-0.01em' : '0.08em',
+        slipAction: shown ? 'Sembunyikan' : 'Lihat',
+        eye: m(shown ? 'eye-off' : 'eye'),
+      };
+    });
+    const tabs = [['Beranda', 'house', true], ['Tugas', 'list-checks'], ['Absensi', 'calendar-days'], ['Slip', 'receipt'], ['Profil', 'user']]
+      .map(([label, icon, on]) => ({ label, mask: m(icon), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#5B4636', font: on ? "700 12px 'DM Sans',sans-serif" : "500 12px 'DM Sans',sans-serif" }));
+    return { frames, tabs };
+  }
+}
+</script>
+</body>
+</html>

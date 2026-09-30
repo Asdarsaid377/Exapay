@@ -26,11 +26,12 @@ Jangan pernah mulai menulis kode sebelum langkah 1–3 selesai.
 
 Sebelum membuat **halaman atau component apapun**:
 
-1. Cek `context/designs/` — apakah ada file desain (screenshot/export) untuk halaman ini?
+1. Cek `context/designs/` — apakah ada referensi (snapshot Claude Design `.html`, screenshot/export) untuk halaman ini?
 2. Cek `context/ui-registry.md` — apakah component serupa sudah pernah dibuat?
 3. Jika **TIDAK ADA** referensi desain untuk halaman/component tersebut:
    - **BERHENTI. Jangan generate UI.**
-   - Tanyakan ke user: *"Saya tidak menemukan referensi desain untuk [nama halaman/component]. Tolong berikan salah satu: (a) screenshot/gambar desain ke `context/designs/`, (b) link Figma, atau (c) izin eksplisit untuk build hanya berdasarkan ui-rules.md + ui-tokens.md."*
+   - Tanyakan ke user: *"Saya tidak menemukan referensi desain untuk [nama halaman/component]. Pilih salah satu: (a) buat di Claude Design — saya susun prompt-nya, Anda kirim link hasilnya, (b) link Claude Design yang sudah ada, (c) screenshot/gambar desain ke `context/designs/`, (d) link Figma/website referensi, atau (e) izin eksplisit untuk build hanya berdasarkan ui-rules.md + ui-tokens.md."*
+   - Jalur Claude Design (prompt → link → snapshot di `context/designs/` → token) ada di `context/ui-workflow.md`.
    - Baru lanjut setelah user menjawab.
 4. Setelah component selesai dibuat → **update `context/ui-registry.md`** (nama, path, kelas yang dipakai).
 
