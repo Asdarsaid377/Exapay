@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 4 — Tugas Harian & KPI
-**Terakhir selesai:** 20 Verifikasi Atasan (2026-10-01)
-**Berikutnya:** 21 Skor Ad-hoc
+**Terakhir selesai:** 21 Skor Ad-hoc (2026-10-01)
+**Berikutnya:** 22 Siklus & Penilaian Periodik
 
 ---
 
@@ -41,7 +41,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 18 Template KPI per Jabatan
 - [x] 19 Log Tugas Harian Karyawan
 - [x] 20 Verifikasi Atasan
-- [ ] 21 Skor Ad-hoc
+- [x] 21 Skor Ad-hoc
 
 ### Phase 5 — Penilaian Periodik & AI
 - [ ] 22 Siklus & Penilaian Periodik
@@ -195,6 +195,11 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Pengaman konkurensi: tiap item membawa `version` = mikrodetik epoch `updated_at` (dihitung di SQL — Date JS hanya milidetik); keputusan dengan versi lama → 409, setujui sekaligus melewati catatan yang sudah diputuskan/dihapus/diubah (`{ approved, skipped }`). Baris dikunci `FOR UPDATE OF task_logs`. Endpoint (owner/admin/atasan, peran dibaca ulang): `GET /tasks/verification?status&page` (50/halaman; menunggu = tanggal terlama dulu), `POST /tasks/verification/:id/decision`, `POST /tasks/verification/approve` (maks. 100).
 - 2026-10-01 — Migration `0018_task_log_verification`: kolom `edited_at`, `verified_quantity numeric(18,2)`, `decided_at`, `decided_by_user_id` (FK users SET NULL), `decided_by_name` (snapshot), `decision_note`; CHECK `task_logs_decision` / `task_logs_verified_quantity` / `task_logs_decision_note`; index `(tenant_id, status, work_date)`; backfill `edited_at` dari `updated_at` yang pernah diubah. Portal: "Diubah" memakai `edited_at`; total harian memakai angka koreksi; daftar menampilkan angka dicoret → koreksi, badge "Dikoreksi", alasan & nama pemutus. `Checkbox` diekstrak ke `components/common/` (juga dipakai `KpiPositionPicker`).
 
+- 2026-10-01 — **Skor ad-hoc (feature 21):** `/kpi/scores` & `/me/performance` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola /attendance (AttendancePeriodNav + StatTile + daftar glass-data) + card "Sebaran predikat KPI" dashboard.html + tile "Skor bulan ini" me.html (tile juga dipasang di beranda `/me` sebagai pintu masuk `/me/performance`). Diverifikasi user ("sudah sesuai").
+- 2026-10-01 — Keputusan user: **skor total maks. 100** (capaian per indikator maks. 120% boleh menutup kekurangan indikator lain); **izin/sakit/cuti disetujui dikeluarkan** dari hari target & pembagi kehadiran (alpa tetap dihitung); **dihitung sampai hari ini** (hari ini ikut hari target; tanggal mulai setelah hari ini → 400). Keputusan sendiri: indikator penilaian atasan yang belum dinilai & indikator tanpa hari target/hari kehadiran **dilewati, bobotnya keluar dari pembagi** (skor = Σ poin ÷ Σ bobot dihitung × 100); semua indikator dilewati → skor kosong.
+- 2026-10-01 — Rumus murni `apps/api/src/modules/kpi/kpi-score.ts` (decimal.js — dependency baru `apps/api`, `Decimal.clone` HALF_UP): hari target dari status `recapEmployee` (on_time/late/absent/pending); prorata harian × 1 · mingguan ÷ hari kerja jadwal per minggu · bulanan ÷ hari kerja bulan tanggal itu (kalender dimuat bulan penuh); kehadiran = hadir ÷ (hadir + alpa). Pembulatan bertahap agar bisa dihitung tangan: target periode 2 desimal → capaian 1 desimal → poin eksak → skor 1 desimal. Predikat ≥90/75/60 (`KPI_PREDICATE_MIN` di shared). Input `ratings` sudah ada (kosong) untuk feature 22.
+- 2026-10-01 — Skor **tidak disimpan** — dihitung saat dibaca dari template KPI jabatan **saat ini** + `verifiedTaskTotals` + rekap absensi (snapshot baru di penilaian periodik feature 22). Endpoint: `GET /kpi/scores?month|from&to&departmentId` (owner/admin semua, atasan bawahan langsung, peran dibaca ulang; rata-rata & predikat rata-rata dari API) dan `GET /kpi/scores/me?month` (semua peran). `AttendanceRecapService.recapEmployees()` baru + diekspor `AttendanceModule`; `KpiModule` mengimpor `AttendanceModule`. Web: `AttendancePeriodNav` prop `rangeHint`, `AttendanceMonthNav` prop `basePath` (`myAttendanceHref` → `monthHref`); tim di URL `?team=`.
+
 ---
 
 ## Catatan (Notes)
@@ -240,3 +245,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 166 per feature 18. Data dev "Kopi Nusantara" dibuat sebelum feature 18 — template bawaan baru muncul setelah tombol "Pakai template bawaan" diklik di `/kpi/templates`. Urutan indikator belum bisa diatur ulang (mengikuti urutan tambah).
 - Total test API 170 per feature 19 (`task-logs.e2e.test.ts`). Data dev: Dewi (`karyawan@exapay.local`, template Sales) punya absen masuk 1 Okt 2026 04:03 WITA + 3 catatan tugas uji (Kunjungan pelanggan 3 + foto, Nilai penjualan 1.250.000,5, pekerjaan lain). Status catatan di kartu `/me` = gabungan (ada ditolak → Ditolak, ada menunggu → Menunggu verifikasi). "Diubah HH:MM" kini memakai `editedAt` (feature 20).
 - Total test API 172 per feature 20 (`task-verification.e2e.test.ts`). Data dev: 3 catatan tugas Dewi 1 Okt 2026 diputuskan user saat verifikasi feature 20 (Rudi/`atasan@exapay.local`). Belum ada: hitungan menunggu verifikasi di sidebar; filter per karyawan di `/kpi/verification`.
+- Total test API 190 per feature 21 (`kpi-score.test.ts` 17 skenario murni + `kpi-scores.e2e.test.ts`). Sekali terlihat 2 test lama gagal di full suite (employee-import, kpi-templates validasi) — lulus saat diulang (flake timing). Data dev 1 Okt 2026: skor Dewi 30,9; karyawan lain 0 (hari ini ikut dihitung, belum ada catatan disetujui).

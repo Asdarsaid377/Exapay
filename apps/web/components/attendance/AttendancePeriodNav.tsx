@@ -22,6 +22,8 @@ type Props = {
   basePath: string;
   // Parameter lain yang dipertahankan saat periode berganti (mis. karyawan terpilih)
   keep?: Record<string, string>;
+  // Keterangan di dialog rentang
+  rangeHint?: string;
 };
 
 const ARROW_CLASSES =
@@ -29,7 +31,7 @@ const ARROW_CLASSES =
 
 // Pilih periode rekap/koreksi: panah per bulan, atau rentang bebas (maks. 92 hari) lewat dialog. Periode di URL.
 // Tanpa referensi desain (feature 16, izin user) — pola AttendanceMonthNav + panel filter EmployeeFilters.
-export function AttendancePeriodNav({ view, currentMonth, from, to, basePath, keep = {} }: Props) {
+export function AttendancePeriodNav({ view, currentMonth, from, to, basePath, keep = {}, rangeHint = "Maksimal 92 hari. Hari ini dan sesudahnya belum dihitung alpa." }: Props) {
   const router = useRouter();
   const [loading, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -109,7 +111,7 @@ export function AttendancePeriodNav({ view, currentMonth, from, to, basePath, ke
         open={open}
         onClose={() => setOpen(false)}
         title="Pilih rentang tanggal"
-        description="Maksimal 92 hari. Hari ini dan sesudahnya belum dihitung alpa."
+        description={rangeHint}
         footer={
           <>
             <Button variant="secondary" onClick={() => setOpen(false)}>

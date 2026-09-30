@@ -41,7 +41,7 @@ export function shiftMonth(month: string, delta: number): string {
   return date.toISOString().slice(0, 7);
 }
 
-// Link riwayat absensi; bulan berjalan tanpa param
-export function myAttendanceHref(month: string, currentMonth: string): string {
-  return month === currentMonth ? "/me/attendance" : `/me/attendance?month=${month}`;
+// Link halaman per bulan; bulan berjalan tanpa param
+export function monthHref(basePath: string, month: string, currentMonth: string): string {
+  return month === currentMonth ? basePath : `${basePath}?month=${month}`;
 }

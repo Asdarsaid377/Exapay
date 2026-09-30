@@ -514,3 +514,18 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — checkbox native (feature 18/20)
 - **Pola kelas kunci:** `size-4.5 shrink-0 accent-accent`; pemanggil membungkus dengan `<label>` area sentuh ≥ 44px
 - **Catatan:** server-safe; props input tanpa `type`/`className`
+
+### KpiIndicatorBreakdown / KpiScoreList / KpiPredicateDistribution / KpiScoreTeamSelect
+- **Path:** apps/web/components/kpi/KpiIndicatorBreakdown.tsx, KpiScoreList.tsx, KpiPredicateDistribution.tsx, KpiScoreTeamSelect.tsx
+- **Dipakai di:** /kpi/scores (Breakdown juga di /me/performance)
+- **Referensi desain:** tanpa snapshot halaman — pola AttendanceRecapTable + card "Sebaran predikat KPI" `context/designs/dashboard.html` (feature 21, izin user)
+- **Pola kelas kunci:** Breakdown = `<ul>` baris `border-t border-border-subtle py-3.5` (nama `text-[14.5px] font-bold` + target·bobot `text-caption text-text-tertiary`; kanan capaian `font-display text-[17px] font-extrabold` + poin caption, atau Badge neutral "Belum dinilai"/"Tidak dihitung"), bar `h-2 bg-chart-track` isi `bg-accent` (≥100% `bg-success`, lebar = capaian ÷ 120), lalu rumus skor `text-[13px]` + hari target caption. List = `glass-data rounded-card`, baris `<details>` grid (desktop kolom Karyawan · Template · Skor `text-[22px] font-extrabold` · Predikat Badge · chevron), isi `rounded-inner bg-fill-subtle`; tanpa template = baris tidak bisa dibuka. Distribution = `glass-strong rounded-card` 4 baris label+rentang, angka `text-lg font-extrabold`, bar `h-2.5` warna predikat (lebar relatif predikat terbanyak). TeamSelect = `glass rounded-card p-2 lg:w-72` + SelectField labelHidden
+- **Catatan:** semua server-safe kecuali TeamSelect (client, `?team=` via `kpiScoresHref`). Label/tone di `lib/kpiScoreLabels.ts` (`PREDICATE_TONES` success/accent/warning/danger, `PREDICATE_BAR_CLASSES`, `PREDICATE_TEXT_CLASSES`, `indicatorTargetLabel`, `indicatorActualLabel`). Di halaman: 2 StatTile (Rata-rata skor + badge predikat, Karyawan dengan skor; `col-span-2` di mobile) kiri, Distribution kanan (`lg:grid-cols-[1fr_1.85fr]`)
+
+### KpiMyScoreCard / KpiScoreTile
+- **Path:** apps/web/components/kpi/KpiMyScoreCard.tsx, KpiScoreTile.tsx
+- **Dipakai di:** /me/performance (Card), /me (Tile)
+- **Referensi desain:** tile "Skor bulan ini" `context/designs/me.html`; Card diturunkan darinya (feature 21)
+- **Pola kelas kunci:** Tile = Link `surface-solid rounded-[20px] p-4` (label `text-[13px]`, angka `font-display text-[30px] font-extrabold` + predikat teks berwarna `text-[13px] font-bold`, periode `text-[12.5px] text-text-tertiary`, kanan "Rincian ›" `text-accent-strong`); Card = `surface-solid rounded-[22px] p-4.5`, angka `text-[44px] font-extrabold` + Badge predikat
+- **Catatan:** server component. Tile hanya tampil jika akun tertaut & jabatan punya template. Rincian di /me/performance = KpiIndicatorBreakdown di card `surface-solid rounded-[22px]`; navigasi bulan = AttendanceMonthNav `basePath="/me/performance"`
+

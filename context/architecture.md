@@ -72,7 +72,7 @@
 │   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14); pengajuan izin/sakit/cuti /attendance/me/leave-requests + persetujuan /attendance/leave-requests (leave-requests.service, my-leave-requests.controller, leave-requests.controller, leave-attachment.ts murni — feature 15; rekap /attendance/recap + koreksi /attendance/corrections (attendance-recap.ts murni, attendance-recap.service/controller, attendance-corrections.service/controller, attendance-viewer.ts cakupan penglihat — feature 16))
 │   │           ├── storage/          → abstraksi FileStorage (put/get/remove) + S3FileStorage (SeaweedFS), StorageModule global; key `tenants/<tenant_id>/…`, bucket dibuat saat start (feature 15)
 │   │           ├── tasks/            → log tugas harian /tasks/me + foto /tasks/logs/:id/photo (task-logs.service, my-task-logs.controller, task-logs.controller, task-log-rules.ts murni — feature 19)
-│   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18)
+│   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21)
 │   │           ├── payroll/
 │   │           ├── compliance/
 │   │           └── audit/
@@ -101,6 +101,8 @@
 │       │   ├── (main)/settings/attendance/ → jadwal kerja & hari libur (feature 13; aturan potongan menyusul feature 17)
 │       │   ├── (main)/kpi/templates/ → daftar, tambah/salin (new/?from=), ubah [id] template KPI (feature 18)
 │       │   ├── (portal)/me/tasks/  → log tugas harian (feature 19; [id]/photo/route.ts buka foto bukti)
+│       │   ├── (main)/kpi/scores/ → skor KPI ad-hoc per karyawan/tim (feature 21)
+│       │   ├── (portal)/me/performance/ → skor KPI milik sendiri per bulan (feature 21)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
@@ -110,7 +112,7 @@
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
 │       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceCorrections.ts, attendanceDeductions.ts, kpiTemplates.ts, taskLogs.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceRecap.ts, kpiTemplates.ts, taskLogs.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceRecap.ts, kpiTemplates.ts, taskLogs.ts, kpiScores.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   ├── geolocation.ts        → lokasi browser saat absen (tidak memblokir)
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)

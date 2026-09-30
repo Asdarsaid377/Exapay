@@ -7,10 +7,10 @@ import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
 import { type Database, type TenantContext, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { localClock, monthRange } from "./attendance-clock.js";
-import { type RecapLeave, type RecapRecord, recapEmployee } from "./attendance-recap.js";
+import { type RecapEmployment, type RecapLeave, type RecapRecord, type RecapResult, recapEmployee } from "./attendance-recap.js";
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
-import { countWorkingDays } from "./work-calendar.js";
+import { countWorkingDays, type WorkCalendar } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
 export type Period = { from: string; to: string };
@@ -161,6 +161,32 @@ export class AttendanceRecapService {
         canCorrect: viewer.manage && row.id !== viewer.ownEmployeeId,
       };
     });
+  }
+
+  // Rekap per karyawan untuk modul lain (skor KPI feature 21) di dalam transaksi ber-tenant pemanggil — cakupan penglihat dicek pemanggil
+  async recapEmployees(
+    tx: Transaction,
+    rows: readonly (RecapEmployment & { id: string })[],
+    period: Period,
+    today: string,
+    calendar: WorkCalendar,
+  ): Promise<Map<string, RecapResult>> {
+    const ids = rows.map((row) => row.id);
+    const records = await this.selectRecords(tx, ids, period);
+    const leaves = await this.selectLeaves(tx, ids, period);
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        recapEmployee({
+          calendar,
+          ...period,
+          today,
+          employment: row,
+          records: records.filter((r) => r.employeeId === row.id).map(toRecapRecord),
+          leaves: leaves.filter((l) => l.employeeId === row.id),
+        }),
+      ]),
+    );
   }
 
   // ——— helper ———

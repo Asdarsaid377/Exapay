@@ -4,19 +4,22 @@ import Link from "next/link";
 
 import { AttendanceCard } from "@/components/attendance/AttendanceCard";
 import { EmptyState } from "@/components/common/EmptyState";
+import { KpiScoreTile } from "@/components/kpi/KpiScoreTile";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { LogTaskButton } from "@/components/tasks/LogTaskButton";
 import { TaskSummaryCard } from "@/components/tasks/TaskSummaryCard";
 import { fetchAttendanceToday } from "@/lib/api/attendance";
+import { fetchMyKpiScore } from "@/lib/api/kpiScores";
 import { fetchMyTaskDay } from "@/lib/api/taskLogs";
 import { getSession } from "@/lib/auth/getSession";
 import { DEFAULT_TIME_ZONE, firstNameOf, formatLongDate, greetingFor } from "@/lib/datetime";
 
 export const metadata: Metadata = { title: "Beranda — Exapay" };
 
-// Beranda portal karyawan mengikuti snapshot context/designs/me.html. Kartu absen (feature 14) + tugas hari ini (feature 19).
+// Beranda portal karyawan mengikuti snapshot context/designs/me.html. Kartu absen (feature 14) + tugas hari ini (feature 19)
+// + tile "Skor bulan ini" (feature 21, tautan ke /me/performance; tampil jika jabatan punya template KPI).
 export default async function PortalHomePage() {
-  const [session, today, tasks] = await Promise.all([getSession(), fetchAttendanceToday(), fetchMyTaskDay(null)]);
+  const [session, today, tasks, score] = await Promise.all([getSession(), fetchAttendanceToday(), fetchMyTaskDay(null), fetchMyKpiScore(null)]);
   const timeZone = today.ok ? today.data.timeZone : DEFAULT_TIME_ZONE;
   const now = today.ok ? new Date(today.data.serverTime) : new Date();
 
@@ -47,6 +50,7 @@ export default async function PortalHomePage() {
       ) : (
         <EmptyState icon={CloudOff} surface="solid" title="Tugas hari ini belum bisa dimuat" description={tasks.error} />
       )}
+      {score.ok && score.data.access !== "not_linked" && score.data.template ? <KpiScoreTile score={score.data} /> : null}
     </>
   );
 }
