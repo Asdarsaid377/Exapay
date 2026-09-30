@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}input::placeholder{color:#8A7561}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Karyawan — Daftar</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636">/employees · Kopi Nusantara · Budi Santoso (Pemilik) · 30 Sep 2026</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="employees-new.html">Tambah karyawan →</a>
+      <a href="employees-detail.html">Detail karyawan →</a>
+      <a href="design-tokens.html">Token &amp; komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Desktop · 1440px — cari, filter, dan segmented berfungsi; klik baris ke detail</div>
+    <div data-screen-label="Daftar Desktop" style="position:relative;width:1440px;height:1024px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:-260px;right:-180px"></div>
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#EADCCB;top:220px;left:-140px"></div>
+        <div style="position:absolute;width:580px;height:360px;border-radius:56px;background:#F6B27A;top:760px;right:140px"></div>
+      </div>
+      <div style="position:relative;height:100%;box-sizing:border-box;display:flex;gap:20px;padding:20px">
+        <aside style="width:248px;flex:none;box-sizing:border-box;padding:20px 14px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 10px">
+            <div style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</div>
+            <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+              <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:12px;background:{{ item.bg }};color:{{ item.fg }};font:{{ item.font }};cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+                <span style="width:19px;height:19px;flex:none;background:currentColor;-webkit-mask:{{ item.mask }};mask:{{ item.mask }}"></span>
+                <span style="flex:1">{{ item.label }}</span>
+                <sc-if value="{{ item.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ item.count }}</span></sc-if>
+                <sc-if value="{{ item.hasSubs }}"><span style="width:16px;height:16px;flex:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></sc-if>
+              </div>
+            </sc-for>
+          </nav>
+        </aside>
+
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <header style="height:68px;flex:none;box-sizing:border-box;padding:0 12px 0 10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+            <div style="height:50px;padding:0 14px;border-radius:14px;display:flex;align-items:center;gap:14px;cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+              <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:13px;color:#5B4636">Pemilik · Makassar</span></div>
+              <span style="width:18px;height:18px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span style="font-size:14px;color:#5B4636">Senin, 30 September 2026</span>
+              <div style="height:50px;padding:0 8px 0 5px;border-radius:999px;display:flex;align-items:center;gap:8px">
+                <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">BS</span>
+                <span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+              </div>
+            </div>
+          </header>
+
+          <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:4px 0 8px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:0 6px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Karyawan</h2>
+                <p style="margin:0;font-size:15px;color:#5B4636">18 aktif · 2 nonaktif</p>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.75);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/upload.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/upload.svg) center / contain no-repeat"></span>Impor Excel</button>
+                <a href="employees-new.html" style="height:40px;padding:0 18px;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span>Tambah karyawan</a>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14)">
+              <div style="position:relative;flex:1;max-width:340px">
+                <span style="position:absolute;left:14px;top:13px;width:18px;height:18px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat"></span>
+                <input onInput="{{ onSearch }}" placeholder="Cari nama atau nomor induk" style="width:100%;box-sizing:border-box;height:44px;padding:0 14px 0 42px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;outline:none" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)">
+              </div>
+              <div style="position:relative;width:196px">
+                <select onChange="{{ onDept }}" style="width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 40px 0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;cursor:pointer;outline:none">
+                  <option value="">Semua departemen</option><option>Operasional</option><option>Produksi</option><option>Keuangan</option><option>Logistik</option>
+                </select>
+                <span style="position:absolute;right:14px;top:14px;width:16px;height:16px;pointer-events:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+              </div>
+              <div style="position:relative;width:176px">
+                <select onChange="{{ onStatus }}" style="width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 40px 0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;cursor:pointer;outline:none">
+                  <option value="">Semua status</option><option>Tetap</option><option>Kontrak</option><option>Percobaan</option>
+                </select>
+                <span style="position:absolute;right:14px;top:14px;width:16px;height:16px;pointer-events:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+              </div>
+              <div style="flex:1"></div>
+              <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+                <sc-for list="{{ segs }}" as="s" hint-placeholder-count="3">
+                  <button onClick="{{ s.click }}" style="height:36px;padding:0 16px;border:none;border-radius:999px;background:{{ s.bg }};box-shadow:{{ s.shadow }};color:{{ s.fg }};font:{{ s.font }};cursor:pointer">{{ s.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="flex:none;border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,1.7fr) 116px minmax(0,1.3fr) 118px minmax(0,1.8fr) 18px;gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">
+                <span>Nama</span><span>Jabatan · Departemen</span><span>Status kerja</span><span>Atasan langsung</span><span>Tanggal masuk</span><span>Keterangan</span><span></span>
+              </div>
+              <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+                <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+                  <a href="employees-detail.html" style="display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,1.7fr) 116px minmax(0,1.3fr) 118px minmax(0,1.8fr) 18px;gap:16px;align-items:center;min-height:64px;padding:10px 20px;box-sizing:border-box;border-top:{{ r.border }};color:{{ r.fg }};text-decoration:none;transition:background .12s" style-hover="background:rgba(242,121,15,0.07);text-decoration:none;color:{{ r.fg }}">
+                    <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                      <span style="width:36px;height:36px;flex:none;border-radius:50%;background:{{ r.avBg }};color:{{ r.fg }};display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
+                      <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                        <span style="font:700 14.5px 'DM Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                        <span style="font-size:12.5px;color:#75604D;font-variant-numeric:tabular-nums">{{ r.nip }}</span>
+                      </div>
+                    </div>
+                    <span style="font-size:14px;line-height:1.35">{{ r.jab }} <span style="color:{{ r.fg2 }}">· {{ r.dept }}</span></span>
+                    <span style="justify-self:start;height:24px;padding:0 10px;border-radius:999px;box-sizing:border-box;border:1px solid {{ r.bBd }};background:{{ r.bBg }};color:{{ r.bFg }};font:700 12.5px/22px 'DM Sans',sans-serif">{{ r.badge }}</span>
+                    <span style="font-size:14px;color:{{ r.fg2 }}">{{ r.atasan }}</span>
+                    <span style="font-size:14px;color:{{ r.fg2 }};font-variant-numeric:tabular-nums">{{ r.masuk }}</span>
+                    <div style="display:flex;align-items:center;gap:7px;color:{{ r.ketFg }}">
+                      <sc-if value="{{ r.warn }}"><span style="width:15px;height:15px;flex:none;background:#B45309;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat"></span></sc-if>
+                      <span style="font:{{ r.ketFont }}">{{ r.ket }}</span>
+                    </div>
+                    <span style="width:16px;height:16px;background:#8A7561;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+                  </a>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:56px 24px">
+                  <span style="width:28px;height:28px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search-x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search-x.svg) center / contain no-repeat"></span>
+                  <span style="font:700 16px 'Plus Jakarta Sans',sans-serif">Tidak ada karyawan yang cocok</span>
+                  <span style="font-size:14px;color:#5B4636">Coba kata kunci lain atau ubah filter.</span>
+                </div>
+              </sc-if>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px 12px 20px;border-top:1px solid rgba(34,18,8,0.08)">
+                <span style="font-size:13.5px;color:#5B4636">{{ pageText }}</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button disabled="" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(34,18,8,0.08);background:rgba(255,255,255,0.4);display:grid;place-items:center;color:#8A7561"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat"></span></button>
+                  <span style="min-width:36px;height:36px;border-radius:999px;background:rgba(242,121,15,0.16);color:#B34C08;font:700 14px/36px 'DM Sans',sans-serif;text-align:center">1</span>
+                  <button disabled="" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(34,18,8,0.08);background:rgba(255,255,255,0.4);display:grid;place-items:center;color:#8A7561"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:48px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · 390px — tabel menjadi daftar card</div>
+      <div data-screen-label="Daftar Mobile" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;inset:0;overflow:hidden">
+          <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+          <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#FAE0C8;top:420px;left:-120px"></div>
+          <div style="position:absolute;width:300px;height:220px;border-radius:44px;background:#F6B27A;top:660px;right:-60px"></div>
+        </div>
+        <div style="position:relative;height:100%;overflow-y:auto;padding:12px 14px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+          <header style="position:sticky;top:0;z-index:3;height:60px;flex:none;padding:0 8px 0 6px;border-radius:20px;background:rgba(255,251,245,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.18);display:flex;align-items:center;gap:6px">
+            <span style="width:44px;height:44px;display:grid;place-items:center"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></span>
+            <div style="flex:1;display:flex;align-items:center;gap:8px;padding:0 8px">
+              <div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Pemilik</span></div>
+              <span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat"></span>
+            </div>
+            <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">BS</span>
+          </header>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:4px 4px 0">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <h2 style="margin:0;font:800 24px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Karyawan</h2>
+              <span style="font-size:14px;color:#5B4636">18 aktif · 2 nonaktif</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button aria-label="Impor Excel" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:grid;place-items:center;cursor:pointer"><span style="width:18px;height:18px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/upload.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/upload.svg) center / contain no-repeat"></span></button>
+              <button style="height:44px;padding:0 16px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span>Tambah</button>
+            </div>
+          </div>
+          <div style="position:relative">
+            <span style="position:absolute;left:14px;top:13px;width:18px;height:18px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat"></span>
+            <input onInput="{{ onSearch }}" placeholder="Cari nama atau nomor induk" style="width:100%;box-sizing:border-box;height:44px;padding:0 14px 0 42px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.85);font:400 15px 'DM Sans',sans-serif;color:#221208;outline:none">
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+              <sc-for list="{{ segs }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.click }}" style="height:36px;border:none;border-radius:999px;background:{{ s.bg }};box-shadow:{{ s.shadow }};color:{{ s.fg }};font:{{ s.font }};cursor:pointer">{{ s.label }}</button>
+              </sc-for>
+            </div>
+            <button style="height:44px;padding:0 14px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:flex;align-items:center;gap:6px;font:700 14px 'Plus Jakarta Sans',sans-serif;color:#221208;cursor:pointer"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/sliders-horizontal.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/sliders-horizontal.svg) center / contain no-repeat"></span>Filter</button>
+          </div>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+            <a href="employees-detail.html" style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:20px;background:rgba(255,253,249,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);color:{{ r.fg }};text-decoration:none" style-hover="text-decoration:none;color:{{ r.fg }}">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ r.avBg }};display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                  <span style="font:700 15px 'DM Sans',sans-serif">{{ r.name }}</span>
+                  <span style="font-size:13px;color:{{ r.fg2 }}">{{ r.jab }} · {{ r.dept }}</span>
+                </div>
+                <span style="height:24px;padding:0 10px;border-radius:999px;box-sizing:border-box;border:1px solid {{ r.bBd }};background:{{ r.bBg }};color:{{ r.bFg }};font:700 12px/22px 'DM Sans',sans-serif">{{ r.badge }}</span>
+              </div>
+              <sc-if value="{{ r.hasKet }}">
+                <div style="display:flex;align-items:center;gap:7px;padding-top:10px;border-top:1px solid rgba(34,18,8,0.07);color:{{ r.ketFg }}">
+                  <sc-if value="{{ r.warn }}"><span style="width:15px;height:15px;flex:none;background:#B45309;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat"></span></sc-if>
+                  <span style="font:{{ r.ketFont }}">{{ r.ket }}</span>
+                </div>
+              </sc-if>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,640px);gap:40px 32px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · belum ada karyawan</div>
+        <div style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;width:320px;height:320px;border-radius:50%;background:#F7D3B3;top:-140px;right:-80px"></div>
+          <div style="position:relative;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Karyawan</h2><span style="font-size:14.5px;color:#5B4636">0 karyawan</span></div>
+            <div style="padding:48px 32px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px">
+              <span style="width:30px;height:30px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/users.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/users.svg) center / contain no-repeat"></span>
+              <span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Belum ada karyawan</span>
+              <span style="font-size:14.5px;color:#5B4636;max-width:380px;text-wrap:pretty">Tambahkan karyawan satu per satu, atau impor sekaligus dari file Excel.</span>
+              <div style="display:flex;gap:10px;margin-top:10px">
+                <button style="height:40px;padding:0 18px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">Tambah karyawan</button>
+                <button style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.75);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#FFFFFF">Impor Excel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · hasil filter kosong</div>
+        <div style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;width:300px;height:200px;border-radius:44px;background:#F6B27A;bottom:-80px;left:-40px"></div>
+          <div style="position:relative;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:10px;padding:10px;border-radius:22px;background:rgba(255,251,245,0.66);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6)">
+              <div style="flex:1;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.85);display:flex;align-items:center;gap:10px;font-size:15px"><span style="width:18px;height:18px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat"></span>Andi Wijaya</div>
+              <div style="width:160px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:space-between;font-size:15px">Percobaan<span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+            </div>
+            <div style="padding:44px 32px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+              <span style="width:28px;height:28px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search-x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search-x.svg) center / contain no-repeat"></span>
+              <span style="font:700 17px 'Plus Jakarta Sans',sans-serif">Tidak ada karyawan yang cocok</span>
+              <span style="font-size:14.5px;color:#5B4636">Tidak ada hasil untuk “Andi Wijaya” dengan status Percobaan.</span>
+              <a href="#" style="margin-top:6px;font:700 14px 'DM Sans',sans-serif">Reset filter</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · skeleton baris tabel</div>
+        <div style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;width:320px;height:320px;border-radius:50%;background:#EADCCB;top:-160px;left:-60px"></div>
+          <div style="position:relative;border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.6fr) 100px minmax(0,1.2fr);gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);font:700 12.5px 'DM Sans',sans-serif;color:#5B4636"><span>Nama</span><span>Jabatan · Departemen</span><span>Status kerja</span><span>Keterangan</span></div>
+            <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.6fr) 100px minmax(0,1.2fr);gap:16px;align-items:center;height:64px;padding:0 20px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out {{ k.delay }} infinite">
+                <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.09)"></span><div style="flex:1;display:flex;flex-direction:column;gap:7px"><span style="width:{{ k.w1 }};height:11px;border-radius:999px;background:rgba(34,18,8,0.1)"></span><span style="width:40%;height:9px;border-radius:999px;background:rgba(34,18,8,0.06)"></span></div></div>
+                <span style="width:{{ k.w2 }};height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span>
+                <span style="width:64px;height:22px;border-radius:999px;background:rgba(34,18,8,0.07)"></span>
+                <span style="width:{{ k.w3 }};height:11px;border-radius:999px;background:rgba(34,18,8,0.07)"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Tampilan atasan · Bayu Saputra (Kepala Produksi) — hanya baca, bawahan langsung</div>
+        <div data-screen-label="Daftar Atasan" style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;width:320px;height:320px;border-radius:50%;background:#F7D3B3;top:-150px;right:-90px"></div>
+          <div style="position:relative;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Bawahan saya</h2><span style="font-size:14.5px;color:#5B4636">3 bawahan langsung · Produksi</span></div>
+            <div style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1.3fr) 96px 104px 16px;gap:14px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);font:700 12.5px 'DM Sans',sans-serif;color:#5B4636"><span>Nama</span><span>Jabatan</span><span>Status kerja</span><span>Tanggal masuk</span><span></span></div>
+              <sc-for list="{{ subRows }}" as="r" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1.3fr) 96px 104px 16px;gap:14px;align-items:center;min-height:64px;padding:10px 20px;box-sizing:border-box;border-top:{{ r.border }};cursor:pointer" style-hover="background:rgba(242,121,15,0.07)">
+                  <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span><div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.nip }}</span></div></div>
+                  <span style="font-size:14px">{{ r.jab }}</span>
+                  <span style="justify-self:start;height:24px;padding:0 10px;border-radius:999px;box-sizing:border-box;border:1px solid {{ r.bBd }};background:{{ r.bBg }};color:{{ r.bFg }};font:700 12.5px/22px 'DM Sans',sans-serif">{{ r.badge }}</span>
+                  <span style="font-size:14px;color:#5B4636">{{ r.masuk }}</span>
+                  <span style="width:16px;height:16px;background:#8A7561;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { q: '', seg: 'aktif', dept: '', status: '' };
+  renderVals() {
+    const st = this.state;
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const D = "'DM Sans',sans-serif";
+    const nav = [['Dashboard','layout-dashboard'],['Karyawan','users',1],['Organisasi','network'],['Absensi','calendar-check',0,'2',1],['KPI','target',0,'7',1],['Payroll','wallet',0,'',1],['Kepatuhan','shield-check'],['Pengaturan','settings',0,'',1]]
+      .map(([label, ic, on, count, subs]) => ({ label, mask: m(ic), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#221208', font: `${on ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count, hasSubs: !!subs && !on }));
+    const E = [
+      ['Dewi Lestari','KN-0012','Barista','Operasional','Tetap','Rudi Hartono','3 Feb 2024'],
+      ['Rina Wulandari','KN-0015','Kasir','Operasional','Kontrak','Rudi Hartono','12 Okt 2025','Kontrak habis 12 Okt 2026',1],
+      ['Agus Pratama','KN-0018','Barista','Operasional','Percobaan','Rudi Hartono','5 Jul 2026','Percobaan selesai 5 Okt 2026',1],
+      ['Rudi Hartono','KN-0003','Kepala Toko','Operasional','Tetap','Budi Santoso','1 Jun 2021'],
+      ['Siti Rahmawati','KN-0005','Staf Keuangan','Keuangan','Tetap','Budi Santoso','14 Mar 2022'],
+      ['Fajar Nugroho','KN-0014','Kurir','Logistik','Kontrak','Yusuf Maulana','20 Jan 2025','Kontrak habis 20 Jan 2027'],
+      ['Maya Sari','KN-0008','Barista','Operasional','Tetap','Rudi Hartono','9 Sep 2022'],
+      ['Hendra Wijaya','KN-0006','Roaster','Produksi','Tetap','Bayu Saputra','8 Jan 2022'],
+      ['Bayu Saputra','KN-0002','Kepala Produksi','Produksi','Tetap','Budi Santoso','1 Mar 2021'],
+      ['Nur Aisyah','KN-0009','Kasir','Operasional','Tetap','Rudi Hartono','2 Nov 2022'],
+      ['Indra Kurniawan','KN-0016','Barista','Operasional','Kontrak','Rudi Hartono','28 Feb 2026','Kontrak habis 28 Feb 2027'],
+      ['Wahyu Hidayat','KN-0010','Roaster','Produksi','Tetap','Bayu Saputra','16 Jan 2023'],
+      ['Putri Anggraini','KN-0017','Kasir','Operasional','Kontrak','Rudi Hartono','3 Apr 2026','Kontrak habis 3 Apr 2027'],
+      ['Andi Syahputra','KN-0011','Kurir','Logistik','Tetap','Yusuf Maulana','5 Jun 2023'],
+      ['Lina Marlina','KN-0007','Staf Admin','Keuangan','Tetap','Siti Rahmawati','18 Jul 2022'],
+      ['Rizky Ramadhan','KN-0019','Barista','Operasional','Kontrak','Rudi Hartono','15 Mei 2026','Kontrak habis 15 Mei 2027'],
+      ['Yusuf Maulana','KN-0004','Staf Gudang','Logistik','Tetap','Budi Santoso','10 Jan 2022'],
+      ['Sri Wahyuni','KN-0013','Pastry','Produksi','Tetap','Bayu Saputra','22 Agu 2024'],
+      ['Eko Prasetyo','KN-0020','Barista','Operasional','Kontrak','Rudi Hartono','1 Agu 2025','Keluar 31 Jul 2026',0,1],
+      ['Ratna Dewi','KN-0001','Kasir','Operasional','Tetap','Rudi Hartono','1 Mar 2021','Keluar 15 Mei 2026',0,1],
+    ];
+    const B = { Tetap: ['rgba(34,18,8,0.07)','#3D2A1C','transparent'], Kontrak: ['rgba(37,99,235,0.1)','#1D4ED8','transparent'], Percobaan: ['rgba(242,121,15,0.16)','#8A3A06','transparent'], Nonaktif: ['transparent','#5B4636','rgba(34,18,8,0.2)'] };
+    const line = '1px solid rgba(34,18,8,0.07)';
+    const all = E.map(([name, nip, jab, dept, status, atasan, masuk, ket, warn, off]) => {
+      const badge = off ? 'Nonaktif' : status;
+      return { name, nip, jab, dept, status, atasan, masuk, ket: ket || '', hasKet: !!ket, warn: !!warn, off: !!off, badge,
+        ini: name.split(' ').map(w => w[0]).slice(0, 2).join(''),
+        bBg: B[badge][0], bFg: B[badge][1], bBd: B[badge][2],
+        fg: off ? '#75604D' : '#221208', fg2: off ? '#75604D' : '#5B4636', avBg: off ? 'rgba(34,18,8,0.06)' : '#EADCCB',
+        ketFg: warn ? '#92400E' : (off ? '#75604D' : '#5B4636'), ketFont: `${warn ? 700 : 400} 13.5px ${D}` };
+    });
+    const q = st.q.trim().toLowerCase();
+    const rows = all.filter(r => (st.seg === 'semua' || (st.seg === 'aktif' ? !r.off : r.off))
+      && (!st.dept || r.dept === st.dept) && (!st.status || r.status === st.status)
+      && (!q || r.name.toLowerCase().includes(q) || r.nip.toLowerCase().includes(q)))
+      .map((r, i) => ({ ...r, border: i ? line : 'none' }));
+    const segs = [['aktif','Aktif'],['nonaktif','Nonaktif'],['semua','Semua']].map(([k, label]) => {
+      const on = st.seg === k;
+      return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => this.setState({ seg: k }) };
+    });
+    const skel = [['62%','70%','80%'],['48%','55%','60%'],['70%','62%','0%'],['55%','75%','70%'],['40%','50%','50%']]
+      .map(([w1, w2, w3], i) => ({ w1, w2, w3, delay: (i * 0.12) + 's', border: i ? line : 'none' }));
+    const subRows = all.filter(r => r.atasan === 'Bayu Saputra').map((r, i) => ({ ...r, border: i ? line : 'none' }));
+    const n = rows.length;
+    return {
+      nav, rows, segs, skel, subRows, hasRows: n > 0, noRows: n === 0,
+      pageText: n ? `Menampilkan 1–${n} dari ${n} karyawan` : 'Menampilkan 0 karyawan',
+      onSearch: e => this.setState({ q: e.target.value }),
+      onDept: e => this.setState({ dept: e.target.value }),
+      onStatus: e => this.setState({ status: e.target.value }),
+    };
+  }
+}
+</script>
+</body>
+</html>

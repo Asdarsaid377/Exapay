@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "dark";
+type Variant = "primary" | "secondary" | "dark" | "danger";
 type Size = "md" | "lg";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -21,6 +21,8 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   secondary: "border border-border-control bg-control text-text-primary hover:border-border-control-hover hover:bg-surface-solid",
   // Aksi penutup (mis. Absen Pulang)
   dark: "bg-inverse text-on-inverse hover:bg-inverse-hover",
+  // Hanya di dialog konfirmasi aksi berisiko (mis. Nonaktifkan karyawan)
+  danger: "bg-danger text-on-danger hover:bg-danger-text",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {

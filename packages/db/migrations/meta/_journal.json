@@ -64,6 +64,13 @@
       "when": 1790756986224,
       "tag": "0008_departments_positions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790767584784,
+      "tag": "0009_employees",
+      "breakpoints": true
     }
   ]
 }

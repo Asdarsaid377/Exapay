@@ -53,6 +53,7 @@
 │   │       ├── common/               → guard, interceptor, filter, decorator bersama
 │   │       │   ├── auth/             → JwtAuthGuard, RolesGuard (global), @Public, @Roles, @SuperAdmin, @CurrentUser
 │   │       │   ├── validation/       → ZodValidationPipe
+│   │       │   ├── crypto/           → FieldCipher (AES-256-GCM kolom sensitif + blind index HMAC), CryptoModule global
 │   │       │   ├── filters/          → AllExceptionsFilter → { success: false, error }
 │   │       │   └── config/           → skema env (zod) untuk ConfigModule
 │   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext), errors.ts
@@ -67,7 +68,7 @@
 │           ├── company/          → profil usaha aktif (/company — owner/admin, feature 09)
 │           ├── regions/          → referensi provinsi & kabupaten/kota Kemendagri (/regions, data platform)
 │           ├── organization/     → departemen & jabatan (/organization, feature 10)
-│   │           ├── employees/
+│   │           ├── employees/        → data karyawan (/employees, feature 11)
 │   │           ├── tasks/
 │   │           ├── kpi/
 │   │           ├── payroll/
@@ -91,16 +92,17 @@
 │       │   ├── (main)/settings/users/ → pengguna & undangan usaha (feature 08)
 │       │   ├── (main)/settings/company/ → profil usaha (feature 09)
 │       │   ├── (main)/organization/ → departemen & jabatan (feature 10)
+│       │   ├── (main)/employees/ → daftar, tambah (new), detail [id] karyawan (feature 11)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
-│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, TextAreaField, SelectField, DropdownMenu, EmptyState, Badge, StatTile, Dialog, Pagination)
+│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, TextAreaField, SelectField, Combobox, SegmentedControl, FormSection, Banner, DropdownMenu, EmptyState, Badge, StatTile, Dialog, Pagination)
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)
 │       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)

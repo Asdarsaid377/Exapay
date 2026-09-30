@@ -5,13 +5,17 @@ type Props = Omit<SelectHTMLAttributes<HTMLSelectElement>, "id"> & {
   id: string;
   label: string;
   error?: string;
-  hint?: string;
+  hint?: ReactNode;
+  // Tanda wajib diisi (* merah) setelah label
+  requiredMark?: boolean;
+  // Label hanya untuk pembaca layar (mis. select di baris filter — opsi pertama sudah menjelaskan isinya)
+  labelHidden?: boolean;
   // <option> — termasuk opsi kosong/placeholder jika perlu
   children: ReactNode;
 };
 
 // <select> native bergaya TextField (ui-rules "Form Inputs"): aksesibel & ramah HP tanpa library.
-export function SelectField({ id, label, error, hint, className, children, ...rest }: Props) {
+export function SelectField({ id, label, error, hint, requiredMark = false, labelHidden = false, className, children, ...rest }: Props) {
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   const selectClasses = [
     "h-11 w-full appearance-none rounded-field border bg-control pr-10 pl-3.5 text-body text-text-primary transition-[border-color,box-shadow,background-color]",
@@ -22,9 +26,10 @@ export function SelectField({ id, label, error, hint, className, children, ...re
   ].join(" ");
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[13px] font-bold text-text-primary">
+    <div className={`flex flex-col ${labelHidden ? "" : "gap-1.5"}`}>
+      <label htmlFor={id} className={labelHidden ? "sr-only" : "text-[13px] font-bold text-text-primary"}>
         {label}
+        {requiredMark ? <span className="text-danger-text"> *</span> : null}
       </label>
       <div className="relative">
         <select id={id} aria-invalid={error ? true : undefined} aria-describedby={describedBy} className={selectClasses} {...rest}>

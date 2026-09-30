@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type BadgeTone = "warning" | "success" | "danger" | "accent" | "neutral" | "info";
+export type BadgeTone = "warning" | "success" | "danger" | "accent" | "neutral" | "info" | "outline";
 
 type Props = {
   tone: BadgeTone;
@@ -13,8 +13,10 @@ const TONE_CLASSES: Record<BadgeTone, string> = {
   success: "bg-success-soft text-success-text",
   danger: "bg-danger-soft text-danger-text",
   accent: "bg-accent-soft text-accent-deep",
-  neutral: "bg-text-primary/6 text-text-secondary",
+  neutral: "bg-text-primary/7 text-neutral-text",
   info: "bg-info-soft text-info-text",
+  // Status tidak aktif (mis. karyawan Nonaktif) — tanpa isian agar tidak tertukar dengan netral
+  outline: "border border-border-outline text-text-secondary",
 };
 
 export function Badge({ tone, children }: Props) {

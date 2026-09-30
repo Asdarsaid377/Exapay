@@ -22,9 +22,12 @@ _Diisi Claude Code setiap kali membaca/menyinkronkan link. Snapshot di repo mena
 | --- | --- | --- | --- |
 | Dashboard owner — desktop 1440, mobile 390, drawer, skeleton, empty state | — (dari export zip) | `dashboard.html` | 2026-09-30 |
 | Portal karyawan `/me` — sebelum/sesudah absen, mode solid (fallback), skeleton | — (dari export zip) | `me.html` | 2026-09-30 |
-| Design token & komponen dasar (warna, kaca, radius, blur, shadow, tipografi, button, input, sidebar, bottom nav, badge, stat tile, dropdown, `@theme`) | — (dari export zip) | `design-tokens.html` | 2026-09-30 |
+| Design token & komponen dasar (warna, kaca, radius, blur, shadow, tipografi, button, input, sidebar, bottom nav, badge, stat tile, dropdown, `@theme`) + komponen halaman Karyawan (data-table, segmented, tabs, pagination, filter-bar, form-section, read-field, masked-value, banner, action-bar, button-danger) | — (dari export zip) | `design-tokens.html` | 2026-09-30 (diperbarui feature 11) |
+| Karyawan — daftar `/employees` (desktop, mobile, empty, filter kosong, skeleton, tampilan atasan) | — (dari export zip "Exapay dashboard dan komponen") | `employees.html` | 2026-09-30 |
+| Karyawan — tambah `/employees/new` (desktop, mobile + action bar, error, field bersyarat, combobox bank, loading) | — (dari export zip) | `employees-new.html` | 2026-09-30 |
+| Karyawan — detail `/employees/[id]` tab Data (tersamar/terbuka, mode ubah, dialog nonaktifkan, nonaktif, tampilan atasan, mobile) | — (dari export zip) | `employees-detail.html` | 2026-09-30 |
 
-Prompt yang menghasilkan desain ini: `claude-design-prompt.md` (glassmorphism). Snapshot adalah source Claude Design apa adanya — hanya tautan antar-file yang diganti ke nama baru. `support.js` + `image-slot.js` adalah runtime Claude Design agar snapshot bisa dibuka di browser (butuh internet: font Google, ikon lucide-static & React dari unpkg); bukan kode aplikasi.
+Prompt: `claude-design-prompt.md` berisi prompt terakhir (halaman Karyawan, feature 11); prompt glassmorphism ada di riwayat git. Snapshot adalah source Claude Design apa adanya — hanya tautan antar-file yang diganti ke nama baru. `support.js` + `image-slot.js` adalah runtime Claude Design agar snapshot bisa dibuka di browser (butuh internet: font Google, ikon lucide-static & React dari unpkg); bukan kode aplikasi.
 
 **Cara membaca snapshot:** markup + inline style = tampilan; `<script type="text/x-dc">` di bawah = data contoh & state (daftar menu, isi kartu, varian). `{{ ... }}` diisi dari script tersebut.
 

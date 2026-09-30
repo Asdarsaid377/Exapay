@@ -18,6 +18,8 @@
   --color-surface-glass: rgb(255 251 245 / 0.6);
   --color-surface-glass-strong: rgb(255 253 249 / 0.8);
   --color-surface-glass-overlay: rgb(255 253 249 / 0.9);
+  /* Permukaan tabel/daftar data — paling solid karena berisi data (design-tokens "data-table") */
+  --color-surface-glass-data: rgb(255 253 249 / 0.86);
   --color-surface-solid: #fffdf9;
   /* Hover item di atas kaca */
   --color-glass-hover: rgb(255 255 255 / 0.62);
@@ -25,6 +27,10 @@
   --color-control: rgb(255 255 255 / 0.8);
   --color-fill-subtle: rgb(34 18 8 / 0.04);
   --color-fill: rgb(34 18 8 / 0.08);
+  /* Tabel data (header tint 3,5%, hover baris tint aksen 7%) & track segmented control */
+  --color-table-head: rgb(34 18 8 / 0.035);
+  --color-row-hover: rgb(242 121 15 / 0.07);
+  --color-segment-track: rgb(34 18 8 / 0.06);
 
   /* Border */
   --color-border-glass: rgb(255 255 255 / 0.6);
@@ -32,6 +38,9 @@
   --color-border-subtle: rgb(34 18 8 / 0.08);
   --color-border-control: rgb(34 18 8 / 0.14);
   --color-border-control-hover: rgb(34 18 8 / 0.24);
+  /* Banner netral & badge outline (Nonaktif) */
+  --color-border-neutral: rgb(34 18 8 / 0.16);
+  --color-border-outline: rgb(34 18 8 / 0.2);
 
   /* Teks */
   --color-text-primary: #221208;
@@ -40,6 +49,8 @@
   --color-text-tertiary: #75604d;
   /* Hanya placeholder, disabled, ikon non-esensial (±4,1:1) */
   --color-text-muted: #8a7561;
+  /* Teks badge netral (mis. status kerja Tetap) */
+  --color-neutral-text: #3d2a1c;
 
   /* Brand / accent */
   --color-accent: #f2790f;
@@ -71,6 +82,10 @@
   --color-danger: #dc2626;
   --color-danger-text: #b91c1c;
   --color-danger-soft: rgb(220 38 38 / 0.1);
+  --color-danger-surface: rgb(254 242 242 / 0.94);
+  --color-danger-border: rgb(220 38 38 / 0.35);
+  /* Teks di atas tombol bahaya (putih di atas #DC2626 = 4,8:1) */
+  --color-on-danger: #ffffff;
   --color-info: #2563eb;
   --color-info-text: #1d4ed8;
   --color-info-soft: rgb(37 99 235 / 0.1);
@@ -99,6 +114,8 @@
   --shadow-overlay: 0 20px 50px -16px rgb(74 42 16 / 0.3);
   --shadow-solid: 0 8px 24px -16px rgb(74 42 16 / 0.2);
   --shadow-drawer: 0 30px 60px -20px rgb(34 18 8 / 0.4);
+  /* Thumb segmented control yang aktif */
+  --shadow-segment: 0 1px 3px rgb(74 42 16 / 0.16);
 
   /* Skala tipografi */
   --text-display: 68px;
@@ -134,6 +151,15 @@
   box-shadow: var(--shadow-glass-lg);
 }
 
+/* Tabel & daftar data: kaca kuat dengan permukaan 86% */
+@utility glass-data {
+  background-color: var(--color-surface-glass-data);
+  -webkit-backdrop-filter: blur(var(--blur-glass-lg)) saturate(1.2);
+  backdrop-filter: blur(var(--blur-glass-lg)) saturate(1.2);
+  border: 1px solid var(--color-border-glass-strong);
+  box-shadow: var(--shadow-glass-lg);
+}
+
 @utility glass-overlay {
   background-color: var(--color-surface-glass-overlay);
   -webkit-backdrop-filter: blur(var(--blur-glass-lg));
@@ -153,6 +179,7 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
   .glass-strong,
+  .glass-data,
   .glass-overlay {
     background-color: var(--color-surface-solid);
   }
@@ -161,6 +188,7 @@
 @media (prefers-reduced-transparency: reduce) {
   .glass,
   .glass-strong,
+  .glass-data,
   .glass-overlay {
     background-color: var(--color-surface-solid);
     -webkit-backdrop-filter: none;

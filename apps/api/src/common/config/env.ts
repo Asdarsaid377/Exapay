@@ -15,6 +15,11 @@ export const envSchema = z.object({
   SMTP_FROM: z.string().min(1),
   // URL publik web (Next.js) — dipakai untuk tautan di email (reset password, verifikasi, undangan)
   APP_WEB_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
+  // Kunci enkripsi kolom sensitif (NIK, NPWP, rekening): 32 byte acak, base64. Buat: `openssl rand -base64 32`.
+  // JANGAN diganti setelah ada data — ciphertext lama tidak bisa dibaca lagi (rotasi kunci = migrasi data terpisah).
+  DATA_ENCRYPTION_KEY: z
+    .string()
+    .refine((value) => /^[A-Za-z0-9+/]+={0,2}$/.test(value) && Buffer.from(value, "base64").length === 32, "DATA_ENCRYPTION_KEY harus 32 byte dalam base64"),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -99,6 +99,7 @@ describe("role runtime app_user", () => {
       "audit_logs",
       "departments",
       "email_verification_tokens",
+      "employees",
       "invitations",
       "memberships",
       "password_reset_tokens",

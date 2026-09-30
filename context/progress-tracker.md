@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 2 — Master Data
-**Terakhir selesai:** 10 Departemen & Jabatan (2026-09-30)
-**Berikutnya:** 11 Daftar & Detail Karyawan
+**Terakhir selesai:** 11 Daftar & Detail Karyawan (2026-09-30)
+**Berikutnya:** 12 Impor Karyawan dari Excel
 
 ---
 
@@ -27,7 +27,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 2 — Master Data
 - [x] 09 Profil Usaha
 - [x] 10 Departemen & Jabatan
-- [ ] 11 Daftar & Detail Karyawan
+- [x] 11 Daftar & Detail Karyawan
 - [ ] 12 Impor Karyawan dari Excel
 
 ### Phase 3 — Absensi
@@ -142,6 +142,12 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Menu Organisasi untuk atasan: **hanya melihat** (keputusan user) — tanpa tombol tambah/aksi. `/organization` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user). `EmptyState` punya `surface="none"` (empty state di dalam card lain, judul h3). `apiRequest` mendukung `DELETE`.
 - 2026-09-30 — Super-admin production dibuat dengan `pnpm --filter @exapay/api admin:create-super-admin -- --email … --name …` (password dari env `SUPER_ADMIN_PASSWORD`, role `app_owner`; akun lama cukup dipromosikan).
 
+- 2026-09-30 — **Karyawan (feature 11) — referensi desain Claude Design** (export zip): snapshot `employees.html`, `employees-new.html`, `employees-detail.html` + `design-tokens.html` diperbarui (komponen halaman Karyawan). Komponen dasar baru: `SegmentedControl`, `FormSection` (tiap section = card sendiri), `Combobox`, `Banner`; Badge `outline`, Button `danger`, `SelectField labelHidden`, `requiredMark`. Badge `neutral` disesuaikan ke desain. Penyimpangan dari desain: tombol "Impor Excel" nonaktif sampai feature 12; nomor induk tidak dibuat otomatis (opsional, unik); menu "Lihat log audit" tidak ada (belum ada penampil audit log).
+- 2026-09-30 — **Model karyawan (keputusan user):** atasan langsung = karyawan lain (`employees.supervisor_id`); akun login tertaut lewat `employees.user_id` (opsional, satu akun satu karyawan per usaha, hanya anggota usaha). Peran atasan melihat karyawan yang `supervisor_id` = data karyawan miliknya — atasan tanpa data karyawan tertaut tidak punya bawahan. Karyawan keluar = **nonaktif** (`end_date` + `end_reason`), tanpa hard delete (app_user tanpa DELETE). Menonaktifkan **tidak** mencabut login — akses dicabut lewat menu Pengguna (teks UI disesuaikan).
+- 2026-09-30 — Migration `0009_employees`: enum `employment_status`, `employee_gender`, `ptkp_status` (TK/0–K/3); FK komposit `(tenant_id, …)` ke departemen/jabatan/atasan/membership (FK tidak melewati RLS) — unique `(tenant_id, id)` ditambahkan ke `departments` & `positions`; FK membership `ON DELETE SET NULL (user_id)` (cabut akses melepas tautan). CHECK: tanggal akhir kontrak/percobaan wajib sesuai status & ≥ tanggal masuk, tidak jadi atasan diri sendiri. Siklus atasan dicegah di service.
+- 2026-09-30 — **Enkripsi kolom sensitif:** `FieldCipher` (folder baru `apps/api/src/common/crypto/`, CryptoModule global) — AES-256-GCM `v1:…`, AAD = tenant + kolom; NIK juga blind index HMAC (`nik_hash`, unik per tenant; kunci turunan HKDF). Env `DATA_ENCRYPTION_KEY` (32 byte base64) kini **wajib** saat API start. Owner/admin melihat tersamar; nilai penuh lewat `POST /employees/:id/reveal` (audit `reveal_sensitive`, POST agar tidak di-prefetch). Atasan tidak menerima data pajak & rekening sama sekali. Nilai sensitif tidak pernah masuk audit log.
+- 2026-09-30 — API `/employees` (list/options/detail/create/update/deactivate/reactivate/reveal); peran dibaca ulang dari DB. Nomor rekening wajib disertai bank. Karyawan nonaktif tidak bisa diubah (aktifkan kembali dulu). TODO feature 10 ditutup: hapus departemen/jabatan yang masih dipakai karyawan → 409 dengan jumlah karyawan.
+
 ---
 
 ## Catatan (Notes)
@@ -162,7 +168,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 87 test per feature 10.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 100 test per feature 11. Sekali terlihat flake 405 di test undangan `users.e2e` (kemungkinan port supertest) — lulus saat diulang.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
 - Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.
@@ -171,3 +177,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Headless Chrome (verifikasi visual): halaman auth tidak pernah memicu event `load` (gambar tersembunyi AuthShell) — pakai `waitUntil: "commit"` + jeda hydration.
 - Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07, dan akun `*@contoh.local` tanpa usaha dari verifikasi feature 08 — boleh diabaikan. Profil "Kopi Nusantara" berisi data contoh (Kota Makassar, gajian tgl 25, NPWP contoh) dari verifikasi feature 09.
 - Component yang dirender dua kali (tabel desktop + daftar mobile) tidak boleh memakai `name`/`id` statis — pakai `useId` (grup radio bernama sama saling menimpa status checked).
+- Data dev "Kopi Nusantara" berisi 4 karyawan contoh dari verifikasi feature 11 (Rudi Hartono tertaut ke `atasan@exapay.local`, bawahan: Dewi & Rina; Siti tanpa atasan).
+- Belum ada: login karyawan nonaktif tetap bisa masuk portal selama membership ada (putuskan di feature 14/37 — mis. tolak absen untuk karyawan nonaktif); bawahan dari atasan yang dinonaktifkan tetap menunjuk atasan tsb (peringatan/pemindahan belum ada); `PageHeader` di mobile menumpuk tombol di bawah judul (desain menaruhnya di kanan).

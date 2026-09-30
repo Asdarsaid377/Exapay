@@ -1,6 +1,6 @@
-import { MEMBERSHIP_ROLES } from "@exapay/shared";
+import { EMPLOYMENT_STATUSES, GENDERS, MEMBERSHIP_ROLES, PTKP_STATUSES } from "@exapay/shared";
 import { sql } from "drizzle-orm";
-import { boolean, check, index, jsonb, pgEnum, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, foreignKey, index, jsonb, pgEnum, pgTable, smallint, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 // Schema fondasi multi-tenant (feature 02).
 // RLS policy, FORCE RLS, trigger updated_at, dan grant role app_user TIDAK bisa dinyatakan di sini —
@@ -221,7 +221,11 @@ export const departments = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("departments_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`)],
+  (t) => [
+    uniqueIndex("departments_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    // Target FK komposit dari employees — menjamin departemen berasal dari tenant yang sama (FK tidak melewati RLS)
+    unique("departments_tenant_id_id_key").on(t.tenantId, t.id),
+  ],
 );
 
 export const positions = pgTable(
@@ -235,5 +239,83 @@ export const positions = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("positions_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`)],
+  (t) => [
+    uniqueIndex("positions_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    unique("positions_tenant_id_id_key").on(t.tenantId, t.id),
+  ],
+);
+
+export const employmentStatus = pgEnum("employment_status", EMPLOYMENT_STATUSES);
+export const employeeGender = pgEnum("employee_gender", GENDERS);
+export const ptkpStatus = pgEnum("ptkp_status", PTKP_STATUSES);
+
+// Karyawan (feature 11). Semua relasi memakai FK komposit (tenant_id, …) — pemeriksaan FK tidak melewati RLS,
+// jadi tanpa ini karyawan bisa menunjuk departemen/atasan milik tenant lain.
+// NIK, NPWP, nomor rekening: ciphertext AES-256-GCM dari API ("v1:<base64 iv|data|tag>", AAD = tenant + kolom).
+// nik_hash = HMAC-SHA256 NIK (hex) untuk cek duplikat per tenant tanpa mendekripsi.
+// Nonaktif = end_date terisi (tidak ada hard delete — riwayat absensi/payroll tetap merujuk karyawan).
+export const employees = pgTable(
+  "employees",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeNumber: text("employee_number"),
+    fullName: text("full_name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    birthDate: date("birth_date", { mode: "string" }),
+    gender: employeeGender("gender"),
+    departmentId: uuid("department_id").notNull(),
+    positionId: uuid("position_id").notNull(),
+    // Atasan langsung = karyawan lain di tenant yang sama. Atasan (peran) melihat karyawan yang supervisor_id = data karyawan miliknya.
+    supervisorId: uuid("supervisor_id"),
+    // Akun login (anggota usaha) yang tertaut — satu akun untuk satu karyawan per tenant
+    userId: uuid("user_id"),
+    joinDate: date("join_date", { mode: "string" }).notNull(),
+    employmentStatus: employmentStatus("employment_status").notNull(),
+    contractEndDate: date("contract_end_date", { mode: "string" }),
+    probationEndDate: date("probation_end_date", { mode: "string" }),
+    nikEncrypted: text("nik_encrypted"),
+    nikHash: text("nik_hash"),
+    npwpEncrypted: text("npwp_encrypted"),
+    ptkpStatus: ptkpStatus("ptkp_status").notNull(),
+    bankCode: text("bank_code"),
+    bankAccountEncrypted: text("bank_account_encrypted"),
+    bankAccountHolder: text("bank_account_holder"),
+    endDate: date("end_date", { mode: "string" }),
+    endReason: text("end_reason"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("employees_tenant_id_id_key").on(t.tenantId, t.id),
+    uniqueIndex("employees_tenant_number_key").on(t.tenantId, sql`lower(${t.employeeNumber})`).where(sql`${t.employeeNumber} IS NOT NULL`),
+    uniqueIndex("employees_tenant_nik_hash_key").on(t.tenantId, t.nikHash).where(sql`${t.nikHash} IS NOT NULL`),
+    uniqueIndex("employees_tenant_user_key").on(t.tenantId, t.userId).where(sql`${t.userId} IS NOT NULL`),
+    index("employees_tenant_supervisor_idx").on(t.tenantId, t.supervisorId),
+    index("employees_tenant_department_idx").on(t.tenantId, t.departmentId),
+    index("employees_tenant_position_idx").on(t.tenantId, t.positionId),
+    foreignKey({ name: "employees_department_fk", columns: [t.tenantId, t.departmentId], foreignColumns: [departments.tenantId, departments.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({ name: "employees_position_fk", columns: [t.tenantId, t.positionId], foreignColumns: [positions.tenantId, positions.id] }).onDelete("restrict"),
+    foreignKey({ name: "employees_supervisor_fk", columns: [t.tenantId, t.supervisorId], foreignColumns: [t.tenantId, t.id] }).onDelete("restrict"),
+    // Membership dicabut → tautan akun dilepas (migration: ON DELETE SET NULL (user_id) — tenant_id tetap)
+    foreignKey({ name: "employees_membership_fk", columns: [t.tenantId, t.userId], foreignColumns: [memberships.tenantId, memberships.userId] }).onDelete(
+      "set null",
+    ),
+    check("employees_not_own_supervisor", sql`${t.supervisorId} IS NULL OR ${t.supervisorId} <> ${t.id}`),
+    check(
+      "employees_contract_end_date",
+      sql`(${t.employmentStatus} = 'contract') = (${t.contractEndDate} IS NOT NULL) AND (${t.contractEndDate} IS NULL OR ${t.contractEndDate} >= ${t.joinDate})`,
+    ),
+    check(
+      "employees_probation_end_date",
+      sql`(${t.employmentStatus} = 'probation') = (${t.probationEndDate} IS NOT NULL) AND (${t.probationEndDate} IS NULL OR ${t.probationEndDate} >= ${t.joinDate})`,
+    ),
+    check("employees_end_date", sql`${t.endDate} IS NULL OR ${t.endDate} >= ${t.joinDate}`),
+    check("employees_nik_hash_pair", sql`(${t.nikEncrypted} IS NULL) = (${t.nikHash} IS NULL)`),
+  ],
 );

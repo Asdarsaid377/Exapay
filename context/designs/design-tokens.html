@@ -185,6 +185,150 @@
     </div>
   </section>
 
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Komponen baru — halaman Karyawan</h2>
+        <p style="margin:0;font-size:15px;color:#5B4636">Dipakai di <a href="employees.html">Daftar</a>, <a href="employees-new.html">Tambah</a>, dan <a href="employees-detail.html">Detail</a>. Token baru ditandai di @theme di bawah.</p>
+      </div>
+    </div>
+    <div style="position:relative;border-radius:28px;overflow:hidden;background:#FBF8F3;padding:40px;border:1px solid rgba(34,18,8,0.06)">
+      <div style="position:absolute;width:560px;height:560px;border-radius:50%;background:#F7D3B3;top:-200px;left:-120px"></div>
+      <div style="position:absolute;width:520px;height:320px;border-radius:56px;background:#F6B27A;bottom:-60px;right:80px"></div>
+      <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px">
+
+        <div style="grid-column:span 2;padding:24px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:14px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Tabel data kaca <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">data-table</span></h3>
+          <div style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+            <div style="display:grid;grid-template-columns:130px minmax(0,2fr) minmax(0,1.5fr) 110px minmax(0,1.6fr);gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);font:700 12.5px 'DM Sans',sans-serif;color:#5B4636"><span>Varian</span><span>Nama</span><span>Jabatan · Departemen</span><span>Status</span><span>Keterangan</span></div>
+            <div style="display:grid;grid-template-columns:130px minmax(0,2fr) minmax(0,1.5fr) 110px minmax(0,1.6fr);gap:16px;align-items:center;min-height:64px;padding:0 20px">
+              <span style="font:500 12.5px 'DM Mono',monospace;color:#5B4636">row / default</span>
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">DL</span><div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">Dewi Lestari</span><span style="font-size:12.5px;color:#75604D">KN-0012</span></div></div>
+              <span style="font-size:14px">Barista <span style="color:#5B4636">· Operasional</span></span>
+              <span style="justify-self:start;height:24px;padding:0 10px;border-radius:999px;background:rgba(34,18,8,0.07);color:#3D2A1C;font:700 12.5px/24px 'DM Sans',sans-serif">Tetap</span>
+              <span style="font-size:13.5px;color:#5B4636">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px minmax(0,2fr) minmax(0,1.5fr) 110px minmax(0,1.6fr);gap:16px;align-items:center;min-height:64px;padding:0 20px;border-top:1px solid rgba(34,18,8,0.07);background:rgba(242,121,15,0.07)">
+              <span style="font:500 12.5px 'DM Mono',monospace;color:#5B4636">row / hover</span>
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">RW</span><div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">Rina Wulandari</span><span style="font-size:12.5px;color:#75604D">KN-0015</span></div></div>
+              <span style="font-size:14px">Kasir <span style="color:#5B4636">· Operasional</span></span>
+              <span style="justify-self:start;height:24px;padding:0 10px;border-radius:999px;background:rgba(37,99,235,0.1);color:#1D4ED8;font:700 12.5px/24px 'DM Sans',sans-serif">Kontrak</span>
+              <span style="display:flex;align-items:center;gap:7px;font:700 13.5px 'DM Sans',sans-serif;color:#92400E"><span style="width:15px;height:15px;background:#B45309;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat"></span>Kontrak habis 12 Okt 2026</span>
+            </div>
+            <div style="display:grid;grid-template-columns:130px minmax(0,2fr) minmax(0,1.5fr) 110px minmax(0,1.6fr);gap:16px;align-items:center;min-height:64px;padding:0 20px;border-top:1px solid rgba(34,18,8,0.07);color:#75604D">
+              <span style="font:500 12.5px 'DM Mono',monospace;color:#5B4636">row / redup</span>
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.06);display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">EP</span><div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">Eko Prasetyo</span><span style="font-size:12.5px">KN-0020</span></div></div>
+              <span style="font-size:14px">Barista · Operasional</span>
+              <span style="justify-self:start;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:1px solid rgba(34,18,8,0.2);color:#5B4636;font:700 12.5px/22px 'DM Sans',sans-serif">Nonaktif</span>
+              <span style="font-size:13.5px">Keluar 31 Jul 2026</span>
+            </div>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Header tint 3,5% · baris 64px, garis 7% · hover tint aksen 7% · redup: teks text-tertiary, avatar netral, badge outline. Permukaan paling solid (86%) karena berisi data.</span>
+        </div>
+
+        <div style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.8);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:16px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Segmented control <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">segmented</span></h3>
+          <div style="display:flex;align-self:flex-start;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+            <span style="height:36px;padding:0 16px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 14px/36px 'DM Sans',sans-serif">Aktif</span>
+            <span style="height:36px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,0.5);font:500 14px/36px 'DM Sans',sans-serif;color:#221208">Nonaktif · hover</span>
+            <span style="height:36px;padding:0 16px;border-radius:999px;font:500 14px/36px 'DM Sans',sans-serif;color:#5B4636">Semua</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(34,18,8,0.07);color:#3D2A1C;font:700 12.5px/24px 'DM Sans',sans-serif">Tetap</span>
+            <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(37,99,235,0.1);color:#1D4ED8;font:700 12.5px/24px 'DM Sans',sans-serif">Kontrak</span>
+            <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(242,121,15,0.16);color:#8A3A06;font:700 12.5px/24px 'DM Sans',sans-serif">Percobaan</span>
+            <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(21,128,61,0.12);color:#166534;font:700 12.5px/24px 'DM Sans',sans-serif">Aktif</span>
+            <span style="height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:1px solid rgba(34,18,8,0.2);color:#5B4636;font:700 12.5px/22px 'DM Sans',sans-serif">Nonaktif</span>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Track 6% · thumb putih + shadow-segment. Badge status kerja: netral / info / aksen; Nonaktif memakai varian outline agar tak tertukar dengan Tetap.</span>
+        </div>
+
+        <div style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.8);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:16px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Tab bar <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">tabs</span></h3>
+          <div style="display:flex;gap:28px;padding:0 8px;border-bottom:1px solid rgba(34,18,8,0.1)">
+            <span style="height:46px;box-shadow:inset 0 -2px 0 #F2790F;font:700 15px/46px 'DM Sans',sans-serif">Data</span>
+            <span style="font:500 15px/46px 'DM Sans',sans-serif;color:#221208">Gaji · hover</span>
+            <span style="font:500 15px/46px 'DM Sans',sans-serif;color:#5B4636">KPI</span>
+            <span style="font:500 15px/46px 'DM Sans',sans-serif;color:#5B4636">Absensi</span>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Garis bawah 1px 10%; tab aktif garis 2px aksen + teks primary. Dipisahkan jelas dari segmented (filter) agar navigasi ≠ filter.</span>
+          <h3 style="margin:8px 0 0;font:700 16px 'Plus Jakarta Sans',sans-serif">Pagination <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">pagination</span></h3>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13.5px;color:#5B4636">21–40 dari 46 karyawan</span>
+            <div style="display:flex;gap:6px">
+              <span style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:grid;place-items:center"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat"></span></span>
+              <span style="min-width:36px;height:36px;border-radius:999px;font:500 14px/36px 'DM Sans',sans-serif;text-align:center">1</span>
+              <span style="min-width:36px;height:36px;border-radius:999px;background:rgba(242,121,15,0.16);color:#B34C08;font:700 14px/36px 'DM Sans',sans-serif;text-align:center">2</span>
+              <span style="min-width:36px;height:36px;border-radius:999px;font:500 14px/36px 'DM Sans',sans-serif;text-align:center">3</span>
+              <span style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:grid;place-items:center"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="grid-column:span 2;padding:24px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:14px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Filter bar <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">filter-bar</span></h3>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:22px;background:rgba(255,251,245,0.6);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.14)">
+            <div style="width:320px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;gap:10px;font-size:15px;color:#8A7561"><span style="width:18px;height:18px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/search.svg) center / contain no-repeat"></span>Cari nama atau nomor induk</div>
+            <div style="width:190px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:space-between;font-size:15px">Semua departemen<span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+            <div style="width:170px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:space-between;font-size:15px">Semua status<span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><span style="height:36px;padding:0 16px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 14px/36px 'DM Sans',sans-serif">Aktif</span><span style="height:36px;padding:0 16px;font:500 14px/36px 'DM Sans',sans-serif;color:#5B4636">Nonaktif</span><span style="height:36px;padding:0 16px;font:500 14px/36px 'DM Sans',sans-serif;color:#5B4636">Semua</span></div>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Panel kaca (60%) · padding 10 · field 44px. Mobile: cari penuh + segmented + tombol “Filter” yang membuka sheet berisi select.</span>
+        </div>
+
+        <div style="grid-column:span 2;padding:24px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:14px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Section form 2 kolom + field tampilan baca + nilai termasking <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">form-section · read-field · masked-value</span></h3>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+            <section style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:170px minmax(0,1fr);gap:24px">
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+                <h4 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Pajak</h4>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#5B4636"><span style="width:14px;height:14px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat"></span>Disimpan terenkripsi</div>
+                <span style="height:34px;padding:0 14px;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);display:flex;align-items:center;gap:7px;font:700 13px 'Plus Jakarta Sans',sans-serif"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye.svg) center / contain no-repeat"></span>Tampilkan</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:13px;color:#75604D">NIK · tersamar</span><span style="font:500 15px 'DM Sans',sans-serif;letter-spacing:0.04em">7371 •••• •••• 0004</span></div>
+                <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:13px;color:#75604D">Status PTKP · read-field</span><span style="font:500 15px 'DM Sans',sans-serif">TK/0</span></div>
+              </div>
+            </section>
+            <section style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:170px minmax(0,1fr);gap:24px">
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+                <h4 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Pajak</h4>
+                <span style="height:34px;padding:0 14px;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);display:flex;align-items:center;gap:7px;font:700 13px 'Plus Jakarta Sans',sans-serif"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye-off.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye-off.svg) center / contain no-repeat"></span>Sembunyikan</span>
+                <span style="font-size:12.5px;line-height:1.4;color:#75604D">Tercatat di log audit</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:13px;color:#75604D">NIK · terbuka</span><span style="font:500 15px 'DM Sans',sans-serif;letter-spacing:0.04em">7371 0557 0898 0004</span></div>
+                <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:13px;color:#75604D">NIK · mode ubah</span><div style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;display:flex;align-items:center;font-size:15px;color:#8A7561;letter-spacing:0.02em">7371 •••• •••• 0004</div><span style="font-size:12.5px;color:#75604D">Kosongkan jika tidak diubah.</span></div>
+              </div>
+            </section>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Kolom kiri 280px (judul + penjelasan + catatan gembok), kanan grid 2 kolom gap 20/16. Mobile: bertumpuk 1 kolom. Tampilan baca: label text-tertiary 13px, nilai 15px medium. Tombol Tampilkan tidak dirender sama sekali untuk atasan.</span>
+        </div>
+
+        <div style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.8);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:12px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Banner status <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">banner</span></h3>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:rgba(255,253,249,0.94);border:1px solid rgba(34,18,8,0.16)"><span style="width:18px;height:18px;flex:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/user-x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/user-x.svg) center / contain no-repeat"></span><span style="flex:1;font:700 14px 'DM Sans',sans-serif">Nonaktif sejak 30 Sep 2026</span><span style="font:700 13.5px 'DM Sans',sans-serif;color:#B34C08">Aktifkan kembali</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:rgba(254,242,242,0.94);border:1px solid rgba(220,38,38,0.35)"><span style="width:18px;height:18px;flex:none;background:#B91C1C;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-alert.svg) center / contain no-repeat"></span><span style="flex:1;font:700 14px 'DM Sans',sans-serif">Gagal menyimpan — coba lagi</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:rgba(255,247,237,0.92);border:1px solid rgba(217,119,6,0.35)"><span style="width:18px;height:18px;flex:none;background:#B45309;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat"></span><span style="flex:1;font:700 14px 'DM Sans',sans-serif">Kontrak Rina Wulandari habis 12 Okt 2026</span></div>
+          <span style="font-size:13px;color:#5B4636">neutral · danger · warning. Radius 18, border tint 16–35%, ikon status 18px.</span>
+        </div>
+
+        <div style="padding:24px;border-radius:22px;background:rgba(255,253,249,0.8);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:12px">
+          <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Sticky action bar mobile <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">action-bar</span></h3>
+          <div style="width:370px;padding:10px;box-sizing:border-box;border-radius:26px;background:rgba(255,251,245,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 -8px 30px -12px rgba(74,42,16,0.22);display:grid;grid-template-columns:1fr 1.6fr;gap:8px">
+            <span style="height:50px;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);font:700 15px/48px 'Plus Jakarta Sans',sans-serif;text-align:center">Batal</span>
+            <span style="height:50px;border-radius:999px;background:#F2790F;font:700 15px/50px 'Plus Jakarta Sans',sans-serif;text-align:center">Simpan</span>
+          </div>
+          <span style="font-size:13px;color:#5B4636">Menempel 10px dari tepi bawah (+ safe-area), radius-sheet, tombol 50px. Desktop memakai bar yang sama secara inline di akhir form.</span>
+          <h3 style="margin:8px 0 0;font:700 16px 'Plus Jakarta Sans',sans-serif">Tombol bahaya <span style="font:500 13px 'DM Mono',monospace;color:#5B4636">button-danger</span></h3>
+          <div style="display:flex;gap:10px"><span style="height:44px;padding:0 20px;border-radius:999px;background:#DC2626;color:#FFFFFF;font:700 14px/44px 'Plus Jakarta Sans',sans-serif">Nonaktifkan</span><span style="height:44px;padding:0 20px;border-radius:999px;background:#B91C1C;color:#FFFFFF;font:700 14px/44px 'Plus Jakarta Sans',sans-serif">Hover</span></div>
+          <span style="font-size:13px;color:#5B4636">Putih di atas #DC2626 = 4,8:1 (AA). Hanya di dialog konfirmasi.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section style="display:flex;flex-direction:column;gap:16px">
     <h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Tailwind CSS v4 — <span style="font-family:'DM Mono',monospace;font-size:22px">@theme</span></h2>
     <pre style="margin:0;padding:28px 32px;border-radius:22px;background:#221208;color:#FBF8F3;font:400 13.5px/1.65 'DM Mono',monospace;overflow:auto;white-space:pre">{{ themeCss }}</pre>
@@ -292,6 +436,18 @@ class Component extends DCLogic {
   --text-body: 15px;      --text-body--line-height: 1.5;
   --text-small: 13.5px;   --text-small--line-height: 1.4;
   --text-caption: 12.5px; --text-caption--line-height: 1.3;
+
+  /* Baru — halaman Karyawan */
+  --color-neutral-text: #3D2A1C;                   /* badge Tetap */
+  --color-row-hover: rgb(242 121 15 / 0.07);
+  --color-table-head: rgb(34 18 8 / 0.035);
+  --color-segment-track: rgb(34 18 8 / 0.06);
+  --color-scrim: rgb(34 18 8 / 0.32);
+  --color-danger-surface: rgb(254 242 242 / 0.94);
+  --color-warning-surface: rgb(255 247 237 / 0.92);
+  --color-border-strong: rgb(34 18 8 / 0.14);      /* field & tombol sekunder */
+  --shadow-segment: 0 1px 3px rgb(74 42 16 / 0.16);
+  --shadow-dialog: 0 30px 70px -20px rgb(34 18 8 / 0.45);
 }
 
 /* Contoh utilitas kaca */

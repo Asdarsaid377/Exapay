@@ -1,11 +1,11 @@
-import { departments, positions } from "@exapay/db";
+import { departments, employees, positions } from "@exapay/db";
 import type { OrgItem, OrgItemInput, OrgKind, Organization } from "@exapay/shared";
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
-import { isUniqueViolation } from "../../database/errors.js";
+import { foreignKeyViolationConstraint, isUniqueViolation } from "../../database/errors.js";
 import { type Database, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
 
@@ -68,15 +68,30 @@ export class OrganizationService {
     );
   }
 
-  // TODO(feature 11): karyawan mereferensikan departemen/jabatan (FK restrict) — tolak hapus yang masih dipakai dengan pesan jelas
+  // Karyawan mereferensikan departemen/jabatan (FK komposit restrict, migration 0009) — yang masih dipakai tidak bisa dihapus,
+  // termasuk oleh karyawan nonaktif (riwayat tetap merujuk ke sana)
   async remove(user: AuthUser, kind: OrgKind, id: string): Promise<void> {
     const ctx = tenantContextOf(user);
     const table = TABLES[kind];
-    await withTenant(this.db, ctx, async (tx) => {
-      const [row] = await tx.delete(table).where(eq(table.id, id)).returning({ name: table.name });
-      if (!row) throw new NotFoundException(`${LABEL[kind]} tidak ditemukan`);
-      await this.audit.record(tx, ctx, { entity: ENTITY[kind], entityId: id, action: "delete", before: { name: row.name } });
-    });
+    const column = kind === "departments" ? employees.departmentId : employees.positionId;
+    const inUse = () => new ConflictException(`${LABEL[kind]} ini masih dipakai karyawan. Pindahkan karyawan tersebut dulu sebelum menghapus.`);
+    try {
+      await withTenant(this.db, ctx, async (tx) => {
+        const [usage] = await tx.select({ total: count() }).from(employees).where(eq(column, id));
+        if (usage && usage.total > 0) {
+          throw new ConflictException(
+            `${LABEL[kind]} ini masih dipakai ${usage.total} karyawan. Pindahkan karyawan tersebut dulu sebelum menghapus.`,
+          );
+        }
+        const [row] = await tx.delete(table).where(eq(table.id, id)).returning({ name: table.name });
+        if (!row) throw new NotFoundException(`${LABEL[kind]} tidak ditemukan`);
+        await this.audit.record(tx, ctx, { entity: ENTITY[kind], entityId: id, action: "delete", before: { name: row.name } });
+      });
+    } catch (error: unknown) {
+      // Karyawan ditambahkan bersamaan setelah pengecekan di atas
+      if (foreignKeyViolationConstraint(error) !== null) throw inUse();
+      throw error;
+    }
   }
 
   private async list(tx: Transaction, kind: OrgKind): Promise<OrgItem[]> {

@@ -38,14 +38,14 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** semua halaman
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Button)
 - **Pola kelas kunci:** pill `rounded-full font-display text-sm font-bold`, `active:scale-[0.97]`, focus `ring-3 ring-accent/45`; size `md` `h-10 px-5` · `lg` `h-12 px-6`; primary `bg-accent text-on-accent hover:bg-accent-hover` (teks cokelat tua); secondary `border border-border-control bg-control hover:border-border-control-hover hover:bg-surface-solid`; dark `bg-inverse text-on-inverse hover:bg-inverse-hover`; disabled `bg-fill text-text-muted`
-- **Catatan:** props `variant` (primary|secondary|dark), `size` (md|lg), `loading` (spinner, warna varian tetap), `fullWidth`. Default `type="button"`. **`buttonClassName(opts)`** untuk `<Link>` bergaya tombol — jangan salin string kelas. Form auth & aksi mobile pakai `size="lg"`
+- **Catatan:** props `variant` (primary|secondary|dark|danger — danger hanya di dialog konfirmasi berisiko), `size` (md|lg), `loading` (spinner, warna varian tetap), `fullWidth`. Default `type="button"`. **`buttonClassName(opts)`** untuk `<Link>` bergaya tombol — jangan salin string kelas. Form auth & aksi mobile pakai `size="lg"`
 
 ### TextField
 - **Path:** apps/web/components/common/TextField.tsx
 - **Dipakai di:** /login, /forgot-password, /signup
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input)
 - **Pola kelas kunci:** input `h-11 rounded-field border border-border-control bg-control px-3.5 text-body`, focus `bg-surface-solid border-accent ring-3 ring-accent/28`; error `border-danger` + pesan `text-caption text-danger-text`; hint `text-caption text-text-tertiary`; disabled `bg-fill-subtle border-border-subtle text-text-tertiary`; label `text-[13px] font-bold`
-- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint`, `labelAction`, `trailing`. Server-safe (tanpa state)
+- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint` (ReactNode), `requiredMark` (* merah), `labelAction`, `trailing`. Server-safe (tanpa state)
 
 ### PasswordField
 - **Path:** apps/web/components/common/PasswordField.tsx
@@ -177,7 +177,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /admin/tenants, /admin/tenants/[id], /settings/users (peran = neutral, Menunggu = warning, Kedaluwarsa = danger)
 - **Referensi desain:** context/designs/design-tokens.html (badge status) + ui-rules "Badge Status"
 - **Pola kelas kunci:** `inline-flex h-6.5 rounded-full px-2.75 text-[12.5px] font-bold`; tone warning `bg-warning-soft text-warning-text` · success `bg-success-soft text-success-text` · danger `bg-danger-soft text-danger-text` · accent `bg-accent-soft text-accent-deep` · neutral `bg-text-primary/6 text-text-secondary` · info `bg-info-soft text-info-text`
-- **Catatan:** prop `tone` (`BadgeTone`). Tanpa titik/ikon. Pakai untuk semua badge status berikutnya (izin, payroll, predikat KPI)
+- **Catatan:** prop `tone` (`BadgeTone`: warning|success|danger|accent|neutral|info|outline — outline untuk status tidak aktif, mis. karyawan Nonaktif). Tanpa titik/ikon. Pakai untuk semua badge status berikutnya (izin, payroll, predikat KPI)
 
 ### StatTile
 - **Path:** apps/web/components/common/StatTile.tsx
@@ -268,7 +268,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /settings/company
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input) — diturunkan dari TextField
 - **Pola kelas kunci:** sama dengan TextField + `appearance-none pr-10`; ikon ChevronDown `absolute right-3.5 size-4.5 text-text-secondary pointer-events-none`
-- **Catatan:** `<select>` native (aksesibel, picker bawaan HP). Props `id`, `label`, `error?`, `hint?`, children `<option>` (placeholder = option `value=""`). Server-safe
+- **Catatan:** `<select>` native (aksesibel, picker bawaan HP). Props `id`, `label`, `error?`, `hint?` (ReactNode), `requiredMark?`, `labelHidden?` (label sr-only — baris filter), children `<option>` (placeholder = option `value=""`). Server-safe
 
 ### TextAreaField
 - **Path:** apps/web/components/common/TextAreaField.tsx
@@ -290,3 +290,52 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 10, izin user) — pola card daftar feature 08 + Dialog + DropdownMenu
 - **Pola kelas kunci:** halaman `grid items-start lg:grid-cols-2 gap-4 lg:gap-5`; card `glass-strong rounded-card` (tanpa overflow-hidden); header `px-5 pt-5 pb-3 lg:px-6` judul `text-h2` + jumlah `font-medium text-text-tertiary tabular-nums` + penjelasan `text-small`, tombol secondary "Tambah" di kanan (hanya jika daftar tidak kosong); baris `min-h-15 border-t border-border-subtle px-5 py-2.5 lg:px-6` nama `text-[15px] font-bold` + caption tanggal; kosong = `EmptyState surface="none"` + CTA primary "Tambah <nama>"
 - **Catatan:** OrgListCard server component (props `kind`, `items`, `canManage` — atasan tanpa aksi). Menu aksi = pola MemberActions (Ubah nama / Hapus `text-danger-text`). OrgItemFormDialog dipakai untuk tambah (tanpa `item`) & ubah nama (`item`); konfirmasi hapus Button `dark`. Teks per daftar di `lib/organizationLabels.ts`. Pola acuan untuk daftar master sederhana berikutnya
+
+### SegmentedControl
+- **Path:** apps/web/components/common/SegmentedControl.tsx
+- **Dipakai di:** /employees (filter Aktif/Nonaktif/Semua), form karyawan (status kerja)
+- **Referensi desain:** context/designs/design-tokens.html ("segmented"), employees.html
+- **Pola kelas kunci:** track `rounded-full bg-segment-track p-1 gap-0.5`; opsi `h-9 (lg: h-10) px-4 rounded-full text-sm`; terpilih `bg-surface-solid font-bold shadow-segment`, lainnya `font-medium text-text-secondary`
+- **Catatan:** client, generik `<T extends string>`. Radio group (panah kiri/kanan, satu tab stop). `fullWidth` = kolom sama rata (mobile). Untuk **filter/pilihan**, bukan navigasi (navigasi antar-bagian = tab bar)
+
+### FormSection
+- **Path:** apps/web/components/common/FormSection.tsx
+- **Dipakai di:** /employees/new, /employees/[id] (tampilan baca & mode ubah)
+- **Referensi desain:** context/designs/employees-new.html, employees-detail.html ("form-section")
+- **Pola kelas kunci:** `glass-strong rounded-card p-4.5 lg:p-7 grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10`; judul `font-display text-base lg:text-[17px] font-bold`; isi field `grid gap-x-4 gap-y-5 sm:grid-cols-2`
+- **Catatan:** server-safe. Props `title`, `description?`, `lockNote?` (ikon gembok — data sensitif), `aside?` (mis. tombol Tampilkan; mobile di kanan judul — dirender dua kali, jadi harus stateless). Berbeda dengan section di CompanyProfileForm (section di dalam satu card): di sini **tiap section = card sendiri** — pola untuk form panjang
+
+### Combobox
+- **Path:** apps/web/components/common/Combobox.tsx
+- **Dipakai di:** form karyawan (Nama bank)
+- **Referensi desain:** context/designs/employees-new.html ("Combobox bank")
+- **Pola kelas kunci:** input = TextField + ikon Search `pl-10.5`; daftar `glass-overlay rounded-[18px] p-2 max-h-72`; opsi `min-h-11 rounded-inner px-3` (label bold + description caption), aktif `bg-accent/10`, terpilih ikon Check `text-accent-strong`
+- **Catatan:** client. Props `options {value,label,description?}`, `value: string|null`, `onChange`. ARIA combobox (panah, Enter, Escape), "Kosongkan pilihan". Untuk daftar panjang (>10) yang perlu dicari; daftar pendek tetap SelectField
+
+### Banner
+- **Path:** apps/web/components/common/Banner.tsx
+- **Dipakai di:** form karyawan (error simpan / "N isian perlu diperbaiki"), detail karyawan (Nonaktif sejak …)
+- **Referensi desain:** context/designs/design-tokens.html ("banner")
+- **Pola kelas kunci:** `rounded-[18px] border px-4.5 py-3.5`; neutral `border-border-neutral bg-surface-solid/92`, danger `border-danger-border bg-danger-surface`, warning `border-warning-border bg-warning-surface`; ikon 20px, judul `text-[14.5px] font-bold`
+- **Catatan:** server-safe. Props `tone`, `title`, `description?`, `action?`, `icon?`. Selebar konten halaman; FormAlert tetap untuk pesan kecil di dalam form/dialog
+
+### EmployeeTable / EmployeeFilters / EmployeeAvatar
+- **Path:** apps/web/components/employees/EmployeeTable.tsx, EmployeeFilters.tsx, EmployeeAvatar.tsx
+- **Dipakai di:** /employees
+- **Referensi desain:** context/designs/employees.html ("data-table", "filter-bar")
+- **Pola kelas kunci:** tabel `glass-data rounded-card`, thead `bg-table-head h-11` teks `text-caption font-bold text-text-secondary whitespace-nowrap`, baris `h-16 border-t hover:bg-row-hover` (tautan menutupi baris), baris nonaktif `text-text-tertiary` + avatar netral + Badge outline; footer tabel = Pagination / "Menampilkan x–y dari n"; mobile = card `glass-data rounded-[20px]`. Filter desktop = panel `glass rounded-card p-2.5` (cari + 2 SelectField `labelHidden` + SegmentedControl), mobile = cari + segmented + tombol Filter → Dialog
+- **Catatan:** EmployeeTable server-safe, prop `compact` = tampilan atasan (Nama, Jabatan, Status, Tanggal masuk). Kolom Keterangan dari `employeeNote()` (kontrak/percobaan ≤30 hari = peringatan). Filter di URL (`employeesHref` di lib/employeeLabels.ts — **jangan ekspor helper dari modul "use client" untuk dipanggil server**). EmployeeAvatar = inisial di `bg-shape-sand` (beda dengan UserAvatar gelap untuk akun login). **Pola acuan tabel data berikutnya** (rekap absensi, payroll)
+
+### EmployeeForm
+- **Path:** apps/web/components/employees/EmployeeForm.tsx
+- **Dipakai di:** /employees/new, /employees/[id] (mode ubah)
+- **Referensi desain:** context/designs/employees-new.html, employees-detail.html (mode ubah)
+- **Pola kelas kunci:** 5 FormSection; Banner danger di atas saat gagal; bar aksi `glass-data sticky bottom-2.5 rounded-[26px] p-2.5` (mobile, grid Batal 1fr / Simpan 1.6fr, tombol lg) → `lg:static lg:rounded-card` inline dengan catatan di kiri
+- **Catatan:** client. Props `id` (form id — tombol di header memakai `form={id}`), `options`, `employee?` (ada = ubah), `onCancel?`, `onSaved?`, `onSubmittingChange?`. Field sensitif **tidak pernah diisi ulang**: placeholder = nilai tersamar + hint "Kosongkan jika tidak diubah"
+
+### EmployeeDetailView / EmployeeDataSections / DeactivateEmployeeDialog
+- **Path:** apps/web/components/employees/EmployeeDetailView.tsx, EmployeeDataSections.tsx, DeactivateEmployeeDialog.tsx
+- **Dipakai di:** /employees/[id]
+- **Referensi desain:** context/designs/employees-detail.html
+- **Pola kelas kunci:** header avatar `lg` + nama `text-[22px] lg:text-h1` + meta + Badge; aksi Ubah (secondary) + ⋯ DropdownMenu (item bahaya `text-danger-text`); **tab bar** `border-b border-text-primary/10 gap-7`, tab `h-11.5 text-[15px]`, aktif `font-bold shadow-[inset_0_-2px_0_var(--color-accent)]`; field baca `dt text-[13px] text-text-tertiary` / `dd text-[15px] font-medium`, nilai tersamar `tracking-[0.04em]`
+- **Catatan:** client. Tab Gaji/KPI/Absensi = EmptyState "Segera hadir" (isi di feature 28/19–22/16). Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`

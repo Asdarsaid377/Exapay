@@ -36,3 +36,31 @@ export function formatDateTime(date: Date | string, timeZone: string = DEFAULT_T
     new Date(date),
   );
 }
+
+// Tanggal tanpa jam dari API (YYYY-MM-DD) — dibaca sebagai tanggal kalender, bukan waktu (tanpa geser zona waktu)
+// "3 Feb 2024"
+export function formatIsoDate(isoDate: string): string {
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+// Tanggal hari ini (YYYY-MM-DD) di zona waktu usaha
+export function todayIso(timeZone: string = DEFAULT_TIME_ZONE): string {
+  return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone }).format(new Date());
+}
+
+// Selisih hari kalender dari → ke (keduanya YYYY-MM-DD)
+export function daysBetween(fromIso: string, toIso: string): number {
+  return Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000);
+}
+
+// Masa kerja "2 tahun 7 bulan" dari tanggal masuk sampai hari ini (atau tanggal keluar)
+export function formatTenure(startIso: string, endIso: string): string {
+  const [sy = 0, sm = 0, sd = 0] = startIso.split("-").map(Number);
+  const [ey = 0, em = 0, ed = 0] = endIso.split("-").map(Number);
+  let months = (ey - sy) * 12 + (em - sm) - (ed < sd ? 1 : 0);
+  if (months < 0) return "Belum mulai bekerja";
+  const years = Math.floor(months / 12);
+  months %= 12;
+  if (years === 0 && months === 0) return "Kurang dari 1 bulan";
+  return [years ? `${years} tahun` : "", months ? `${months} bulan` : ""].filter(Boolean).join(" ");
+}

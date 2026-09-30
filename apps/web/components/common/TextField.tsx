@@ -4,14 +4,16 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "id"> & {
   id: string;
   label: string;
   error?: string;
-  hint?: string;
+  hint?: ReactNode;
+  // Tanda wajib diisi (* merah) setelah label
+  requiredMark?: boolean;
   // Aksi kecil di kanan label (mis. tautan "Lupa password?")
   labelAction?: ReactNode;
   // Elemen di dalam input sebelah kanan (mis. tombol tampilkan password)
   trailing?: ReactNode;
 };
 
-export function TextField({ id, label, error, hint, labelAction, trailing, className, ...rest }: Props) {
+export function TextField({ id, label, error, hint, requiredMark = false, labelAction, trailing, className, ...rest }: Props) {
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   const inputClasses = [
     "h-11 w-full rounded-field border bg-control px-3.5 text-body text-text-primary placeholder:text-text-muted transition-[border-color,box-shadow,background-color]",
@@ -27,6 +29,7 @@ export function TextField({ id, label, error, hint, labelAction, trailing, class
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="text-[13px] font-bold text-text-primary">
           {label}
+          {requiredMark ? <span className="text-danger-text"> *</span> : null}
         </label>
         {labelAction}
       </div>
