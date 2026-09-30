@@ -57,6 +57,13 @@
       "when": 1790756226678,
       "tag": "0007_seed_regions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790756986224,
+      "tag": "0008_departments_positions",
+      "breakpoints": true
     }
   ]
 }

@@ -63,14 +63,14 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### EmptyState
 - **Path:** apps/web/components/common/EmptyState.tsx
-- **Dipakai di:** /dashboard, /me, halaman "Segera hadir"
+- **Dipakai di:** /dashboard, /me, halaman "Segera hadir", /organization (surface none)
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (state empty — tindakan tertunda)
 - **Pola kelas kunci:** card `glass-strong` (atau `surface-solid`) `rounded-card px-6 py-12 text-center`; ikon status `size-7` tanpa kotak (`text-accent-strong` / `text-success`); judul `font-display text-base font-bold`; teks `text-sm text-text-secondary`
-- **Catatan:** props `icon`, `iconTone` (accent|success), `title`, `description`, `action`, `surface` (glass|solid — portal di luar kartu utama pakai solid). CTA pakai `buttonClassName`
+- **Catatan:** props `icon`, `iconTone` (accent|success), `title`, `description`, `action`, `surface` (glass|solid|none — portal di luar kartu utama pakai solid; `none` = di dalam card lain, `py-10` tanpa latar, judul h3). CTA pakai `buttonClassName` atau tombol client
 
 ### DropdownMenu
 - **Path:** apps/web/components/common/DropdownMenu.tsx
-- **Dipakai di:** TenantSwitcher, UserMenu, MemberActions
+- **Dipakai di:** TenantSwitcher, UserMenu, MemberActions, OrgItemActions
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Dropdown)
 - **Pola kelas kunci:** panel `glass-overlay absolute top-full z-30 mt-2 rounded-[18px] p-2 flex flex-col gap-0.5`; item di dalam: `rounded-inner` hover `bg-accent/10`, terpilih `bg-accent/10` + Check `text-accent-strong`; pemisah `mx-2 border-t border-border-subtle`
 - **Catatan:** props `label` (aria), `trigger`, `triggerClassName`, `align` start|end, `panelClassName` (lebar, default `w-80`), `children(close)`. Tertutup saat klik di luar / Escape. Pakai ini untuk dropdown berikutnya
@@ -283,3 +283,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 09, izin user)
 - **Pola kelas kunci:** form = card `glass-strong rounded-card p-5 lg:p-7`; section `grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-8 border-t border-border-subtle py-6 first:border-t-0 first:pt-0` (kiri judul `text-h2` + penjelasan `text-small`, kanan field `gap-4`); pasangan field `grid sm:grid-cols-2 gap-4`; footer `border-t pt-6`: FormAlert hasil + caption "Terakhir diubah" `text-caption text-text-tertiary` + Button primary
 - **Catatan:** client. Props `profile`, `provinces`. Provinsi → kab/kota bertahap (ganti provinsi mengosongkan kota). NPWP ditampilkan `formatNpwp`. **Pola acuan form pengaturan berikutnya** (/settings/attendance, /settings/kpi, /settings/salary-components) — ekstrak `SettingsSection` saat dipakai kedua kalinya
+
+### OrgListCard / AddOrgItemButton / OrgItemActions / OrgItemFormDialog / DeleteOrgItemDialog
+- **Path:** apps/web/components/organization/OrgListCard.tsx, AddOrgItemButton.tsx, OrgItemActions.tsx, OrgItemFormDialog.tsx, DeleteOrgItemDialog.tsx
+- **Dipakai di:** /organization
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 10, izin user) — pola card daftar feature 08 + Dialog + DropdownMenu
+- **Pola kelas kunci:** halaman `grid items-start lg:grid-cols-2 gap-4 lg:gap-5`; card `glass-strong rounded-card` (tanpa overflow-hidden); header `px-5 pt-5 pb-3 lg:px-6` judul `text-h2` + jumlah `font-medium text-text-tertiary tabular-nums` + penjelasan `text-small`, tombol secondary "Tambah" di kanan (hanya jika daftar tidak kosong); baris `min-h-15 border-t border-border-subtle px-5 py-2.5 lg:px-6` nama `text-[15px] font-bold` + caption tanggal; kosong = `EmptyState surface="none"` + CTA primary "Tambah <nama>"
+- **Catatan:** OrgListCard server component (props `kind`, `items`, `canManage` — atasan tanpa aksi). Menu aksi = pola MemberActions (Ubah nama / Hapus `text-danger-text`). OrgItemFormDialog dipakai untuk tambah (tanpa `item`) & ubah nama (`item`); konfirmasi hapus Button `dark`. Teks per daftar di `lib/organizationLabels.ts`. Pola acuan untuk daftar master sederhana berikutnya

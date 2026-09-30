@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 2 — Master Data
-**Terakhir selesai:** 09 Profil Usaha (2026-09-30)
-**Berikutnya:** 10 Departemen & Jabatan
+**Terakhir selesai:** 10 Departemen & Jabatan (2026-09-30)
+**Berikutnya:** 11 Daftar & Detail Karyawan
 
 ---
 
@@ -26,7 +26,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ### Phase 2 — Master Data
 - [x] 09 Profil Usaha
-- [ ] 10 Departemen & Jabatan
+- [x] 10 Departemen & Jabatan
 - [ ] 11 Daftar & Detail Karyawan
 - [ ] 12 Impor Karyawan dari Excel
 
@@ -138,6 +138,8 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — **Profil usaha (feature 09):** kolom di `tenants` (migration `0006`): `address`, `npwp` (hanya digit, CHECK 15/16 digit — **tidak dienkripsi**, identitas pajak perusahaan bukan data pribadi; keputusan user), `regency_code` (FK `regencies`), `payday` smallint (CHECK 1–31; bulan lebih pendek = hari terakhir bulan). Semua nullable. `GET`/`PUT /company` (owner/admin); audit `tenant/update_profile` hanya kolom yang berubah, tanpa perubahan = tanpa audit. Nama usaha berubah → web `revalidatePath("/", "layout")` agar header ikut.
 - 2026-09-30 — **Referensi wilayah** (keputusan user: tabel, bukan teks bebas): `provinces` (kode 2 digit + `time_zone` IANA WIB/WITA/WIT) & `regencies` (kode `PP.KK`) — data platform tanpa `tenant_id`, RLS + FORCE + policy `reference_read` (SELECT semua), app_user hanya SELECT. Seed migration `0007`: 38 provinsi + 514 kab/kota Kepmendagri 300.2.2-2138/2025 (sumber `cahyadsn/wilayah`, MIT). Seed melepas FORCE sementara (policy hanya SELECT, FORCE berlaku juga untuk app_owner). Perubahan wilayah = migration baru. `GET /regions` (cukup login) dibaca tanpa `withTenant`. `time_zone` belum dipakai — sambungkan ke `lib/datetime.ts` di feature 13.
 - 2026-09-30 — `/settings/company` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user). Pola form pengaturan: card `glass-strong` dengan section 2 kolom (judul+penjelasan | field). Komponen dasar baru `SelectField` (select native) & `TextAreaField`. `apiRequest` kini mendukung `PUT`.
+- 2026-09-30 — **Departemen & jabatan (feature 10):** tabel `departments` & `positions` (migration `0008`) — **dua daftar independen** (keputusan user; karyawan feature 11 memilih satu dari masing-masing, template KPI feature 18 per jabatan tanpa duplikasi). Nama unik per tenant `lower(name)` (index unik juga melayani filter tenant — tanpa index `tenant_id` terpisah) → 409. `GET /organization` (owner/admin/atasan, `canManage`), `POST/PUT/DELETE /organization/:kind(/:id)` (owner/admin), `:kind` tidak dikenal → 404. Satu implementasi service untuk kedua tabel (bentuk identik). Audit `department|position` create/rename/delete. **Hapus = hard delete; feature 11 wajib menambah FK restrict dari karyawan + tolak hapus yang masih dipakai dengan pesan jelas (TODO di `organization.service.ts`).**
+- 2026-09-30 — Menu Organisasi untuk atasan: **hanya melihat** (keputusan user) — tanpa tombol tambah/aksi. `/organization` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user). `EmptyState` punya `surface="none"` (empty state di dalam card lain, judul h3). `apiRequest` mendukung `DELETE`.
 - 2026-09-30 — Super-admin production dibuat dengan `pnpm --filter @exapay/api admin:create-super-admin -- --email … --name …` (password dari env `SUPER_ADMIN_PASSWORD`, role `app_owner`; akun lama cukup dipromosikan).
 
 ---
@@ -160,7 +162,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 83 test per feature 09.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 87 test per feature 10.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
 - Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.

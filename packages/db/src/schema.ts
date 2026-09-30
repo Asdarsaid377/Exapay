@@ -207,3 +207,33 @@ export const invitations = pgTable(
     index("invitations_tenant_email_idx").on(t.tenantId, sql`lower(${t.email})`),
   ],
 );
+
+// Struktur organisasi (feature 10). Departemen & jabatan adalah dua daftar independen per tenant;
+// karyawan (feature 11) memilih satu dari masing-masing. Nama unik per tenant, tidak peka huruf besar/kecil.
+export const departments = pgTable(
+  "departments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("departments_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`)],
+);
+
+export const positions = pgTable(
+  "positions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("positions_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`)],
+);

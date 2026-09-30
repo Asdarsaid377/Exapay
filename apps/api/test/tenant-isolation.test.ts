@@ -97,10 +97,12 @@ describe("role runtime app_user", () => {
     );
     expect(rows.map((r) => r.relname).sort()).toEqual([
       "audit_logs",
+      "departments",
       "email_verification_tokens",
       "invitations",
       "memberships",
       "password_reset_tokens",
+      "positions",
       "provinces",
       "refresh_tokens",
       "regencies",
