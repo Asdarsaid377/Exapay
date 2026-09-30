@@ -101,7 +101,9 @@ describe("role runtime app_user", () => {
       "invitations",
       "memberships",
       "password_reset_tokens",
+      "provinces",
       "refresh_tokens",
+      "regencies",
       "tenants",
       "users",
     ]);

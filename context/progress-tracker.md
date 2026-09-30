@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 2 — Master Data
-**Terakhir selesai:** 08 Undang Pengguna & Kelola Peran (2026-09-30)
-**Berikutnya:** 09 Profil Usaha
+**Terakhir selesai:** 09 Profil Usaha (2026-09-30)
+**Berikutnya:** 10 Departemen & Jabatan
 
 ---
 
@@ -25,7 +25,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 08 Undang Pengguna & Kelola Peran
 
 ### Phase 2 — Master Data
-- [ ] 09 Profil Usaha
+- [x] 09 Profil Usaha
 - [ ] 10 Departemen & Jabatan
 - [ ] 11 Daftar & Detail Karyawan
 - [ ] 12 Impor Karyawan dari Excel
@@ -135,6 +135,9 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Query `memberships` wajib difilter `tenant_id` walau ada RLS: policy `own_memberships_select` juga memperlihatkan membership user sendiri di usaha lain.
 - 2026-09-30 — Cabut akses = hapus membership (akun tetap, bisa diundang lagi). Sesi pengguna tsb kehilangan usaha saat refresh berikutnya; access token lama masih berlaku ≤ 15 menit untuk endpoint lain (sama dengan tenant nonaktif). Undang email yang sudah anggota → 409; undang ulang email tertunda menggantikan undangan lama (cooldown 60 detik); admin tidak bisa menimpa/mengelola undangan owner/admin. `InvitationsService.create` kini mengembalikan `{ id, token }`.
 - 2026-09-30 — `/settings/users` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola feature 07 (TenantTable, Dialog, Badge). `Dialog` kini `text-left` (dialog di dalam sel tabel rata kanan ikut mewarisi perataan).
+- 2026-09-30 — **Profil usaha (feature 09):** kolom di `tenants` (migration `0006`): `address`, `npwp` (hanya digit, CHECK 15/16 digit — **tidak dienkripsi**, identitas pajak perusahaan bukan data pribadi; keputusan user), `regency_code` (FK `regencies`), `payday` smallint (CHECK 1–31; bulan lebih pendek = hari terakhir bulan). Semua nullable. `GET`/`PUT /company` (owner/admin); audit `tenant/update_profile` hanya kolom yang berubah, tanpa perubahan = tanpa audit. Nama usaha berubah → web `revalidatePath("/", "layout")` agar header ikut.
+- 2026-09-30 — **Referensi wilayah** (keputusan user: tabel, bukan teks bebas): `provinces` (kode 2 digit + `time_zone` IANA WIB/WITA/WIT) & `regencies` (kode `PP.KK`) — data platform tanpa `tenant_id`, RLS + FORCE + policy `reference_read` (SELECT semua), app_user hanya SELECT. Seed migration `0007`: 38 provinsi + 514 kab/kota Kepmendagri 300.2.2-2138/2025 (sumber `cahyadsn/wilayah`, MIT). Seed melepas FORCE sementara (policy hanya SELECT, FORCE berlaku juga untuk app_owner). Perubahan wilayah = migration baru. `GET /regions` (cukup login) dibaca tanpa `withTenant`. `time_zone` belum dipakai — sambungkan ke `lib/datetime.ts` di feature 13.
+- 2026-09-30 — `/settings/company` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user). Pola form pengaturan: card `glass-strong` dengan section 2 kolom (judul+penjelasan | field). Komponen dasar baru `SelectField` (select native) & `TextAreaField`. `apiRequest` kini mendukung `PUT`.
 - 2026-09-30 — Super-admin production dibuat dengan `pnpm --filter @exapay/api admin:create-super-admin -- --email … --name …` (password dari env `SUPER_ADMIN_PASSWORD`, role `app_owner`; akun lama cukup dipromosikan).
 
 ---
@@ -157,12 +160,12 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 78 test per feature 08.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 83 test per feature 09.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
 - Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.
 - `db.execute()` (SQL mentah Drizzle) mengembalikan `timestamptz` sebagai string, bukan `Date`.
 - Test e2e: jangan `await` request supertest lain di dalam argumen request yang sedang dibangun (`.set(..., await tokenOf())`) — keduanya berbagi `http.Server` dan request pertama kena `ECONNREFUSED`. Hitung token lebih dulu.
 - Headless Chrome (verifikasi visual): halaman auth tidak pernah memicu event `load` (gambar tersembunyi AuthShell) — pakai `waitUntil: "commit"` + jeda hydration.
-- Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07, dan akun `*@contoh.local` tanpa usaha dari verifikasi feature 08 — boleh diabaikan.
+- Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07, dan akun `*@contoh.local` tanpa usaha dari verifikasi feature 08 — boleh diabaikan. Profil "Kopi Nusantara" berisi data contoh (Kota Makassar, gajian tgl 25, NPWP contoh) dari verifikasi feature 09.
 - Component yang dirender dua kali (tabel desktop + daftar mobile) tidak boleh memakai `name`/`id` statis — pakai `useId` (grup radio bernama sama saling menimpa status checked).

@@ -1,6 +1,6 @@
 import { MEMBERSHIP_ROLES } from "@exapay/shared";
 import { sql } from "drizzle-orm";
-import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, jsonb, pgEnum, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 // Schema fondasi multi-tenant (feature 02).
 // RLS policy, FORCE RLS, trigger updated_at, dan grant role app_user TIDAK bisa dinyatakan di sini —
@@ -11,14 +11,52 @@ const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull(
 
 export const membershipRole = pgEnum("membership_role", MEMBERSHIP_ROLES);
 
-export const tenants = pgTable("tenants", {
-  id: uuid("id").primaryKey().defaultRandom(),
+// Data referensi wilayah (feature 09) — tingkat platform, bukan data tenant: tanpa tenant_id, baca-saja untuk app_user.
+// Kode & nama sesuai Kepmendagri No 300.2.2-2138 Tahun 2025 (di-seed lewat migration 0007).
+export const provinces = pgTable("provinces", {
+  // Kode Kemendagri 2 digit, mis. "73"
+  code: text("code").primaryKey(),
   name: text("name").notNull(),
-  // Diisi super-admin (feature 07): anggota tenant tidak bisa login. Hanya super-admin yang boleh mengubah (trigger).
-  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
+  // Zona waktu IANA provinsi (WIB Asia/Jakarta · WITA Asia/Makassar · WIT Asia/Jayapura)
+  timeZone: text("time_zone").notNull(),
 });
+
+export const regencies = pgTable(
+  "regencies",
+  {
+    // Kode Kemendagri "PP.KK", mis. "73.71" (Kota Makassar)
+    code: text("code").primaryKey(),
+    provinceCode: text("province_code")
+      .notNull()
+      .references(() => provinces.code, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+  },
+  (t) => [index("regencies_province_code_idx").on(t.provinceCode)],
+);
+
+export const tenants = pgTable(
+  "tenants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    // Diisi super-admin (feature 07): anggota tenant tidak bisa login. Hanya super-admin yang boleh mengubah (trigger).
+    deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+    // Profil usaha (feature 09) — null sampai diisi owner/admin di /settings/company
+    address: text("address"),
+    // NPWP badan, hanya digit (15 lama / 16 digit sejak 2024). Identitas pajak perusahaan — tidak dienkripsi (bukan data pribadi).
+    npwp: text("npwp"),
+    // Kota/kabupaten lokasi usaha — dasar UMK (feature 34)
+    regencyCode: text("regency_code").references(() => regencies.code, { onDelete: "restrict" }),
+    // Tanggal gajian 1–31; bulan yang lebih pendek memakai hari terakhir bulan itu
+    payday: smallint("payday"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("tenants_npwp_format", sql`${t.npwp} ~ '^[0-9]{15,16}$'`),
+    check("tenants_payday_range", sql`${t.payday} between 1 and 31`),
+  ],
+);
 
 // Akun platform (bukan tabel tenant): satu user bisa tergabung di beberapa tenant lewat memberships.
 export const users = pgTable(

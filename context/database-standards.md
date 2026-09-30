@@ -105,6 +105,12 @@ Aturan:
 
 ---
 
+## Data Referensi Platform
+
+- Tabel referensi lintas tenant (mis. `provinces`, `regencies`; nanti UMK/TER/BPJS di feature 24) **tanpa** `tenant_id`, tetapi tetap RLS + FORCE dengan policy `reference_read` (`FOR SELECT USING (true)`) dan grant `SELECT` saja ke app_user — aplikasi tidak bisa mengubahnya
+- Isi/ubah data hanya lewat migration (dijalankan app_owner). Karena FORCE berlaku juga untuk app_owner dan policy hanya SELECT, migration seed melepas FORCE sementara (`NO FORCE` → INSERT → `FORCE`) dalam transaksi migration yang sama
+- Dibaca tanpa `withTenant` (bukan data tenant) — beri komentar di service
+
 ## Uang & Regulasi
 
 - Kolom uang: `numeric(18,2)` (atau presisi lebih jika perlu untuk perhitungan antara). **Tidak pernah** `float`/`real`/`double precision`

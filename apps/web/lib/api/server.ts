@@ -8,7 +8,7 @@ export type ApiResult<T> =
   | { ok: false; status: number; error: string; code?: ApiErrorCode; setCookies: string[] };
 
 type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT";
   body?: unknown;
   // Nilai header Cookie yang diteruskan ke API (sesi user)
   cookieHeader?: string;

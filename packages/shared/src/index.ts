@@ -71,3 +71,16 @@ export {
   type TenantPendingInvitation,
   type TenantUsersOverview,
 } from "./users.js";
+export {
+  companyProfileSchema,
+  formatNpwp,
+  PAYDAY_MAX,
+  PAYDAY_MIN,
+  regionProvincesSchema,
+  updateCompanyProfileSchema,
+  type CompanyProfile,
+  type CompanyRegency,
+  type RegionProvince,
+  type UpdateCompanyProfile,
+  type UpdateCompanyProfileInput,
+} from "./company.js";

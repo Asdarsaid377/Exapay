@@ -262,3 +262,24 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 08, izin user) — pola card daftar + ResendOwnerInvitationButton
 - **Pola kelas kunci:** card `glass-strong rounded-card` + judul `text-h2`; baris `border-t border-border-subtle px-5 py-4 lg:flex-row lg:justify-between`; nama `text-[15px] font-bold` + Badge peran (neutral) + status (warning "Menunggu" / danger "Kedaluwarsa"); caption "Dikirim … oleh … · berlaku sampai …"; aksi dua Button secondary (Kirim ulang, Batalkan) + FormAlert hasil
 - **Catatan:** undangan yang tidak boleh dikelola (`canManage` false, mis. admin melihat undangan owner) menampilkan caption "Hanya pemilik yang bisa mengelola undangan ini". Batalkan lewat Dialog konfirmasi
+
+### SelectField
+- **Path:** apps/web/components/common/SelectField.tsx
+- **Dipakai di:** /settings/company
+- **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input) — diturunkan dari TextField
+- **Pola kelas kunci:** sama dengan TextField + `appearance-none pr-10`; ikon ChevronDown `absolute right-3.5 size-4.5 text-text-secondary pointer-events-none`
+- **Catatan:** `<select>` native (aksesibel, picker bawaan HP). Props `id`, `label`, `error?`, `hint?`, children `<option>` (placeholder = option `value=""`). Server-safe
+
+### TextAreaField
+- **Path:** apps/web/components/common/TextAreaField.tsx
+- **Dipakai di:** /settings/company (alamat)
+- **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input) — diturunkan dari TextField
+- **Pola kelas kunci:** sama dengan TextField, `min-h-24 py-2.5 resize-y`, default `rows={3}`
+- **Catatan:** props sama dengan TextField (tanpa `trailing`/`labelAction`). Server-safe
+
+### CompanyProfileForm
+- **Path:** apps/web/components/company/CompanyProfileForm.tsx
+- **Dipakai di:** /settings/company
+- **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 09, izin user)
+- **Pola kelas kunci:** form = card `glass-strong rounded-card p-5 lg:p-7`; section `grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-8 border-t border-border-subtle py-6 first:border-t-0 first:pt-0` (kiri judul `text-h2` + penjelasan `text-small`, kanan field `gap-4`); pasangan field `grid sm:grid-cols-2 gap-4`; footer `border-t pt-6`: FormAlert hasil + caption "Terakhir diubah" `text-caption text-text-tertiary` + Button primary
+- **Catatan:** client. Props `profile`, `provinces`. Provinsi → kab/kota bertahap (ganti provinsi mengosongkan kota). NPWP ditampilkan `formatNpwp`. **Pola acuan form pengaturan berikutnya** (/settings/attendance, /settings/kpi, /settings/salary-components) — ekstrak `SettingsSection` saat dipakai kedua kalinya
