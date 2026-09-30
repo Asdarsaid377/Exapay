@@ -3,6 +3,9 @@ import {
   ATTENDANCE_ALLOWANCE_MODES,
   EMPLOYMENT_STATUSES,
   GENDERS,
+  KPI_INDICATOR_TYPES,
+  KPI_SYSTEM_METRICS,
+  KPI_TARGET_PERIODS,
   LEAVE_ATTACHMENT_TYPES,
   LEAVE_REQUEST_STATUSES,
   LATE_DEDUCTION_MODES,
@@ -263,6 +266,28 @@ export const departments = pgTable(
   ],
 );
 
+// Template KPI (feature 18) — didefinisikan sebelum positions karena jabatan menunjuk template yang dipakainya.
+// builtin_key = asal template bawaan ("sales", "kasir", …) agar bawaan yang terhapus bisa ditambahkan kembali; salinan = null.
+export const kpiTemplates = pgTable(
+  "kpi_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    builtinKey: text("builtin_key"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("kpi_templates_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    uniqueIndex("kpi_templates_tenant_builtin_key").on(t.tenantId, t.builtinKey).where(sql`${t.builtinKey} IS NOT NULL`),
+    unique("kpi_templates_tenant_id_id_key").on(t.tenantId, t.id),
+  ],
+);
+
 export const positions = pgTable(
   "positions",
   {
@@ -271,12 +296,65 @@ export const positions = pgTable(
       .notNull()
       .references(() => tenants.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    // Template KPI jabatan ini (feature 18) — satu jabatan maksimal satu template, satu template bisa banyak jabatan
+    kpiTemplateId: uuid("kpi_template_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     uniqueIndex("positions_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
     unique("positions_tenant_id_id_key").on(t.tenantId, t.id),
+    index("positions_tenant_kpi_template_idx").on(t.tenantId, t.kpiTemplateId),
+    // Template dihapus → jabatan tanpa template (migration: ON DELETE SET NULL (kpi_template_id) — tenant_id tetap)
+    foreignKey({ name: "positions_kpi_template_fk", columns: [t.tenantId, t.kpiTemplateId], foreignColumns: [kpiTemplates.tenantId, kpiTemplates.id] }).onDelete(
+      "set null",
+    ),
+  ],
+);
+
+export const kpiIndicatorType = pgEnum("kpi_indicator_type", KPI_INDICATOR_TYPES);
+export const kpiTargetPeriod = pgEnum("kpi_target_period", KPI_TARGET_PERIODS);
+export const kpiSystemMetric = pgEnum("kpi_system_metric", KPI_SYSTEM_METRICS);
+
+// Indikator template KPI (feature 18). Kolom yang terisi bergantung tipe (CHECK kpi_indicators_type_fields):
+// numeric/count → unit + target + target_period; rating → target = skala maks (5); system → system_metric + target persen.
+// unique (tenant_id, id) = target FK komposit log tugas (feature 19).
+export const kpiIndicators = pgTable(
+  "kpi_indicators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    templateId: uuid("template_id").notNull(),
+    sortOrder: smallint("sort_order").notNull(),
+    name: text("name").notNull(),
+    type: kpiIndicatorType("type").notNull(),
+    unit: text("unit"),
+    target: numeric("target", { precision: 18, scale: 2 }).notNull(),
+    targetPeriod: kpiTargetPeriod("target_period"),
+    systemMetric: kpiSystemMetric("system_metric"),
+    weight: smallint("weight").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("kpi_indicators_tenant_template_idx").on(t.tenantId, t.templateId, t.sortOrder),
+    unique("kpi_indicators_tenant_id_id_key").on(t.tenantId, t.id),
+    foreignKey({ name: "kpi_indicators_template_fk", columns: [t.tenantId, t.templateId], foreignColumns: [kpiTemplates.tenantId, kpiTemplates.id] }).onDelete(
+      "cascade",
+    ),
+    check("kpi_indicators_weight", sql`${t.weight} BETWEEN 1 AND 100`),
+    check("kpi_indicators_target_positive", sql`${t.target} > 0`),
+    check(
+      "kpi_indicators_type_fields",
+      sql`CASE ${t.type}
+        WHEN 'numeric' THEN ${t.unit} IS NOT NULL AND ${t.targetPeriod} IS NOT NULL AND ${t.systemMetric} IS NULL
+        WHEN 'count' THEN ${t.unit} IS NOT NULL AND ${t.targetPeriod} IS NOT NULL AND ${t.systemMetric} IS NULL AND ${t.target} = trunc(${t.target})
+        WHEN 'rating' THEN ${t.unit} IS NULL AND ${t.targetPeriod} IS NULL AND ${t.systemMetric} IS NULL AND ${t.target} = 5
+        WHEN 'system' THEN ${t.unit} IS NULL AND ${t.targetPeriod} IS NULL AND ${t.systemMetric} IS NOT NULL AND ${t.target} <= 100
+      END`,
+    ),
   ],
 );
 

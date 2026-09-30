@@ -113,6 +113,13 @@
       "when": 1790784524954,
       "tag": "0015_attendance_deduction_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790796517691,
+      "tag": "0016_kpi_templates",
+      "breakpoints": true
     }
   ]
 }

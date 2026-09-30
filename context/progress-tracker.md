@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 3 selesai → 4 — Tugas Harian & KPI
-**Terakhir selesai:** 17 Aturan Potongan Absensi (2026-10-01)
-**Berikutnya:** 18 Template KPI per Jabatan
+**Phase:** 4 — Tugas Harian & KPI
+**Terakhir selesai:** 18 Template KPI per Jabatan (2026-10-01)
+**Berikutnya:** 19 Log Tugas Harian Karyawan
 
 ---
 
@@ -38,7 +38,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 17 Aturan Potongan Absensi
 
 ### Phase 4 — Tugas Harian & KPI
-- [ ] 18 Template KPI per Jabatan
+- [x] 18 Template KPI per Jabatan
 - [ ] 19 Log Tugas Harian Karyawan
 - [ ] 20 Verifikasi Atasan
 - [ ] 21 Skor Ad-hoc
@@ -182,6 +182,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Aturan hitung (payroll-engine `calculateAttendanceDeduction`, disetujui user): telat ≤ toleransi diabaikan, lewat toleransi → **seluruh menit sejak jam masuk** dihitung; per blok = ceil per kejadian; batas per bulan = per periode hitung. Prorata = dasar × hari ÷ pembagi dalam satu langkah (tarif per hari tidak dibulatkan dulu); pembagi aktual = hari kerja kalender periode (bukan masa kerja karyawan); total alpa + izin/sakit ≤ dasar prorata (nominal tetap tanpa batas). Izin/sakit yang dipotong dinilai = 1 hari alpa → wajib aturan alpa aktif (refine zod + CHECK DB); "setelah N hari" menggabungkan izin + sakit; cuti tidak pernah dipotong. Tunjangan kehadiran: pengurangan jadi baris sendiri, **tidak masuk `totalDeduction`**. **Pembulatan: tiap baris ke rupiah penuh HALF_UP.**
 - 2026-10-01 — Migration `0015_attendance_deduction_rules`: aturan per kolom (bukan jsonb) + 6 enum + CHECK konsistensi per mode, uang `numeric(18,2)`, exclusion constraint `attendance_deduction_rules_no_overlap` (daterange inklusif per tenant). app_user: SELECT/INSERT/DELETE + **UPDATE hanya kolom `effective_to`** (isi aturan immutable di level DB). Simpan mengunci semua versi `FOR UPDATE`. Audit `attendance_deduction_rule` create/close/delete. Nama penyimpan di-snapshot.
 - 2026-10-01 — Uang pertama di kode: `packages/shared/src/money.ts` (`moneySchema`, `positiveMoneySchema`, `formatRupiah` — operasi string), payroll-engine memakai `Decimal.clone({ precision: 40, rounding: ROUND_HALF_UP })` (`src/money.ts`) + vitest, bergantung pada `@exapay/shared`. Fakta potongan dari rekap: fungsi murni `deductionFacts()` (`attendance-deduction-facts.ts`, dipakai ulang feature 27). Endpoint: `GET|POST /attendance/deduction-rules`, `POST /attendance/deduction-rules/preview` (owner/admin, peran dibaca ulang). Web: uang di form = digit rupiah penuh (`lib/money.ts`).
+- 2026-10-01 — **Template KPI (feature 18):** `/kpi/templates`, `/kpi/templates/new` (`?from=<id>` = salin) & `/kpi/templates/[id]` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola OrgListCard + FormSection + action bar EmployeeForm. Keputusan user: **1 template → banyak jabatan, tiap jabatan maks. 1 template** (kolom `positions.kpi_template_id`, FK komposit `ON DELETE SET NULL ("kpi_template_id")`; memasang jabatan ke template lain = memindahkannya); **penilaian atasan skala 1–5** (target = 5, `KPI_RATING_SCALE_MAX`).
+- 2026-10-01 — Tipe indikator: `numeric` (angka, target ≤2 desimal) · `count` (jumlah, target bulat) — keduanya satuan + waktu target per hari/minggu/bulan (diprorata per hari kerja di feature 21) · `rating` (penilaian atasan) · `system` (`attendance_rate`, target persen, dari rekap absensi). Bobot bilangan bulat, total **tepat 100%** (zod `kpiTemplateInputSchema`, 400), maks. 10 indikator, nama indikator unik per template, maks. satu indikator otomatis per metrik. CHECK DB menjaga isian per tipe.
+- 2026-10-01 — Migration `0016_kpi_templates`: `kpi_templates` (nama unik per usaha, `builtin_key` unik parsial) + `kpi_indicators` (FK komposit ke template `ON DELETE CASCADE`, unique `(tenant_id, id)` untuk FK log tugas feature 19, `target numeric(18,2)`). Template diubah **di tempat, tanpa versi** — indikator ber-id diubah, tanpa id = baru, tidak dikirim = dihapus; snapshot nilai saat itu disimpan penilaian periodik (feature 22). Audit `kpi_template` create/update/delete (isi lengkap). **TODO feature 19:** tolak hapus/ganti tipe indikator & hapus template yang sudah punya log tugas (TODO di `kpi-templates.service.ts`).
+- 2026-10-01 — Template bawaan (`kpi-builtin-templates.ts`): Sales, Kasir, Admin Gudang, Staf Produksi — disalin lewat `seedTenantDefaults`; `POST /kpi/templates/builtin` menambahkan kembali bawaan yang belum ada (usaha lama / terhapus). Target di respons API tanpa nol di belakang (`"80.00"` → `"80"`) agar bisa dikirim balik apa adanya. Endpoint hanya owner/admin (`GET/POST /kpi/templates`, `PUT/DELETE /kpi/templates/:id`); satu `GET` memuat semua template + jabatan (editor mencari template dari situ).
 
 ---
 
@@ -225,3 +229,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 154 per feature 16. Data dev: Dewi Lestari punya satu koreksi uji 25 Sep 2026 (08:10–17:05, oleh Budi Pemilik); di data dev Siti Rahmawati kini ber-atasan Rudi.
 - Total test API 158 + 25 unit test payroll-engine (`pnpm --filter @exapay/payroll-engine test`) per feature 17. Sekali terlihat flake 401 dengan body `{"_tag":"UnauthorizedError"}` (bukan format API kita — kemungkinan koneksi nyasar ke proses lain di localhost); tidak terulang di 3 run berikutnya.
 - Data dev: belum ada versi aturan potongan tersimpan kecuali yang dibuat user saat verifikasi feature 17. Pratinjau di `/settings/attendance` memakai karyawan dari rekap bulan berjalan.
+- Total test API 166 per feature 18. Data dev "Kopi Nusantara" dibuat sebelum feature 18 — template bawaan baru muncul setelah tombol "Pakai template bawaan" diklik di `/kpi/templates`. Urutan indikator belum bisa diatur ulang (mengikuti urutan tambah).

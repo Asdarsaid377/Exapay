@@ -12,6 +12,7 @@ import { EmailModule } from "./modules/email/email.module.js";
 import { EmployeesModule } from "./modules/employees/employees.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { InvitationsModule } from "./modules/invitations/invitations.module.js";
+import { KpiModule } from "./modules/kpi/kpi.module.js";
 import { OrganizationModule } from "./modules/organization/organization.module.js";
 import { RegionsModule } from "./modules/regions/regions.module.js";
 import { StorageModule } from "./modules/storage/storage.module.js";
@@ -37,6 +38,7 @@ import { RedisModule } from "./redis/redis.module.js";
     OrganizationModule,
     EmployeesModule,
     AttendanceModule,
+    KpiModule,
     RedisModule,
     HealthModule,
   ],
