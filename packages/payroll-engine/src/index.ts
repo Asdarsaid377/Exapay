@@ -1,2 +1,2 @@
-// Perhitungan gaji murni (tanpa I/O). Diisi mulai feature 25.
-export {};
+// Perhitungan gaji murni (tanpa I/O). Uang = string desimal di batas modul, decimal.js di dalam.
+export { calculateAttendanceDeduction, type AttendanceDeductionInput, type AttendanceDeductionSalary } from "./attendance-deduction.js";

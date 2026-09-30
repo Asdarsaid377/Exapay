@@ -97,6 +97,7 @@ describe("role runtime app_user", () => {
     );
     expect(rows.map((r) => r.relname).sort()).toEqual([
       "attendance_corrections",
+      "attendance_deduction_rules",
       "attendance_records",
       "audit_logs",
       "company_holidays",

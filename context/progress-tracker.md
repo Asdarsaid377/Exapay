@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 3 — Absensi
-**Terakhir selesai:** 16 Rekap & Koreksi Absensi (2026-09-30)
-**Berikutnya:** 17 Aturan Potongan Absensi
+**Phase:** 3 selesai → 4 — Tugas Harian & KPI
+**Terakhir selesai:** 17 Aturan Potongan Absensi (2026-10-01)
+**Berikutnya:** 18 Template KPI per Jabatan
 
 ---
 
@@ -35,7 +35,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 14 Absen Masuk/Pulang (Portal Karyawan)
 - [x] 15 Izin, Sakit, Cuti
 - [x] 16 Rekap & Koreksi Absensi
-- [ ] 17 Aturan Potongan Absensi
+- [x] 17 Aturan Potongan Absensi
 
 ### Phase 4 — Tugas Harian & KPI
 - [ ] 18 Template KPI per Jabatan
@@ -177,6 +177,11 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Rekap dihitung saat dibaca oleh fungsi murni `attendance-recap.ts` (`recapEmployee`, dipakai ulang payroll feature 27): alpa = hari kerja **sebelum hari ini** tanpa absen & tanpa izin disetujui; absen menang atas izin di tanggal yang sama; absen di hari libur dihitung terpisah (`offDayPresent`); `missingCheckOut` hanya hari lampau. Hari kerja dari kalender kerja saat ini (tidak berversi); menit telat dari snapshot absen. **Tanggal keluar karyawan = hari kerja terakhir (inklusif, tetap dihitung)** — dikonfirmasi user; berlaku juga untuk potongan/prorata payroll (feature 27).
 - 2026-09-30 — Migration `0014_attendance_corrections`: riwayat koreksi **append-only** (app_user SELECT/INSERT), before/after jam & telat, nama pengoreksi di-snapshot; `attendance_records` dapat unique `(tenant_id, id)` untuk FK komposit. Koreksi: owner/admin saja (peran dibaca ulang), **tidak ada yang mengoreksi absensinya sendiri** (403), tanggal/jam mendatang & di luar masa kerja ditolak, baris dikunci `FOR UPDATE`; jam dibaca di zona waktu baris (`zonedInstant` di `attendance-clock.ts`); lokasi GPS jam yang diubah dikosongkan; audit `attendance_record`/`correct` (alasan di `after`).
 - 2026-09-30 — Endpoint: `GET /attendance/recap` (owner/admin/atasan, cakupan bawahan), `GET /attendance/recap/:employeeId` (rincian harian + `canCorrect`), `GET|POST /attendance/corrections` (owner/admin). Logika penglihat (owner/admin semua, atasan bawahan langsung) dipindah ke `attendance-viewer.ts`, dipakai bersama `LeaveRequestsService`.
+- 2026-10-01 — **Aturan potongan absensi (feature 17):** bagian aturan, pratinjau & riwayat di `/settings/attendance` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola FormSection + SelectField + daftar berpemisah. User menyetujui semua keputusan di bawah ("sejauh ini sudah sesuai"); **akan disesuaikan bila ada klien yang minta kustomisasi**.
+- 2026-10-01 — Keputusan user: **simpan = versi baru**, tanggal berlaku ≥ hari ini (zona waktu usaha); versi berjalan ditutup sehari sebelumnya (`effective_to`), versi terjadwal yang mulai pada/sesudah tanggal baru **dihapus** (belum pernah berlaku; tercatat di audit `delete`). Versi yang pernah berlaku tidak bisa diubah. Usaha tanpa versi = tanpa potongan. **Pratinjau = absensi nyata satu karyawan + gaji diisi manual** (tidak disimpan; komponen gaji di feature 28), memakai aturan di form (belum perlu disimpan). **"Surat" = lampiran pengajuan** izin/sakit.
+- 2026-10-01 — Aturan hitung (payroll-engine `calculateAttendanceDeduction`, disetujui user): telat ≤ toleransi diabaikan, lewat toleransi → **seluruh menit sejak jam masuk** dihitung; per blok = ceil per kejadian; batas per bulan = per periode hitung. Prorata = dasar × hari ÷ pembagi dalam satu langkah (tarif per hari tidak dibulatkan dulu); pembagi aktual = hari kerja kalender periode (bukan masa kerja karyawan); total alpa + izin/sakit ≤ dasar prorata (nominal tetap tanpa batas). Izin/sakit yang dipotong dinilai = 1 hari alpa → wajib aturan alpa aktif (refine zod + CHECK DB); "setelah N hari" menggabungkan izin + sakit; cuti tidak pernah dipotong. Tunjangan kehadiran: pengurangan jadi baris sendiri, **tidak masuk `totalDeduction`**. **Pembulatan: tiap baris ke rupiah penuh HALF_UP.**
+- 2026-10-01 — Migration `0015_attendance_deduction_rules`: aturan per kolom (bukan jsonb) + 6 enum + CHECK konsistensi per mode, uang `numeric(18,2)`, exclusion constraint `attendance_deduction_rules_no_overlap` (daterange inklusif per tenant). app_user: SELECT/INSERT/DELETE + **UPDATE hanya kolom `effective_to`** (isi aturan immutable di level DB). Simpan mengunci semua versi `FOR UPDATE`. Audit `attendance_deduction_rule` create/close/delete. Nama penyimpan di-snapshot.
+- 2026-10-01 — Uang pertama di kode: `packages/shared/src/money.ts` (`moneySchema`, `positiveMoneySchema`, `formatRupiah` — operasi string), payroll-engine memakai `Decimal.clone({ precision: 40, rounding: ROUND_HALF_UP })` (`src/money.ts`) + vitest, bergantung pada `@exapay/shared`. Fakta potongan dari rekap: fungsi murni `deductionFacts()` (`attendance-deduction-facts.ts`, dipakai ulang feature 27). Endpoint: `GET|POST /attendance/deduction-rules`, `POST /attendance/deduction-rules/preview` (owner/admin, peran dibaca ulang). Web: uang di form = digit rupiah penuh (`lib/money.ts`).
 
 ---
 
@@ -216,5 +221,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Karyawan nonaktif masih bisa membuka portal, tapi absen ditolak (feature 14). `karyawan@exapay.local` (dev) belum tertaut data karyawan.
 - Test API butuh container **storage** (SeaweedFS) selain postgres/redis/mailpit — `docker compose up -d postgres redis mailpit storage`. Total test API 143 per feature 15.
 - Data dev: `karyawan@exapay.local` kini tertaut ke karyawan **Dewi Lestari** (bawahan Rudi) + satu pengajuan Sakit 28–29 Sep 2026 disetujui Andi Atasan (verifikasi feature 15).
-- Belum ada: hitungan pengajuan tertunda di sidebar; potongan absensi (feature 17/27); alpa di portal `/me/attendance` (ringkasan portal belum memakai `recapEmployee`).
+- Belum ada: hitungan pengajuan tertunda di sidebar; potongan absensi di payroll (feature 27); alpa di portal `/me/attendance` (ringkasan portal belum memakai `recapEmployee`).
 - Total test API 154 per feature 16. Data dev: Dewi Lestari punya satu koreksi uji 25 Sep 2026 (08:10–17:05, oleh Budi Pemilik); di data dev Siti Rahmawati kini ber-atasan Rudi.
+- Total test API 158 + 25 unit test payroll-engine (`pnpm --filter @exapay/payroll-engine test`) per feature 17. Sekali terlihat flake 401 dengan body `{"_tag":"UnauthorizedError"}` (bukan format API kita — kemungkinan koneksi nyasar ke proses lain di localhost); tidak terulang di 3 run berikutnya.
+- Data dev: belum ada versi aturan potongan tersimpan kecuali yang dibuat user saat verifikasi feature 17. Pratinjau di `/settings/attendance` memakai karyawan dari rekap bulan berjalan.

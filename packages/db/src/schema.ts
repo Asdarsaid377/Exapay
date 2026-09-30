@@ -1,12 +1,18 @@
 import {
+  ABSENCE_DEDUCTION_MODES,
+  ATTENDANCE_ALLOWANCE_MODES,
   EMPLOYMENT_STATUSES,
   GENDERS,
   LEAVE_ATTACHMENT_TYPES,
   LEAVE_REQUEST_STATUSES,
+  LATE_DEDUCTION_MODES,
   LEAVE_TYPES,
   MEMBERSHIP_ROLES,
   NATIONAL_HOLIDAY_KINDS,
+  PERMIT_SICK_DEDUCTION_MODES,
+  PRORATE_BASES,
   PTKP_STATUSES,
+  WORKING_DAY_DIVISOR_MODES,
 } from "@exapay/shared";
 import { sql } from "drizzle-orm";
 import {
@@ -18,6 +24,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -564,5 +571,84 @@ export const leaveRequests = pgTable(
       sql`(${t.status} IN ('approved', 'rejected')) = (${t.decidedAt} IS NOT NULL) AND (${t.decidedAt} IS NOT NULL OR (${t.decidedByUserId} IS NULL AND ${t.decidedByName} IS NULL AND ${t.decisionNote} IS NULL))`,
     ),
     check("leave_requests_cancelled", sql`(${t.status} = 'cancelled') = (${t.cancelledAt} IS NOT NULL)`),
+  ],
+);
+
+export const absenceDeductionMode = pgEnum("absence_deduction_mode", ABSENCE_DEDUCTION_MODES);
+export const prorateBase = pgEnum("prorate_base", PRORATE_BASES);
+export const workingDayDivisorMode = pgEnum("working_day_divisor_mode", WORKING_DAY_DIVISOR_MODES);
+export const lateDeductionMode = pgEnum("late_deduction_mode", LATE_DEDUCTION_MODES);
+export const permitSickDeductionMode = pgEnum("permit_sick_deduction_mode", PERMIT_SICK_DEDUCTION_MODES);
+export const attendanceAllowanceMode = pgEnum("attendance_allowance_mode", ATTENDANCE_ALLOWANCE_MODES);
+
+// Aturan potongan absensi (feature 17): satu baris = satu versi aturan per usaha, berlaku effective_from..effective_to
+// (inklusif; null = sampai diganti). Versi tidak beririsan (exclusion constraint di migration). Isi aturan tidak bisa
+// diubah — app_user hanya boleh UPDATE effective_to (menutup versi) dan DELETE versi terjadwal yang tertimpa (dicek service).
+// Kolom per jenis aturan hanya terisi sesuai mode-nya (CHECK). Uang numeric(18,2).
+export const attendanceDeductionRules = pgTable(
+  "attendance_deduction_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    // Alpa
+    absenceMode: absenceDeductionMode("absence_mode").notNull(),
+    absenceProrateBase: prorateBase("absence_prorate_base"),
+    absenceDivisorMode: workingDayDivisorMode("absence_divisor_mode"),
+    absenceDivisorDays: smallint("absence_divisor_days"),
+    absenceAmountPerDay: numeric("absence_amount_per_day", { precision: 18, scale: 2 }),
+    // Telat — late_amount = nominal per kejadian (per_occurrence) atau per blok (per_block)
+    lateMode: lateDeductionMode("late_mode").notNull(),
+    lateToleranceMinutes: smallint("late_tolerance_minutes"),
+    lateBlockMinutes: smallint("late_block_minutes"),
+    lateAmount: numeric("late_amount", { precision: 18, scale: 2 }),
+    lateMonthlyCap: numeric("late_monthly_cap", { precision: 18, scale: 2 }),
+    // Izin & sakit
+    permitSickMode: permitSickDeductionMode("permit_sick_mode").notNull(),
+    permitSickFreeDays: smallint("permit_sick_free_days"),
+    // Tunjangan kehadiran
+    allowanceMode: attendanceAllowanceMode("allowance_mode").notNull(),
+    allowanceMinAbsentDays: smallint("allowance_min_absent_days"),
+    allowanceAmountPerDay: numeric("allowance_amount_per_day", { precision: 18, scale: 2 }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Nama penyimpan (snapshot) — tetap terbaca walau aksesnya kemudian dicabut
+    createdByName: text("created_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Cari versi yang berlaku di tanggal tertentu; juga melayani filter tenant
+    index("attendance_deduction_rules_tenant_from_idx").on(t.tenantId, t.effectiveFrom),
+    check("attendance_deduction_rules_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check(
+      "attendance_deduction_rules_absence",
+      sql`CASE ${t.absenceMode}
+        WHEN 'none' THEN ${t.absenceProrateBase} IS NULL AND ${t.absenceDivisorMode} IS NULL AND ${t.absenceDivisorDays} IS NULL AND ${t.absenceAmountPerDay} IS NULL
+        WHEN 'prorate' THEN ${t.absenceProrateBase} IS NOT NULL AND ${t.absenceDivisorMode} IS NOT NULL AND ${t.absenceAmountPerDay} IS NULL
+          AND (${t.absenceDivisorMode} = 'fixed') = (${t.absenceDivisorDays} IS NOT NULL) AND coalesce(${t.absenceDivisorDays} BETWEEN 1 AND 31, true)
+        WHEN 'fixed_per_day' THEN ${t.absenceProrateBase} IS NULL AND ${t.absenceDivisorMode} IS NULL AND ${t.absenceDivisorDays} IS NULL AND ${t.absenceAmountPerDay} > 0
+      END`,
+    ),
+    check(
+      "attendance_deduction_rules_late",
+      sql`CASE ${t.lateMode}
+        WHEN 'none' THEN ${t.lateToleranceMinutes} IS NULL AND ${t.lateBlockMinutes} IS NULL AND ${t.lateAmount} IS NULL AND ${t.lateMonthlyCap} IS NULL
+        ELSE ${t.lateToleranceMinutes} BETWEEN 0 AND 240 AND ${t.lateAmount} > 0 AND coalesce(${t.lateMonthlyCap} > 0, true)
+          AND (${t.lateMode} = 'per_block') = (${t.lateBlockMinutes} IS NOT NULL) AND coalesce(${t.lateBlockMinutes} BETWEEN 1 AND 240, true)
+      END`,
+    ),
+    check(
+      "attendance_deduction_rules_permit_sick",
+      sql`(${t.permitSickMode} = 'after_days') = (${t.permitSickFreeDays} IS NOT NULL) AND coalesce(${t.permitSickFreeDays} BETWEEN 0 AND 31, true)
+        AND (${t.permitSickMode} = 'none' OR ${t.absenceMode} <> 'none')`,
+    ),
+    check(
+      "attendance_deduction_rules_allowance",
+      sql`(${t.allowanceMode} = 'forfeit') = (${t.allowanceMinAbsentDays} IS NOT NULL) AND coalesce(${t.allowanceMinAbsentDays} BETWEEN 1 AND 31, true)
+        AND (${t.allowanceMode} = 'reduce_per_day') = (${t.allowanceAmountPerDay} IS NOT NULL) AND coalesce(${t.allowanceAmountPerDay} > 0, true)`,
+    ),
   ],
 );

@@ -45,7 +45,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /login, /forgot-password, /signup
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input)
 - **Pola kelas kunci:** input `h-11 rounded-field border border-border-control bg-control px-3.5 text-body`, focus `bg-surface-solid border-accent ring-3 ring-accent/28`; error `border-danger` + pesan `text-caption text-danger-text`; hint `text-caption text-text-tertiary`; disabled `bg-fill-subtle border-border-subtle text-text-tertiary`; label `text-[13px] font-bold`
-- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint` (ReactNode), `requiredMark` (* merah), `labelAction`, `trailing`, `labelClassName` (kelas baris label, mis. `lg:sr-only` di baris tabel yang punya judul kolom — label tetap terbaca screen reader). Server-safe (tanpa state)
+- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint` (ReactNode), `requiredMark` (* merah), `labelAction`, `trailing`, `leading` (awalan teks di kiri input, `pl-10`, mis. "Rp" — feature 17), `labelClassName` (kelas baris label, mis. `lg:sr-only` di baris tabel yang punya judul kolom — label tetap terbaca screen reader). Server-safe (tanpa state)
 
 ### PasswordField
 - **Path:** apps/web/components/common/PasswordField.tsx
@@ -451,3 +451,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola AttendanceHistoryList (CalendarDate + judul + sub + Badge) di card glass-data + Dialog (feature 16, izin user)
 - **Pola kelas kunci:** select = panel `glass rounded-card p-2 sm:p-2.5 lg:w-96` + SelectField `labelHidden`; daftar harian `glass-data rounded-card px-4.5 pt-4.5 lg:px-6` dengan kepala EmployeeAvatar `md` + nama `text-[17px] font-bold` + ringkasan `text-small tabular-nums`, baris `border-t py-3` = CalendarDate (redup jika bukan hari kerja) + hari bold + jam `text-small` + Badge status (`DAY_STATUS_TONES`: success tepat waktu, warning telat, danger alpa, info izin/sakit/cuti, neutral libur/belum absen) + "Dikoreksi" `text-caption text-text-tertiary` + Button secondary "Koreksi"; dialog: kotak "Sekarang: …" `rounded-inner bg-fill-subtle`, grid 2 kolom TextField `type="time"` (masuk wajib, pulang opsional), TextAreaField alasan; riwayat = card `glass-data` baris CalendarDate + "Absen ditambahkan · Masuk …" / "Masuk 08:30 → 08:00" + alasan + "Oleh … · tanggal" caption
 - **Catatan:** Select client (navigasi `correctionsHref`, periode dipertahankan). DayList server: tanggal > hari ini & di luar masa kerja disembunyikan, terbaru di atas; tombol hanya jika `canCorrect` dari API. Button client (`useId`), validasi `attendanceCorrectionInputSchema`, Server Action `correctAttendance` + `router.refresh()`. Label status di `lib/attendanceRecapLabels.ts` (`dayStatusLabel`)
+
+### MoneyField
+- **Path:** apps/web/components/common/MoneyField.tsx
+- **Dipakai di:** /settings/attendance (aturan potongan & pratinjau)
+- **Referensi desain:** tanpa referensi — diturunkan dari TextField (feature 17, izin user)
+- **Pola kelas kunci:** TextField + `leading="Rp"` (`text-body text-text-secondary`, input `pl-10`), `inputMode="numeric"`, `tabular-nums`
+- **Catatan:** client. `value` = digit rupiah penuh tanpa pemisah (string, bukan number), tampil dengan pemisah ribuan titik; helper di `lib/money.ts` (`sanitizeMoneyInput`, `groupThousands`, `moneyDigits`). Pakai untuk semua isian uang berikutnya (komponen gaji, THR)
+
+### DeductionRulesEditor / DeductionRuleFields / DeductionPreviewResult / DeductionRuleVersionList
+- **Path:** apps/web/components/attendance/DeductionRulesEditor.tsx, DeductionRuleFields.tsx, DeductionPreviewResult.tsx, DeductionRuleVersionList.tsx
+- **Dipakai di:** /settings/attendance (3 FormSection setelah "Hari kerja": Aturan potongan absensi, Pratinjau potongan, Riwayat aturan potongan)
+- **Referensi desain:** tanpa referensi — pola FormSection + SelectField + daftar berpemisah (feature 17, izin user; tercatat di progress-tracker)
+- **Pola kelas kunci:** grup aturan `border-t border-border-subtle py-5 first:border-t-0` judul `text-[15px] font-bold` + penjelasan `text-small`, isian `grid sm:grid-cols-2 gap-x-4 gap-y-5` (SelectField cara potong + isian tambahan sesuai mode); footer `border-t pt-5` TextField `type="date"` "Berlaku mulai" + FormAlert warning (versi terjadwal tergantikan) + Button primary "Simpan aturan"; pratinjau: Button secondary "Hitung pratinjau", baris rincian = label `text-[14.5px] font-bold` + nominal `font-display text-[17px] font-bold tabular-nums` + langkah `text-small`, total `dl rounded-inner bg-fill-subtle` angka `font-display text-xl font-extrabold`; riwayat: rentang tanggal bold + Badge (success Berlaku / info Terjadwal / outline Berakhir) + `dl sm:grid-cols-[120px_minmax(0,1fr)]` ringkasan aturan
+- **Catatan:** Editor client (satu state draf untuk form & pratinjau — pratinjau memakai aturan di form yang belum disimpan). Draf ↔ aturan & label di `lib/attendanceDeductionLabels.ts` (`draftFromRules`, `rulesInputFromDraft`, `draftErrorsFrom`, `rulesSummary`); validasi `attendanceDeductionRulesSchema`. Server Action `saveAttendanceDeductionRules` / `previewAttendanceDeduction`. PreviewResult & VersionList server-safe; angka & langkah dari API (payroll-engine), web tidak menghitung

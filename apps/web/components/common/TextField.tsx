@@ -11,11 +11,13 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "id"> & {
   labelAction?: ReactNode;
   // Elemen di dalam input sebelah kanan (mis. tombol tampilkan password)
   trailing?: ReactNode;
+  // Awalan teks di dalam input sebelah kiri (mis. "Rp" di MoneyField) — bukan ikon hiasan
+  leading?: ReactNode;
   // Kelas baris label, mis. "lg:sr-only" di tabel yang punya judul kolom (label tetap terbaca screen reader)
   labelClassName?: string;
 };
 
-export function TextField({ id, label, error, hint, requiredMark = false, labelAction, trailing, labelClassName, className, ...rest }: Props) {
+export function TextField({ id, label, error, hint, requiredMark = false, labelAction, trailing, leading, labelClassName, className, ...rest }: Props) {
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   const inputClasses = [
     "h-11 w-full rounded-field border bg-control px-3.5 text-body text-text-primary placeholder:text-text-muted transition-[border-color,box-shadow,background-color]",
@@ -23,6 +25,7 @@ export function TextField({ id, label, error, hint, requiredMark = false, labelA
     "disabled:border-border-subtle disabled:bg-fill-subtle disabled:text-text-tertiary",
     error ? "border-danger focus:border-danger" : "border-border-control focus:border-accent",
     trailing ? "pr-11" : "",
+    leading ? "pl-10" : "",
     className ?? "",
   ].join(" ");
 
@@ -36,6 +39,11 @@ export function TextField({ id, label, error, hint, requiredMark = false, labelA
         {labelAction}
       </div>
       <div className="relative">
+        {leading ? (
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-body text-text-secondary">
+            {leading}
+          </span>
+        ) : null}
         <input id={id} aria-invalid={error ? true : undefined} aria-describedby={describedBy} className={inputClasses} {...rest} />
         {trailing ? <div className="absolute inset-y-0 right-0 flex items-center pr-1.5">{trailing}</div> : null}
       </div>

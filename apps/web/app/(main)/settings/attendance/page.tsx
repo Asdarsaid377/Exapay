@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 
 import { AddCompanyHolidayButton } from "@/components/attendance/AddCompanyHolidayButton";
 import { CompanyHolidayList } from "@/components/attendance/CompanyHolidayList";
+import { DeductionRulesEditor } from "@/components/attendance/DeductionRulesEditor";
+import { DeductionRuleVersionList } from "@/components/attendance/DeductionRuleVersionList";
 import { HolidayYearSwitch } from "@/components/attendance/HolidayYearSwitch";
 import { NationalHolidayList } from "@/components/attendance/NationalHolidayList";
 import { WorkingDaysSummary } from "@/components/attendance/WorkingDaysSummary";
@@ -12,6 +14,8 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { FormAlert } from "@/components/common/FormAlert";
 import { FormSection } from "@/components/common/FormSection";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { fetchAttendanceDeductionSettings } from "@/lib/api/attendanceDeductions";
+import { fetchAttendanceRecap } from "@/lib/api/attendanceRecap";
 import { fetchHolidayOverview, fetchWorkSchedule } from "@/lib/api/workCalendar";
 import { todayIso } from "@/lib/datetime";
 
@@ -21,7 +25,7 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-// Jadwal kerja & hari libur (feature 13). Aturan potongan absensi (feature 17) menyusul di halaman ini.
+// Jadwal kerja & hari libur (feature 13) + aturan potongan absensi berversi & pratinjau (feature 17).
 // Proxy sudah membatasi ke owner/admin; API memeriksa ulang.
 export default async function SettingsAttendancePage({ searchParams }: Props) {
   const raw = await searchParams;
@@ -30,16 +34,22 @@ export default async function SettingsAttendancePage({ searchParams }: Props) {
   const requested = calendarYearSchema.safeParse(typeof raw.year === "string" ? raw.year : undefined);
   const year = requested.success ? requested.data : currentYear;
 
-  const [schedule, holidays] = await Promise.all([fetchWorkSchedule(), fetchHolidayOverview(year)]);
+  const [schedule, holidays, deductions, recap] = await Promise.all([
+    fetchWorkSchedule(),
+    fetchHolidayOverview(year),
+    fetchAttendanceDeductionSettings(),
+    // Karyawan contoh untuk pratinjau potongan (masa kerja beririsan dengan bulan berjalan)
+    fetchAttendanceRecap({}),
+  ]);
   const header = (
     <PageHeader
       title="Pengaturan absensi"
-      description="Jadwal kerja dan hari libur usaha. Dipakai untuk menandai keterlambatan, menghitung hari kerja di KPI, dan potongan absensi di payroll."
+      description="Jadwal kerja, hari libur, dan aturan potongan absensi usaha. Dipakai untuk menandai keterlambatan, menghitung hari kerja di KPI, dan potongan absensi di payroll."
     />
   );
 
-  if (!schedule.ok || !holidays.ok) {
-    const error = !schedule.ok ? schedule.error : !holidays.ok ? holidays.error : "";
+  if (!schedule.ok || !holidays.ok || !deductions.ok) {
+    const error = !schedule.ok ? schedule.error : !holidays.ok ? holidays.error : !deductions.ok ? deductions.error : "";
     return (
       <>
         {header}
@@ -49,6 +59,9 @@ export default async function SettingsAttendancePage({ searchParams }: Props) {
   }
 
   const overview = holidays.data;
+  const previewEmployees = recap.ok
+    ? recap.data.rows.map((row) => ({ id: row.employee.id, fullName: row.employee.fullName, positionName: row.employee.positionName }))
+    : [];
   const workdays = schedule.data.days.filter((day) => day.isWorkday).map((day) => day.weekday);
   const years = [...new Set([...overview.nationalYears, currentYear, year])].sort((a, b) => a - b);
   const yearSwitch = <HolidayYearSwitch year={year} years={years} currentYear={currentYear} />;
@@ -105,6 +118,15 @@ export default async function SettingsAttendancePage({ searchParams }: Props) {
           description="Dihitung dari jadwal kerja dan hari libur di atas. Dipakai untuk prorata target KPI dan pembagi potongan absensi."
         >
           <WorkingDaysSummary months={overview.workingDaysByMonth} currentMonth={year === currentYear ? Number(today.slice(5, 7)) - 1 : null} />
+        </FormSection>
+
+        <DeductionRulesEditor settings={deductions.data} employees={previewEmployees} />
+
+        <FormSection
+          title="Riwayat aturan potongan"
+          description="Payroll memakai versi yang berlaku pada periodenya. Versi yang sudah pernah berlaku tidak bisa diubah — buat versi baru."
+        >
+          <DeductionRuleVersionList versions={deductions.data.versions} />
         </FormSection>
       </div>
     </>
