@@ -44,7 +44,7 @@ export function ForgotPasswordForm() {
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex size-11 items-center justify-center rounded-field bg-accent-soft text-accent">
+          <div className="flex size-11 items-center justify-center rounded-field bg-accent-soft text-accent-strong">
             <MailCheck aria-hidden className="size-5" />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -54,9 +54,9 @@ export function ForgotPasswordForm() {
               tautan untuk mengatur ulang password. Tautan berlaku selama 1 jam.
             </p>
           </div>
-          <p className="text-xs text-text-muted">Tidak menerima email? Periksa folder spam, atau kirim ulang dalam beberapa menit.</p>
+          <p className="text-caption text-text-tertiary">Tidak menerima email? Periksa folder spam, atau kirim ulang dalam beberapa menit.</p>
         </div>
-        <Button variant="secondary" fullWidth onClick={() => setSentTo(null)}>
+        <Button variant="secondary" size="lg" fullWidth onClick={() => setSentTo(null)}>
           Kirim ulang
         </Button>
       </>
@@ -79,7 +79,7 @@ export function ForgotPasswordForm() {
           error={fieldError}
           disabled={submitting}
         />
-        <Button type="submit" fullWidth loading={submitting} className="mt-2">
+        <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-2">
           {submitting ? "Mengirim…" : "Kirim tautan reset"}
         </Button>
       </form>

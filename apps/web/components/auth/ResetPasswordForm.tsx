@@ -7,7 +7,7 @@ import { type FormEvent, useState } from "react";
 
 import { resetPassword } from "@/actions/auth";
 import { AuthHeading } from "@/components/auth/AuthHeading";
-import { Button } from "@/components/common/Button";
+import { Button, buttonClassName } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
 import { PasswordField } from "@/components/common/PasswordField";
 
@@ -19,9 +19,6 @@ type Props = {
 type FieldErrors = { password?: string; confirmPassword?: string };
 
 type Status = "form" | "invalid-token" | "success";
-
-const linkButtonClasses =
-  "inline-flex w-full items-center justify-center rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-on-accent shadow-accent transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 export function ResetPasswordForm({ token }: Props) {
   const [password, setPassword] = useState("");
@@ -70,7 +67,7 @@ export function ResetPasswordForm({ token }: Props) {
             description="Silakan masuk dengan password baru Anda. Demi keamanan, sesi di perangkat lain telah diakhiri."
           />
         </div>
-        <Link href="/login" className={linkButtonClasses}>
+        <Link href="/login" className={buttonClassName({ size: "lg", fullWidth: true })}>
           Masuk sekarang
         </Link>
       </>
@@ -81,7 +78,7 @@ export function ResetPasswordForm({ token }: Props) {
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex size-11 items-center justify-center rounded-field bg-warning-soft text-warning">
+          <div className="flex size-11 items-center justify-center rounded-field bg-warning-soft text-warning-icon">
             <LinkIcon aria-hidden className="size-5" />
           </div>
           <AuthHeading
@@ -89,7 +86,7 @@ export function ResetPasswordForm({ token }: Props) {
             description="Tautan reset password sudah kedaluwarsa, sudah pernah dipakai, atau tidak lengkap. Silakan minta tautan baru."
           />
         </div>
-        <Link href="/forgot-password" className={linkButtonClasses}>
+        <Link href="/forgot-password" className={buttonClassName({ size: "lg", fullWidth: true })}>
           Minta tautan baru
         </Link>
       </>
@@ -122,7 +119,7 @@ export function ResetPasswordForm({ token }: Props) {
           error={fieldErrors.confirmPassword}
           disabled={submitting}
         />
-        <Button type="submit" fullWidth loading={submitting} className="mt-2">
+        <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-2">
           {submitting ? "Menyimpan…" : "Simpan password baru"}
         </Button>
       </form>

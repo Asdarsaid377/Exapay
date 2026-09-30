@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { verifyEmail } from "@/actions/auth";
 import { AuthHeading } from "@/components/auth/AuthHeading";
-import { Button } from "@/components/common/Button";
+import { Button, buttonClassName } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
 
 type Props = {
@@ -15,9 +15,6 @@ type Props = {
 };
 
 type Status = { kind: "verifying" } | { kind: "success" } | { kind: "invalid-token" } | { kind: "error"; message: string };
-
-const linkButtonClasses =
-  "inline-flex w-full items-center justify-center rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-on-accent shadow-accent transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 // Verifikasi dijalankan otomatis saat halaman dibuka dari tautan email.
 export function VerifyEmailStatus({ token }: Props) {
@@ -45,7 +42,7 @@ export function VerifyEmailStatus({ token }: Props) {
     return (
       <div className="flex flex-col gap-4" aria-busy>
         <AuthHeading title="Memverifikasi email…" description="Mohon tunggu sebentar." />
-        <div className="h-11 w-full animate-pulse rounded-full bg-surface-secondary" />
+        <div className="h-12 w-full animate-exa-pulse rounded-full bg-fill" />
       </div>
     );
   }
@@ -59,7 +56,7 @@ export function VerifyEmailStatus({ token }: Props) {
           </div>
           <AuthHeading title="Email berhasil diverifikasi" description="Akun Anda sudah aktif. Silakan masuk untuk mulai mengelola usaha Anda." />
         </div>
-        <Link href="/login" className={linkButtonClasses}>
+        <Link href="/login" className={buttonClassName({ size: "lg", fullWidth: true })}>
           Masuk sekarang
         </Link>
       </>
@@ -70,7 +67,7 @@ export function VerifyEmailStatus({ token }: Props) {
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex size-11 items-center justify-center rounded-field bg-warning-soft text-warning">
+          <div className="flex size-11 items-center justify-center rounded-field bg-warning-soft text-warning-icon">
             <LinkIcon aria-hidden className="size-5" />
           </div>
           <AuthHeading
@@ -78,7 +75,7 @@ export function VerifyEmailStatus({ token }: Props) {
             description="Tautan verifikasi sudah kedaluwarsa atau tidak lengkap. Masuk dengan email dan password Anda untuk meminta tautan baru."
           />
         </div>
-        <Link href="/login" className={linkButtonClasses}>
+        <Link href="/login" className={buttonClassName({ size: "lg", fullWidth: true })}>
           Masuk untuk kirim ulang
         </Link>
       </>
@@ -90,7 +87,7 @@ export function VerifyEmailStatus({ token }: Props) {
       <AuthHeading title="Verifikasi gagal" />
       <FormAlert tone="danger">{status.message}</FormAlert>
       {token ? (
-        <Button fullWidth onClick={() => void run(token)}>
+        <Button size="lg" fullWidth onClick={() => void run(token)}>
           Coba lagi
         </Button>
       ) : null}

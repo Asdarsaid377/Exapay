@@ -1,9 +1,11 @@
 import type { SessionUser, TenantMembership } from "@exapay/shared";
 import type { ReactNode } from "react";
 
+import { BackdropShapes } from "@/components/layout/BackdropShapes";
 import { PortalBottomNav } from "@/components/layout/PortalBottomNav";
 import { TenantSwitcher } from "@/components/layout/TenantSwitcher";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { ROLE_LABELS } from "@/lib/roleLabels";
 
 type Props = {
   user: SessionUser;
@@ -12,20 +14,22 @@ type Props = {
   children: ReactNode;
 };
 
-// Kerangka portal karyawan /me: header ringkas di atas, bottom nav di bawah, konten selebar HP.
+// Kerangka portal karyawan /me (snapshot context/designs/me.html): header kaca + bottom nav kaca mengambang.
+// Maks 3 lapisan blur di portal (header, kartu utama halaman, bottom nav) — card lain memakai surface-solid.
 export function PortalShell({ user, activeTenant, tenants, children }: Props) {
   return (
-    <div className="min-h-dvh pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface">
-        <div className="mx-auto flex h-14 max-w-lg items-center gap-2 px-2">
-          <TenantSwitcher activeTenant={activeTenant} tenants={tenants} />
-          <div className="ml-auto shrink-0 pr-2">
-            <UserMenu user={user} />
+    <>
+      <BackdropShapes variant="portal" />
+      <div className="mx-auto flex min-h-dvh max-w-lg flex-col gap-3.5 px-3.5 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+        <header className="glass sticky top-3 z-20 flex h-15 shrink-0 items-center justify-between gap-2 rounded-[20px] pr-2 pl-2">
+          <div className="min-w-0 flex-1">
+            <TenantSwitcher activeTenant={activeTenant} tenants={tenants} subtitle={`${user.fullName} · ${ROLE_LABELS[activeTenant.role]}`} />
           </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-lg px-4 py-6">{children}</main>
+          <UserMenu user={user} showChevron={false} />
+        </header>
+        <main className="flex flex-col gap-3.5">{children}</main>
+      </div>
       <PortalBottomNav />
-    </div>
+    </>
   );
 }

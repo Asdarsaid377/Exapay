@@ -1,51 +1,54 @@
 "use client";
 
 import type { SessionUser } from "@exapay/shared";
-import { LoaderCircle, LogOut } from "lucide-react";
+import { ChevronDown, LoaderCircle, LogOut } from "lucide-react";
 import { useState } from "react";
 
 import { logout } from "@/actions/auth";
 import { DropdownMenu } from "@/components/common/DropdownMenu";
+import { UserAvatar } from "@/components/layout/UserAvatar";
 
 type Props = {
   user: SessionUser;
+  // Chevron di samping avatar (desktop); portal cukup avatar
+  showChevron?: boolean;
 };
 
-function initialsOf(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  const letters = parts.length > 1 ? `${parts[0]?.[0] ?? ""}${parts[parts.length - 1]?.[0] ?? ""}` : (parts[0]?.slice(0, 2) ?? "");
-  return letters.toUpperCase() || "?";
-}
-
 // Avatar inisial di header: identitas akun + keluar
-export function UserMenu({ user }: Props) {
+export function UserMenu({ user, showChevron = true }: Props) {
   const [loggingOut, setLoggingOut] = useState(false);
 
   return (
     <DropdownMenu
       label="Menu akun"
       align="end"
-      triggerClassName="flex size-9 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent-strong transition-colors hover:bg-border"
-      trigger={initialsOf(user.fullName)}
+      panelClassName="w-65"
+      triggerClassName="flex items-center gap-2 rounded-full p-0.75 transition-colors hover:bg-glass-hover lg:h-12.5 lg:pr-2 lg:pl-1.25"
+      trigger={
+        <>
+          <UserAvatar fullName={user.fullName} />
+          {showChevron ? <ChevronDown aria-hidden className="hidden size-4 text-text-secondary lg:block" /> : null}
+        </>
+      }
     >
       {() => (
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-col px-3 pt-1 pb-2">
-            <p className="truncate text-sm font-semibold text-text-primary">{user.fullName}</p>
-            <p className="truncate text-xs text-text-muted">{user.email}</p>
+        <>
+          <div className="flex flex-col gap-0.5 px-3 py-2.5">
+            <p className="truncate font-display text-[15px] font-bold text-text-primary">{user.fullName}</p>
+            <p className="truncate text-[13px] text-text-secondary">{user.email}</p>
           </div>
-          <div className="border-t border-border" />
+          <div className="mx-2 my-0.5 border-t border-border-subtle" />
           <form action={logout} onSubmit={() => setLoggingOut(true)}>
             <button
               type="submit"
               disabled={loggingOut}
-              className="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:opacity-60"
+              className="flex h-11 w-full items-center gap-2.5 rounded-inner px-3 text-sm font-bold text-danger-text transition-colors hover:bg-danger/8 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 disabled:opacity-60"
             >
-              {loggingOut ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <LogOut aria-hidden className="size-4" />}
+              {loggingOut ? <LoaderCircle aria-hidden className="size-4.5 animate-spin" /> : <LogOut aria-hidden className="size-4.5" />}
               {loggingOut ? "Keluar…" : "Keluar"}
             </button>
           </form>
-        </div>
+        </>
       )}
     </DropdownMenu>
   );

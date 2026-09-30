@@ -1,20 +1,17 @@
-import { Wallet } from "lucide-react";
-
 type Props = {
-  // "inverse" untuk latar gelap (panel brand)
+  // "inverse" untuk latar gelap (panel foto halaman auth)
   tone?: "default" | "inverse";
 };
 
+// Placeholder mengikuti snapshot desain (context/designs/dashboard.html) sampai ada logo resmi
 export function ExapayLogo({ tone = "default" }: Props) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-accent text-on-accent shadow-accent">
-        <Wallet aria-hidden className="size-5" />
+      <span aria-hidden className="grid size-8 place-items-center rounded-[10px] bg-accent font-display text-lg font-extrabold text-on-accent">
+        e
       </span>
-      <span
-        className={`font-display text-xl font-extrabold tracking-tight ${tone === "inverse" ? "text-on-inverse" : "text-text-primary"}`}
-      >
-        Exapay
+      <span className={`font-display text-[21px] font-extrabold tracking-[-0.03em] ${tone === "inverse" ? "text-on-inverse" : "text-text-primary"}`}>
+        exapay
       </span>
     </div>
   );

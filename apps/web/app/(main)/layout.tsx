@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { getSession } from "@/lib/auth/getSession";
+import { formatLongDate } from "@/lib/datetime";
 import { staffMenuFor } from "@/lib/navigation";
 
 type Props = {
@@ -17,7 +18,13 @@ export default async function MainLayout({ children }: Props) {
   if (activeTenant.role === "karyawan") redirect("/me");
 
   return (
-    <AppShell user={session.user} activeTenant={activeTenant} tenants={session.tenants} sections={staffMenuFor(activeTenant.role)}>
+    <AppShell
+      user={session.user}
+      activeTenant={activeTenant}
+      tenants={session.tenants}
+      sections={staffMenuFor(activeTenant.role)}
+      todayLabel={formatLongDate(new Date())}
+    >
       {children}
     </AppShell>
   );

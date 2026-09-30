@@ -19,9 +19,9 @@ export function PasswordField(props: Props) {
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Sembunyikan password" : "Tampilkan password"}
-          className="rounded-md p-1 text-text-muted hover:text-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+          className="flex size-8 items-center justify-center rounded-inner text-text-secondary transition-colors hover:bg-fill-subtle hover:text-text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45"
         >
-          {visible ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
+          {visible ? <EyeOff aria-hidden className="size-4.5" /> : <Eye aria-hidden className="size-4.5" />}
         </button>
       }
     />

@@ -8,12 +8,14 @@ type Props = {
   trigger: ReactNode;
   triggerClassName?: string;
   align?: "start" | "end";
+  // Lebar panel (default w-80)
+  panelClassName?: string;
   // Isi panel; `close` untuk menutup setelah aksi
   children: (close: () => void) => ReactNode;
 };
 
 // Panel mengambang di bawah tombol. Tertutup saat klik di luar atau tombol Escape.
-export function DropdownMenu({ label, trigger, triggerClassName, align = "start", children }: Props) {
+export function DropdownMenu({ label, trigger, triggerClassName, align = "start", panelClassName = "w-80", children }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -46,14 +48,14 @@ export function DropdownMenu({ label, trigger, triggerClassName, align = "start"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
-        className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${triggerClassName ?? ""}`}
+        className={`focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 ${triggerClassName ?? ""}`}
       >
         {trigger}
       </button>
       {open ? (
         <div
           id={panelId}
-          className={`absolute top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-field border border-border bg-surface p-2 shadow-card ${align === "end" ? "right-0" : "left-0"}`}
+          className={`glass-overlay absolute top-full z-30 mt-2 flex max-w-[calc(100vw-2rem)] flex-col gap-0.5 rounded-[18px] p-2 ${panelClassName} ${align === "end" ? "right-0" : "left-0"}`}
         >
           {children(() => setOpen(false))}
         </div>

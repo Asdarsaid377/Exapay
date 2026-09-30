@@ -47,7 +47,7 @@ export function ResendVerificationButton({ email, startWithCooldown = false }: P
   return (
     <div className="flex flex-col gap-3">
       {result ? <FormAlert tone={result.tone}>{result.message}</FormAlert> : null}
-      <Button variant="secondary" fullWidth loading={sending} disabled={secondsLeft > 0} onClick={handleResend}>
+      <Button variant="secondary" size="lg" fullWidth loading={sending} disabled={secondsLeft > 0} onClick={handleResend}>
         {sending ? "Mengirim…" : secondsLeft > 0 ? `Kirim ulang dalam ${secondsLeft} detik` : "Kirim ulang email verifikasi"}
       </Button>
     </div>

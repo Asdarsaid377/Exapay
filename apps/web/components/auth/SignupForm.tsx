@@ -66,7 +66,7 @@ export function SignupForm() {
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex size-11 items-center justify-center rounded-field bg-accent-soft text-accent">
+          <div className="flex size-11 items-center justify-center rounded-field bg-accent-soft text-accent-strong">
             <MailCheck aria-hidden className="size-5" />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -76,7 +76,7 @@ export function SignupForm() {
               tersebut untuk mengaktifkan akun, lalu masuk ke Exapay. Tautan berlaku selama 24 jam.
             </p>
           </div>
-          <p className="text-xs text-text-muted">Tidak menerima email? Periksa folder spam, atau kirim ulang di bawah.</p>
+          <p className="text-caption text-text-tertiary">Tidak menerima email? Periksa folder spam, atau kirim ulang di bawah.</p>
         </div>
         <div className="flex flex-col gap-3">
           <ResendVerificationButton email={sentTo} startWithCooldown />
@@ -143,7 +143,7 @@ export function SignupForm() {
           hint={`Minimal ${PASSWORD_MIN_LENGTH} karakter. Gunakan kombinasi huruf dan angka agar lebih aman.`}
           disabled={submitting}
         />
-        <Button type="submit" fullWidth loading={submitting} className="mt-2">
+        <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-2">
           {submitting ? "Mendaftarkan…" : "Daftar"}
         </Button>
       </form>

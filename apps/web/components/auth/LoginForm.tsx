@@ -115,6 +115,7 @@ export function LoginForm({ initialTenants, next }: Props) {
           <TenantPicker tenants={step.tenants} pendingTenantId={pendingTenantId} onSelect={handleSelectTenant} />
           <Button
             variant="secondary"
+            size="lg"
             fullWidth
             loading={switchingAccount}
             disabled={pendingTenantId !== null}
@@ -168,7 +169,7 @@ export function LoginForm({ initialTenants, next }: Props) {
             </Link>
           }
         />
-        <Button type="submit" fullWidth loading={submitting} className="mt-2">
+        <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-2">
           {submitting ? "Memproses…" : "Masuk"}
         </Button>
       </form>
