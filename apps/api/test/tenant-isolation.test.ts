@@ -96,12 +96,16 @@ describe("role runtime app_user", () => {
        where n.nspname = 'public' and c.relkind = 'r'`,
     );
     expect(rows.map((r) => r.relname).sort()).toEqual([
+      "attendance_records",
       "audit_logs",
+      "company_holidays",
       "departments",
       "email_verification_tokens",
       "employees",
       "invitations",
       "memberships",
+      "national_holiday_exclusions",
+      "national_holidays",
       "password_reset_tokens",
       "positions",
       "provinces",
@@ -109,6 +113,7 @@ describe("role runtime app_user", () => {
       "regencies",
       "tenants",
       "users",
+      "work_schedule_days",
     ]);
     for (const row of rows) {
       expect(row.relrowsecurity, `${row.relname} RLS enabled`).toBe(true);

@@ -1,6 +1,25 @@
-import { EMPLOYMENT_STATUSES, GENDERS, MEMBERSHIP_ROLES, PTKP_STATUSES } from "@exapay/shared";
+import { EMPLOYMENT_STATUSES, GENDERS, MEMBERSHIP_ROLES, NATIONAL_HOLIDAY_KINDS, PTKP_STATUSES } from "@exapay/shared";
 import { sql } from "drizzle-orm";
-import { boolean, check, date, foreignKey, index, jsonb, pgEnum, pgTable, smallint, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  date,
+  doublePrecision,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  smallint,
+  text,
+  time,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 // Schema fondasi multi-tenant (feature 02).
 // RLS policy, FORCE RLS, trigger updated_at, dan grant role app_user TIDAK bisa dinyatakan di sini —
@@ -317,5 +336,124 @@ export const employees = pgTable(
     ),
     check("employees_end_date", sql`${t.endDate} IS NULL OR ${t.endDate} >= ${t.joinDate}`),
     check("employees_nik_hash_pair", sql`(${t.nikEncrypted} IS NULL) = (${t.nikHash} IS NULL)`),
+  ],
+);
+
+// Jadwal kerja default per tenant (feature 13): tepat 7 baris (Senin=1 … Minggu=7), diisi saat tenant dibuat.
+// Jam tetap tersimpan untuk hari libur agar kembali saat hari itu diaktifkan lagi. Tanpa shift malam (masuk < pulang).
+export const workScheduleDays = pgTable(
+  "work_schedule_days",
+  {
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    weekday: smallint("weekday").notNull(),
+    isWorkday: boolean("is_workday").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    primaryKey({ name: "work_schedule_days_pkey", columns: [t.tenantId, t.weekday] }),
+    check("work_schedule_days_weekday_range", sql`${t.weekday} between 1 and 7`),
+    check("work_schedule_days_time_order", sql`${t.startTime} < ${t.endTime}`),
+  ],
+);
+
+export const nationalHolidayKind = pgEnum("national_holiday_kind", NATIONAL_HOLIDAY_KINDS);
+
+// Libur nasional & cuti bersama (feature 13) — data referensi platform sesuai SKB 3 Menteri, baca-saja untuk app_user,
+// diisi lewat migration per tahun. Satu baris per tanggal.
+export const nationalHolidays = pgTable("national_holidays", {
+  date: date("date", { mode: "string" }).primaryKey(),
+  name: text("name").notNull(),
+  kind: nationalHolidayKind("kind").notNull(),
+});
+
+// Libur nasional/cuti bersama yang TIDAK diliburkan usaha (tetap masuk kerja). Tidak ada baris = diikuti.
+export const nationalHolidayExclusions = pgTable(
+  "national_holiday_exclusions",
+  {
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    date: date("date", { mode: "string" })
+      .notNull()
+      .references(() => nationalHolidays.date, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ name: "national_holiday_exclusions_pkey", columns: [t.tenantId, t.date] })],
+);
+
+// Libur khusus usaha (feature 13), mis. ulang tahun usaha. Satu libur per tanggal per tenant.
+export const companyHolidays = pgTable(
+  "company_holidays",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    date: date("date", { mode: "string" }).notNull(),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("company_holidays_tenant_date_key").on(t.tenantId, t.date)],
+);
+
+// Absen masuk/pulang (feature 14): satu baris per karyawan per tanggal kerja (tanggal lokal zona waktu usaha).
+// Jam selalu dari server. Jadwal & menit telat disimpan saat absen masuk (snapshot) — jadwal kerja tidak berversi,
+// jadi perubahan jadwal kemudian tidak mengubah status telat hari yang sudah lewat. Koreksi admin menyusul (feature 16).
+// Lokasi GPS opsional: dicatat bila browser memberi izin, tidak memblokir absen.
+export const attendanceRecords = pgTable(
+  "attendance_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    // Zona waktu IANA yang dipakai menghitung tanggal kerja & telat
+    timeZone: text("time_zone").notNull(),
+    // Jam jadwal hari itu; null = bukan hari kerja (libur / hari libur jadwal)
+    scheduledStart: time("scheduled_start"),
+    scheduledEnd: time("scheduled_end"),
+    lateMinutes: integer("late_minutes").notNull().default(0),
+    checkInAt: timestamp("check_in_at", { withTimezone: true }).notNull(),
+    checkInLatitude: doublePrecision("check_in_latitude"),
+    checkInLongitude: doublePrecision("check_in_longitude"),
+    checkInAccuracy: doublePrecision("check_in_accuracy"),
+    checkOutAt: timestamp("check_out_at", { withTimezone: true }),
+    checkOutLatitude: doublePrecision("check_out_latitude"),
+    checkOutLongitude: doublePrecision("check_out_longitude"),
+    checkOutAccuracy: doublePrecision("check_out_accuracy"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Juga melayani filter tenant & riwayat per karyawan per rentang tanggal
+    uniqueIndex("attendance_records_tenant_employee_date_key").on(t.tenantId, t.employeeId, t.workDate),
+    foreignKey({ name: "attendance_records_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    check("attendance_records_late_minutes", sql`${t.lateMinutes} >= 0`),
+    check("attendance_records_schedule_pair", sql`(${t.scheduledStart} IS NULL) = (${t.scheduledEnd} IS NULL)`),
+    check("attendance_records_off_day_not_late", sql`${t.scheduledStart} IS NOT NULL OR ${t.lateMinutes} = 0`),
+    check("attendance_records_check_out_order", sql`${t.checkOutAt} IS NULL OR ${t.checkOutAt} >= ${t.checkInAt}`),
+    check(
+      "attendance_records_check_in_location",
+      sql`(${t.checkInLatitude} IS NULL) = (${t.checkInLongitude} IS NULL) AND (${t.checkInLatitude} IS NOT NULL OR ${t.checkInAccuracy} IS NULL)`,
+    ),
+    check(
+      "attendance_records_check_out_location",
+      sql`(${t.checkOutLatitude} IS NULL) = (${t.checkOutLongitude} IS NULL) AND (${t.checkOutLatitude} IS NOT NULL OR ${t.checkOutAccuracy} IS NULL)`,
+    ),
+    check(
+      "attendance_records_check_out_location_needs_time",
+      sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutLatitude} IS NULL`,
+    ),
   ],
 );

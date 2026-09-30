@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 3 — Absensi
-**Terakhir selesai:** 12 Impor Karyawan dari Excel (2026-09-30)
-**Berikutnya:** 13 Jadwal Kerja & Hari Libur
+**Terakhir selesai:** 14 Absen Masuk/Pulang (Portal Karyawan) (2026-09-30)
+**Berikutnya:** 15 Izin, Sakit, Cuti
 
 ---
 
@@ -31,8 +31,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 12 Impor Karyawan dari Excel
 
 ### Phase 3 — Absensi
-- [ ] 13 Jadwal Kerja & Hari Libur
-- [ ] 14 Absen Masuk/Pulang (Portal Karyawan)
+- [x] 13 Jadwal Kerja & Hari Libur
+- [x] 14 Absen Masuk/Pulang (Portal Karyawan)
 - [ ] 15 Izin, Sakit, Cuti
 - [ ] 16 Rekap & Koreksi Absensi
 - [ ] 17 Aturan Potongan Absensi
@@ -155,6 +155,17 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Library Excel: **`read-excel-file` + `write-excel-file`** (MIT, aktif) — bukan `exceljs` (tidak rilis sejak 2023) atau `xlsx` npm (usang, ada CVE). Sel angka di kolom NIK/NPWP/rekening/HP **ditolak** (Excel presisi 15 digit → digit NIK hilang); template memformat kolom tsb sebagai Teks. Dropdown template disisipkan ke XML sheet lewat `features` (write-excel-file tidak mendukung data validation). Batas 1 MB / 500 baris; isi zip > 30 MB ditolak (zip bomb); file .xls lama ditolak dengan pesan jelas. `experimental.serverActions.bodySizeLimit: "2mb"` di `next.config.ts`.
 - 2026-09-30 — Unduh template lewat Route Handler `app/(main)/employees/import/template/route.ts` (`apiFetchFile` di `lib/api/server.ts`); gagal → redirect `?template=error`. `apiRequest` kini menerima body `FormData`. API 413 → pesan "File terlalu besar" (AllExceptionsFilter).
 
+- 2026-09-30 — **Jadwal kerja & hari libur (feature 13):** `/settings/attendance` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — FormSection + SegmentedControl + daftar ala OrgListCard + Dialog. Komponen baru di `components/attendance/`.
+- 2026-09-30 — Libur nasional = **data referensi platform** (`national_holidays`, keputusan user), diisi per tahun lewat migration dari SKB 3 Menteri (0011: 2026 & 2027, sumber setneg.go.id). Tahun baru / perubahan SKB (mis. geser Idulfitri hasil isbat) = migration baru. Libur nasional **dan** cuti bersama otomatis diliburkan; usaha bisa memilih "Tetap masuk kerja" per tanggal (`national_holiday_exclusions`, ada baris = tidak diliburkan). Libur khusus usaha di `company_holidays` (satu per tanggal).
+- 2026-09-30 — Jadwal kerja: satu jadwal default per usaha, 7 baris `work_schedule_days` (PK tenant+hari ISO 1–7), bawaan **Senin–Jumat 08.00–17.00** (`DEFAULT_WORK_SCHEDULE` di shared; `seedTenantDefaults` + backfill migration 0010). Jam hari libur tetap disimpan. Tanpa shift malam (masuk < pulang). **Tidak berversi** — perubahan jadwal ikut memengaruhi hitung ulang periode lampau (payroll final aman karena snapshot); pertimbangkan versi berlaku-tanggal jika dibutuhkan feature 16/27.
+- 2026-09-30 — Hitung hari kerja: fungsi murni `apps/api/src/modules/attendance/work-calendar.ts` (tanggal string YYYY-MM-DD, dihitung UTC) + `WorkCalendarService.loadCalendar(tx, from, to)` (diekspor `AttendanceModule`) untuk KPI (feature 21) & payroll (feature 27). Hari kerja = hari kerja jadwal − libur yang diikuti (libur di luar hari kerja tidak dihitung dua kali). Endpoint `GET /attendance/working-days` dibatasi rentang 2 tahun.
+
+- 2026-09-30 — **Absen masuk/pulang (feature 14):** tabel `attendance_records` (migration `0012`) — satu baris per karyawan per `work_date` (unik `tenant_id, employee_id, work_date`), FK komposit ke `employees`, app_user SELECT/INSERT/UPDATE **tanpa DELETE**. Jam selalu `new Date()` di API (field jam dari client diabaikan). Tanggal kerja & telat dihitung di zona waktu provinsi usaha (`tenants.regency_code → provinces.time_zone`, fallback `Asia/Jakarta`); fungsi murni `attendance-clock.ts` (`localClock`, `lateMinutes`, `monthRange`).
+- 2026-09-30 — Jadwal hari itu (`scheduled_start/end`) + `late_minutes` + `time_zone` **disimpan saat absen masuk (snapshot)** — jadwal kerja tidak berversi, jadi perubahan jadwal tidak mengubah status hari lampau. Telat = menit penuh setelah jam masuk (08:00:59 = tepat waktu), **tanpa toleransi** (toleransi di aturan potongan feature 17). Absen di hari libur/akhir pekan diterima, `scheduled_*` null → status `off_day`, tidak pernah telat. `WorkCalendarService.dayInfo(tx, date)` ditambahkan (jadwal + nama libur satu tanggal).
+- 2026-09-30 — **Semua peran boleh absen** (keputusan user) asal akun tertaut data karyawan aktif (`end_date` null dan `join_date` ≤ hari ini) → selain itu 403; `GET` mengembalikan `access: ok|not_linked|inactive`. Endpoint `/attendance/me/today|check-in|check-out|history` (`@Roles(...MEMBERSHIP_ROLES)`). Satu masuk & satu pulang per hari → 409 (termasuk ketukan ganda via unique violation). Pulang hanya untuk `work_date` hari ini — lupa pulang kemarin dikoreksi admin (feature 16). Absen sendiri **tanpa audit log** (baris absensi = catatannya); koreksi feature 16 wajib audit.
+- 2026-09-30 — GPS opsional: lat/long/akurasi (`double precision`) masuk & pulang, CHECK berpasangan. Web meminta lokasi maks 8 detik (`lib/geolocation.ts`); gagal/ditolak → absen tetap dikirim tanpa lokasi. API hanya mengembalikan `checkInLocated/checkOutLocated`, bukan koordinat.
+- 2026-09-30 — UI: kartu absen `/me` mengikuti snapshot `me.html`; `/me/attendance` **tanpa referensi visual** (turunkan dari pola me.html, izin user). Jam di kartu = jam server (selisih jam perangkat dikoreksi), refresh otomatis saat lewat tengah malam lokal. Owner/admin/atasan masuk portal lewat menu akun "Absen saya" (`AppShell showPortalLink`), kembali lewat "Kembali ke dashboard" (`UserMenu switchTo`). Tombol absen memakai Button `lg` (h-12) — desain 58px; tidak ditambah ukuran baru.
+
 ---
 
 ## Catatan (Notes)
@@ -185,5 +196,9 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Data dev berisi beberapa tenant uji "Konveksi Uji …" / "Usaha Smoke" dari verifikasi feature 07, dan akun `*@contoh.local` tanpa usaha dari verifikasi feature 08 — boleh diabaikan. Profil "Kopi Nusantara" berisi data contoh (Kota Makassar, gajian tgl 25, NPWP contoh) dari verifikasi feature 09.
 - Component yang dirender dua kali (tabel desktop + daftar mobile) tidak boleh memakai `name`/`id` statis — pakai `useId` (grup radio bernama sama saling menimpa status checked).
 - Data dev "Kopi Nusantara" berisi 4 karyawan contoh dari verifikasi feature 11 (Rudi Hartono tertaut ke `atasan@exapay.local`, bawahan: Dewi & Rina; Siti tanpa atasan).
-- Belum ada: login karyawan nonaktif tetap bisa masuk portal selama membership ada (putuskan di feature 14/37 — mis. tolak absen untuk karyawan nonaktif); bawahan dari atasan yang dinonaktifkan tetap menunjuk atasan tsb (peringatan/pemindahan belum ada); `PageHeader` di mobile menumpuk tombol di bawah judul (desain menaruhnya di kanan).
+- Belum ada: login karyawan nonaktif tetap bisa masuk portal selama membership ada (absen sudah ditolak sejak feature 14; akses portal lain diputuskan di feature 37); bawahan dari atasan yang dinonaktifkan tetap menunjuk atasan tsb (peringatan/pemindahan belum ada); `PageHeader` di mobile menumpuk tombol di bawah judul (desain menaruhnya di kanan).
 - Template impor belum pernah dibuka di Microsoft Excel asli (hanya divalidasi XML + QuickLook macOS) — cek dropdown saat uji coba klien. Data dev "Kopi Nusantara" mungkin berisi 24 karyawan contoh "… Pratama" dari verifikasi feature 12.
+- Data libur nasional tersedia 2026–2027. Tahun tanpa data menampilkan peringatan di `/settings/attendance`; tambahkan 2028 lewat migration setelah SKB terbit (biasanya Sept). `TextField` kini punya prop `labelClassName` (mis. `lg:sr-only`). Total test API 122 per feature 13.
+- Zona waktu usaha: API absensi memakai `provinces.time_zone` (feature 14); `/me` & `/me/attendance` memakai `timeZone` dari API. Halaman lain (header AppShell, `/settings/attendance`) masih WIB via `lib/datetime.ts` (TODO).
+- Total test API 134 per feature 14 (e2e absensi memalsukan jam dengan `vi.useFakeTimers({ toFake: ["Date"] })` + login ulang setelah jam digeser). Data dev: Rudi (`atasan@exapay.local`) punya absen 30 Sep 2026 telat 821 menit dari verifikasi feature 14.
+- Karyawan nonaktif masih bisa membuka portal, tapi absen ditolak (feature 14). `karyawan@exapay.local` (dev) belum tertaut data karyawan.

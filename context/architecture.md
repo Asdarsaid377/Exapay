@@ -69,6 +69,7 @@
 │           ├── regions/          → referensi provinsi & kabupaten/kota Kemendagri (/regions, data platform)
 │           ├── organization/     → departemen & jabatan (/organization, feature 10)
 │   │           ├── employees/        → data karyawan (/employees, feature 11) + impor Excel (employee-import.*: parser, template, service, controller — feature 12)
+│   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14)
 │   │           ├── tasks/
 │   │           ├── kpi/
 │   │           ├── payroll/
@@ -86,6 +87,7 @@
 │       │   ├── (main)/[...slug]/     → "Segera hadir" untuk menu yang belum dibangun (selain itu 404)
 │       │   ├── (portal)/layout.tsx   → PortalShell (bottom nav) portal karyawan
 │       │   ├── (portal)/me/[...slug]/ → "Segera hadir" portal
+│       │   ├── (portal)/me/page.tsx, me/attendance/ → kartu absen & riwayat absensi (feature 14)
 │       │   ├── (admin)/layout.tsx    → AppShell panel super-admin (menu ADMIN_MENU)
 │       │   ├── (admin)/admin/tenants/ → daftar & detail tenant
 │       │   ├── (auth)/invite/[token]/ → terima undangan
@@ -93,6 +95,7 @@
 │       │   ├── (main)/settings/company/ → profil usaha (feature 09)
 │       │   ├── (main)/organization/ → departemen & jabatan (feature 10)
 │       │   ├── (main)/employees/ → daftar, tambah (new), detail [id] karyawan (feature 11), impor (import/ + import/template/route.ts unduh template — feature 12)
+│       │   ├── (main)/settings/attendance/ → jadwal kerja & hari libur (feature 13; aturan potongan menyusul feature 17)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
@@ -100,10 +103,11 @@
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
+│       │   ├── geolocation.ts        → lokasi browser saat absen (tidak memblokir)
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)
 │       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)
 ├── packages/

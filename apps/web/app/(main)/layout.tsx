@@ -26,6 +26,7 @@ export default async function MainLayout({ children }: Props) {
       headerStart={<TenantSwitcher activeTenant={activeTenant} tenants={session.tenants} />}
       sections={staffMenuFor(activeTenant.role)}
       todayLabel={formatLongDate(new Date())}
+      showPortalLink
     >
       {children}
     </AppShell>

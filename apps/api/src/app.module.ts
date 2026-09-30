@@ -4,6 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { envSchema } from "./common/config/env.js";
 import { CryptoModule } from "./common/crypto/crypto.module.js";
 import { DatabaseModule } from "./database/database.module.js";
+import { AttendanceModule } from "./modules/attendance/attendance.module.js";
 import { AuditModule } from "./modules/audit/audit.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { CompanyModule } from "./modules/company/company.module.js";
@@ -33,6 +34,7 @@ import { RedisModule } from "./redis/redis.module.js";
     RegionsModule,
     OrganizationModule,
     EmployeesModule,
+    AttendanceModule,
     RedisModule,
     HealthModule,
   ],

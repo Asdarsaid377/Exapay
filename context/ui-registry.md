@@ -45,7 +45,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /login, /forgot-password, /signup
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (Input)
 - **Pola kelas kunci:** input `h-11 rounded-field border border-border-control bg-control px-3.5 text-body`, focus `bg-surface-solid border-accent ring-3 ring-accent/28`; error `border-danger` + pesan `text-caption text-danger-text`; hint `text-caption text-text-tertiary`; disabled `bg-fill-subtle border-border-subtle text-text-tertiary`; label `text-[13px] font-bold`
-- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint` (ReactNode), `requiredMark` (* merah), `labelAction`, `trailing`. Server-safe (tanpa state)
+- **Catatan:** props wajib `id` + `label`; opsional `error`, `hint` (ReactNode), `requiredMark` (* merah), `labelAction`, `trailing`, `labelClassName` (kelas baris label, mis. `lg:sr-only` di baris tabel yang punya judul kolom — label tetap terbaca screen reader). Server-safe (tanpa state)
 
 ### PasswordField
 - **Path:** apps/web/components/common/PasswordField.tsx
@@ -63,7 +63,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### EmptyState
 - **Path:** apps/web/components/common/EmptyState.tsx
-- **Dipakai di:** /dashboard, /me, halaman "Segera hadir", /organization (surface none)
+- **Dipakai di:** /dashboard, /me (gagal muat kartu absen), /me/attendance (solid), halaman "Segera hadir", /organization (surface none)
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (state empty — tindakan tertunda)
 - **Pola kelas kunci:** card `glass-strong` (atau `surface-solid`) `rounded-card px-6 py-12 text-center`; ikon status `size-7` tanpa kotak (`text-accent-strong` / `text-success`); judul `font-display text-base font-bold`; teks `text-sm text-text-secondary`
 - **Catatan:** props `icon`, `iconTone` (accent|success), `title`, `description`, `action`, `surface` (glass|solid|none — portal di luar kartu utama pakai solid; `none` = di dalam card lain, `py-10` tanpa latar, judul h3). CTA pakai `buttonClassName` atau tombol client
@@ -108,7 +108,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** header AppShell & PortalShell; avatar juga di kartu user drawer
 - **Referensi desain:** context/designs/dashboard.html + design-tokens.html (avatar + dropdown akun)
 - **Pola kelas kunci:** avatar `size-10` (lg: `size-11`) `rounded-full bg-inverse text-on-inverse font-display font-bold`; trigger `rounded-full p-0.75 hover:bg-glass-hover lg:h-12.5` + ChevronDown (desktop); panel `w-65`: nama `font-display text-[15px] font-bold` + email `text-[13px]`, Keluar `h-11 rounded-inner text-danger-text font-bold hover:bg-danger/8`
-- **Catatan:** UserMenu prop `showChevron` (portal: false). Keluar = `<form action={logout}>`. UserAvatar prop `size` md|lg
+- **Catatan:** UserMenu prop `showChevron` (portal: false), `switchTo` portal|dashboard (feature 14 — item `h-11 rounded-inner text-sm font-bold hover:bg-accent/10` + ikon Clock/LayoutDashboard `text-text-secondary`, di atas Keluar; AppShell `showPortalLink` → "Absen saya", PortalShell peran non-karyawan → "Kembali ke dashboard"). Keluar = `<form action={logout}>`. UserAvatar prop `size` md|lg
 
 ### PortalShell / PortalBottomNav
 - **Path:** apps/web/components/layout/PortalShell.tsx, PortalBottomNav.tsx
@@ -353,3 +353,59 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** diturunkan dari pola employees-new.html (FormSection, action bar) + employees.html (data-table) — tanpa snapshot halaman ini (feature 12, izin user)
 - **Pola kelas kunci:** langkah pilih = 2 FormSection ("1. Unduh template" tautan `<a>` bergaya secondary, "2. Unggah file" FileDropzone); pratinjau = card file `glass-strong rounded-card` (nama `font-display font-bold` + ringkasan `text-small tabular-nums` + Periksa ulang/Ganti file secondary), Banner warning/danger, SegmentedControl filter (Perlu diperbaiki/Siap/Semua — mobile `fullWidth`, label "Salah"), tabel `glass-data rounded-card` pola EmployeeTable (kolom Baris, Nama, Jabatan · Departemen, Status kerja, Tanggal masuk, Hasil pemeriksaan; sel `align-top`), kesalahan `li text-small` = kolom `font-bold text-danger-text` + pesan `text-text-secondary`, baris valid Badge success "Siap diimpor"; mobile card `glass-data rounded-[20px]`; action bar = pola EmployeeForm (sticky mobile); selesai = EmptyState ikon CircleCheck success + 2 tombol
 - **Catatan:** EmployeeImportFlow client, state `select → preview → done`; File disimpan di state browser dan dikirim ulang saat konfirmasi (Server Action `previewEmployeeImport` / `importEmployees`). Prop `templateError` dari `?template=error`. ImportPreviewTable server-safe (props `rows`)
+
+### WorkScheduleForm
+- **Path:** apps/web/components/attendance/WorkScheduleForm.tsx
+- **Dipakai di:** /settings/attendance (di dalam FormSection "Jadwal kerja")
+- **Referensi desain:** tanpa referensi — diturunkan dari pola FormSection + SegmentedControl (feature 13, izin user; tercatat di progress-tracker)
+- **Pola kelas kunci:** judul kolom desktop `grid-cols-[96px_auto_minmax(0,1fr)_minmax(0,1fr)] text-caption font-bold text-text-secondary`; baris `border-t border-border-subtle py-3`, nama hari `text-[15px] font-bold` (libur `text-text-tertiary`); SegmentedControl Kerja/Libur; TextField `type="time"` dengan `labelClassName="lg:sr-only"` (mobile: label terlihat, grid 2 kolom); footer `border-t pt-5` ringkasan "N hari kerja per minggu · Terakhir diubah" + tombol primary "Simpan jadwal"
+- **Catatan:** client. Jam hari libur dinonaktifkan tapi tetap tersimpan. Error per hari dari `workScheduleInputSchema` (path `days[i]`), error umum (mis. tidak ada hari kerja) lewat FormAlert. Server Action `saveWorkSchedule`
+
+### CalendarDate
+- **Path:** apps/web/components/attendance/CalendarDate.tsx
+- **Dipakai di:** /settings/attendance (daftar libur), /me/attendance (riwayat)
+- **Referensi desain:** ui-rules "Tanggal di daftar pengingat"
+- **Pola kelas kunci:** kolom `w-11` — tanggal `font-display text-xl font-extrabold tabular-nums` + bulan `text-xs text-text-tertiary`
+- **Catatan:** server-safe. Prop `date` (YYYY-MM-DD), `muted`. Pakai ulang untuk kalender kepatuhan (feature 33)
+
+### NationalHolidayList / NationalHolidayActions
+- **Path:** apps/web/components/attendance/NationalHolidayList.tsx, NationalHolidayActions.tsx
+- **Dipakai di:** /settings/attendance
+- **Referensi desain:** tanpa referensi — pola daftar OrgListCard + OrgItemActions (feature 13)
+- **Pola kelas kunci:** baris `min-h-15 border-t border-border-subtle py-2.5 first:border-t-0` = CalendarDate + judul `text-[14.5px] font-bold` + sub `text-small text-text-secondary` ("Hari · Libur nasional/Cuti bersama · di luar hari kerja"); tanggal "tetap masuk" diredupkan + Badge `outline` "Tetap masuk"; menu ⋯ DropdownMenu satu item (Tetap masuk kerja / Jadikan hari libur)
+- **Catatan:** List server-safe (props `holidays`, `workdays`); Actions client → Server Action `setNationalHolidayObservance` + `router.refresh()`, trigger pulse saat berjalan, error kecil di samping menu
+
+### CompanyHolidayList / CompanyHolidayActions / CompanyHolidayFormDialog / DeleteCompanyHolidayDialog / AddCompanyHolidayButton
+- **Path:** apps/web/components/attendance/
+- **Dipakai di:** /settings/attendance
+- **Referensi desain:** tanpa referensi — pola OrgListCard/OrgItemFormDialog/DeleteOrgItemDialog (feature 13)
+- **Pola kelas kunci:** baris sama dengan NationalHolidayList; kosong = teks `text-sm text-text-secondary` "Belum ada libur usaha di {tahun}"; dialog: TextField `type="date"` + Keterangan; tombol tambah secondary "Tambah" di kanan judul grup; hapus = Button `dark`
+- **Catatan:** client (kecuali List). Simpan libur di tahun lain dari yang ditampilkan → pindah ke `?year=` tahun itu. Tanggal ganda → 409 dari API ditampilkan di FormAlert
+
+### HolidayYearSwitch
+- **Path:** apps/web/components/attendance/HolidayYearSwitch.tsx
+- **Dipakai di:** /settings/attendance (aside FormSection "Hari libur")
+- **Referensi desain:** SegmentedControl (design-tokens "segmented")
+- **Pola kelas kunci:** SegmentedControl pilihan tahun
+- **Catatan:** client. Tahun di URL `?year=` (tahun berjalan tanpa param) via `attendanceSettingsHref`; `router.push` dalam transition (kontrol dikunci saat memuat)
+
+### WorkingDaysSummary
+- **Path:** apps/web/components/attendance/WorkingDaysSummary.tsx
+- **Dipakai di:** /settings/attendance (FormSection "Hari kerja {tahun}")
+- **Referensi desain:** tanpa referensi (feature 13)
+- **Pola kelas kunci:** grid `grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2`, sel `rounded-inner bg-fill-subtle px-3 py-2.5` (bulan berjalan `bg-accent-soft` + label `text-accent-strong font-bold`, `aria-current="date"`), bulan `text-caption text-text-tertiary`, angka `font-display text-xl font-extrabold tabular-nums`; total `text-small`
+- **Catatan:** server-safe. Angka dari API (`workingDaysByMonth`) — tidak menghitung di web
+
+### AttendanceCard / AttendanceStatusRow
+- **Path:** apps/web/components/attendance/AttendanceCard.tsx, AttendanceStatusRow.tsx
+- **Dipakai di:** /me
+- **Referensi desain:** context/designs/me.html (frame "Sebelum absen" / "Sesudah absen masuk")
+- **Pola kelas kunci:** card `glass-strong rounded-[24px] p-5 gap-4` (salah satu dari 3 lapisan blur portal); baris atas `text-[13.5px] text-text-secondary` ("Jam server · WITA" | nama libur / Hari kerja); jam `font-display text-[68px] leading-[0.95] font-extrabold tracking-[-0.04em] tabular-nums`; tanggal `text-[15px] font-bold`; jadwal `text-sm text-text-secondary`; tombol Button `lg fullWidth` primary "Absen Masuk" (LogIn) / `dark` "Absen Pulang" (LogOut); baris status `rounded-[14px] px-3.5 py-3` + ikon `size-4.5` + teks `text-[14.5px] font-bold` — tone success `bg-success-soft text-success-text` · warning (telat) `bg-warning-soft text-warning-text` · neutral `bg-fill-subtle`; catatan lokasi MapPin `text-[13px] text-text-secondary`
+- **Catatan:** AttendanceCard client, prop `today` (`AttendanceToday`). Jam berdetak dari jam server (offset), refresh saat lewat tengah malam lokal. Tombol: ambil lokasi (`lib/geolocation.ts`, label "Mengambil lokasi…") → Server Action `checkIn`/`checkOut` ("Menyimpan…"); error FormAlert danger. `access` ≠ ok → FormAlert info tanpa tombol. Selesai = teks "Absen hari ini selesai". Label status di `lib/attendanceLabels.ts`. AttendanceStatusRow server-safe
+
+### AttendanceMonthNav / AttendanceSummary / AttendanceHistoryList
+- **Path:** apps/web/components/attendance/AttendanceMonthNav.tsx, AttendanceSummary.tsx, AttendanceHistoryList.tsx
+- **Dipakai di:** /me/attendance
+- **Referensi desain:** tanpa snapshot — diturunkan dari pola me.html (tile "Kehadiran bulan ini", card solid) (feature 14, izin user)
+- **Pola kelas kunci:** nav bulan `surface-solid rounded-[20px] p-1.5` + panah `size-11 rounded-field hover:bg-fill-subtle` + label `font-display text-[17px] font-bold` (bulan depan dari bulan berjalan = panah `text-text-muted` nonaktif); tile `surface-solid rounded-[20px] p-4 gap-1.5` grid 2 kolom (label `text-[13px]`, angka `font-display text-[30px] font-extrabold tabular-nums` + satuan `text-[13px] font-bold`, catatan `text-[12.5px] text-text-tertiary`); daftar `surface-solid rounded-card px-4.5 pt-4.5` judul `text-[17px] font-bold`, baris `border-t border-border-subtle py-3.5` = CalendarDate + hari `text-[14.5px] font-bold` + jam `text-small tabular-nums` + Badge status (success Tepat waktu / warning Telat / neutral Di luar hari kerja)
+- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hanya hadir & telat — alpa/izin menyusul feature 15/16. Pola acuan halaman daftar portal berikutnya (slip, tugas)

@@ -71,6 +71,27 @@
       "when": 1790767584784,
       "tag": "0009_employees",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790772194620,
+      "tag": "0010_work_schedule_holidays",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790772216272,
+      "tag": "0011_seed_national_holidays",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790775245432,
+      "tag": "0012_attendance_records",
+      "breakpoints": true
     }
   ]
 }

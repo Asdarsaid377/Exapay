@@ -25,7 +25,8 @@ export function PortalShell({ user, activeTenant, tenants, children }: Props) {
           <div className="min-w-0 flex-1">
             <TenantSwitcher activeTenant={activeTenant} tenants={tenants} subtitle={`${user.fullName} · ${ROLE_LABELS[activeTenant.role]}`} />
           </div>
-          <UserMenu user={user} showChevron={false} />
+          {/* Owner/admin/atasan membuka portal untuk absen (feature 14) — jalan kembali ke area sidebar */}
+          <UserMenu user={user} showChevron={false} switchTo={activeTenant.role === "karyawan" ? undefined : "dashboard"} />
         </header>
         <main className="flex flex-col gap-3.5">{children}</main>
       </div>

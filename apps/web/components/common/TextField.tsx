@@ -11,9 +11,11 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "id"> & {
   labelAction?: ReactNode;
   // Elemen di dalam input sebelah kanan (mis. tombol tampilkan password)
   trailing?: ReactNode;
+  // Kelas baris label, mis. "lg:sr-only" di tabel yang punya judul kolom (label tetap terbaca screen reader)
+  labelClassName?: string;
 };
 
-export function TextField({ id, label, error, hint, requiredMark = false, labelAction, trailing, className, ...rest }: Props) {
+export function TextField({ id, label, error, hint, requiredMark = false, labelAction, trailing, labelClassName, className, ...rest }: Props) {
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   const inputClasses = [
     "h-11 w-full rounded-field border bg-control px-3.5 text-body text-text-primary placeholder:text-text-muted transition-[border-color,box-shadow,background-color]",
@@ -26,7 +28,7 @@ export function TextField({ id, label, error, hint, requiredMark = false, labelA
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between ${labelClassName ?? ""}`}>
         <label htmlFor={id} className="text-[13px] font-bold text-text-primary">
           {label}
           {requiredMark ? <span className="text-danger-text"> *</span> : null}
