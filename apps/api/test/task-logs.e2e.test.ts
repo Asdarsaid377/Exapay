@@ -299,7 +299,7 @@ describe("log tugas harian", () => {
     expect((await get(karyawan, `/tasks/logs/${id}/photo`)).status).toBe(404);
 
     // Sudah diverifikasi (feature 20) → terkunci
-    await withTenant(db, { tenantId: ws.tenantId, userId: null }, (tx) => tx.update(taskLogs).set({ status: "approved" }).where(eq(taskLogs.id, id)));
+    await withTenant(db, { tenantId: ws.tenantId, userId: null }, (tx) => tx.update(taskLogs).set({ status: "approved", decidedAt: new Date() }).where(eq(taskLogs.id, id)));
     expect((await editTask(karyawan, id, { note: "Ubah lagi" })).status).toBe(409);
     expect((await deleteTask(karyawan, id)).status).toBe(409);
     expect((await get(karyawan, "/tasks/me")).body.data.logs[0]).toMatchObject({ id, status: "approved", editable: false });

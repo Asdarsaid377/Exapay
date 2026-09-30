@@ -759,6 +759,17 @@ export const taskLogs = pgTable(
     status: taskLogStatus("status").notNull().default("pending"),
     // Akun yang mencatat (akun tertaut karyawan saat itu)
     createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Terakhir diubah karyawan (updated_at ikut berubah saat diverifikasi)
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    // Verifikasi atasan (feature 20). verified_quantity = realisasi yang diakui (angka karyawan atau koreksi atasan);
+    // hanya catatan indikator yang disetujui — satu-satunya angka yang masuk skor KPI (feature 21). quantity = angka asli karyawan.
+    verifiedQuantity: numeric("verified_quantity", { precision: 18, scale: 2 }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decidedByUserId: uuid("decided_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Snapshot nama pemutus (dibaca karyawan)
+    decidedByName: text("decided_by_name"),
+    // Alasan tolak / koreksi (wajib), catatan setuju (opsional)
+    decisionNote: text("decision_note"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -767,6 +778,8 @@ export const taskLogs = pgTable(
     unique("task_logs_tenant_id_id_key").on(t.tenantId, t.id),
     // Log per karyawan per tanggal; juga melayani filter tenant
     index("task_logs_tenant_employee_date_idx").on(t.tenantId, t.employeeId, t.workDate),
+    // Daftar verifikasi per status (menunggu: tanggal terlama dulu)
+    index("task_logs_tenant_status_date_idx").on(t.tenantId, t.status, t.workDate),
     // Pemeriksaan FK RESTRICT saat indikator dihapus
     index("task_logs_tenant_indicator_idx").on(t.tenantId, t.indicatorId),
     foreignKey({
@@ -786,6 +799,21 @@ export const taskLogs = pgTable(
     check(
       "task_logs_photo",
       sql`(${t.photoKey} IS NULL) = (${t.photoType} IS NULL) AND (${t.photoKey} IS NULL) = (${t.photoSize} IS NULL) AND coalesce(${t.photoSize} > 0, true)`,
+    ),
+    // Diputuskan ⇔ decided_at terisi; menunggu tanpa jejak keputusan
+    check(
+      "task_logs_decision",
+      sql`(${t.status} <> 'pending') = (${t.decidedAt} IS NOT NULL) AND (${t.decidedAt} IS NOT NULL OR (${t.decidedByUserId} IS NULL AND ${t.decidedByName} IS NULL AND ${t.decisionNote} IS NULL))`,
+    ),
+    // Realisasi diakui hanya untuk catatan indikator yang disetujui
+    check(
+      "task_logs_verified_quantity",
+      sql`(${t.verifiedQuantity} IS NOT NULL) = (${t.status} = 'approved' AND ${t.indicatorId} IS NOT NULL) AND coalesce(${t.verifiedQuantity} > 0, true)`,
+    ),
+    // Tolak & koreksi wajib beralasan
+    check(
+      "task_logs_decision_note",
+      sql`(${t.decisionNote} IS NULL OR char_length(${t.decisionNote}) BETWEEN 1 AND 500) AND (${t.status} <> 'rejected' OR ${t.decisionNote} IS NOT NULL) AND (${t.verifiedQuantity} IS NULL OR ${t.verifiedQuantity} = ${t.quantity} OR ${t.decisionNote} IS NOT NULL)`,
     ),
   ],
 );

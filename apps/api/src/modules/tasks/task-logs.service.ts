@@ -64,6 +64,11 @@ const logColumns = {
   status: taskLogs.status,
   createdAt: taskLogs.createdAt,
   updatedAt: taskLogs.updatedAt,
+  editedAt: taskLogs.editedAt,
+  verifiedQuantity: taskLogs.verifiedQuantity,
+  decidedAt: taskLogs.decidedAt,
+  decidedByName: taskLogs.decidedByName,
+  decisionNote: taskLogs.decisionNote,
 };
 
 type LogRow = {
@@ -80,27 +85,44 @@ type LogRow = {
   status: TaskLogStatus;
   createdAt: Date;
   updatedAt: Date;
+  editedAt: Date | null;
+  verifiedQuantity: string | null;
+  decidedAt: Date | null;
+  decidedByName: string | null;
+  decisionNote: string | null;
 };
 
-function isLoggableType(type: string | null): type is LoggableKpiIndicatorType {
+export function isLoggableType(type: string | null): type is LoggableKpiIndicatorType {
   return LOGGABLE_KPI_INDICATOR_TYPES.some((loggable) => loggable === type);
 }
 
-function toTaskLog(row: LogRow, editable: boolean): TaskLog {
+// Isi catatan tanpa indikator/editable — dipakai juga daftar verifikasi (feature 20)
+export function taskLogFields(row: Omit<LogRow, "indicatorId" | "indicatorName" | "indicatorType" | "indicatorUnit">): Omit<TaskLog, "indicator" | "editable"> {
   return {
     id: row.id,
     workDate: row.workDate,
-    // Indikator yang tipenya berubah tidak mungkin punya log (ditolak template KPI) — guard untuk tipe TS
-    indicator:
-      row.indicatorId && row.indicatorName && isLoggableType(row.indicatorType)
-        ? { id: row.indicatorId, name: row.indicatorName, type: row.indicatorType, unit: row.indicatorUnit ?? "" }
-        : null,
     quantity: row.quantity === null ? null : trimDecimal(row.quantity),
     note: row.note,
     photo: row.photoType && row.photoSize !== null ? { contentType: row.photoType, size: row.photoSize } : null,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    editedAt: row.editedAt ? row.editedAt.toISOString() : null,
+    verifiedQuantity: row.verifiedQuantity === null ? null : trimDecimal(row.verifiedQuantity),
+    decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
+    decidedByName: row.decidedByName,
+    decisionNote: row.decisionNote,
+  };
+}
+
+function toTaskLog(row: LogRow, editable: boolean): TaskLog {
+  return {
+    ...taskLogFields(row),
+    // Indikator yang tipenya berubah tidak mungkin punya log (ditolak template KPI) — guard untuk tipe TS
+    indicator:
+      row.indicatorId && row.indicatorName && isLoggableType(row.indicatorType)
+        ? { id: row.indicatorId, name: row.indicatorName, type: row.indicatorType, unit: row.indicatorUnit ?? "" }
+        : null,
     editable,
   };
 }
@@ -154,7 +176,8 @@ export class TaskLogsService {
       const totals = await tx
         .select({
           indicatorId: taskLogs.indicatorId,
-          total: sql<string>`coalesce(sum(${taskLogs.quantity}) filter (where ${taskLogs.status} <> 'rejected'), 0)::text`,
+          // Angka koreksi atasan menggantikan angka karyawan
+          total: sql<string>`coalesce(sum(coalesce(${taskLogs.verifiedQuantity}, ${taskLogs.quantity})) filter (where ${taskLogs.status} <> 'rejected'), 0)::text`,
         })
         .from(taskLogs)
         .where(and(eq(taskLogs.employeeId, employee.id), eq(taskLogs.workDate, selected)))
@@ -269,6 +292,7 @@ export class TaskLogsService {
             indicatorId: input.indicatorId,
             quantity: input.quantity,
             note: input.note,
+            editedAt: new Date(),
             ...(replacePhoto ? { photoKey: key, photoType: photo?.contentType ?? null, photoSize: photo ? photo.buffer.length : null } : {}),
           })
           .where(eq(taskLogs.id, id));

@@ -3,6 +3,8 @@
 import type { KpiPositionOption } from "@exapay/shared";
 import Link from "next/link";
 
+import { Checkbox } from "@/components/common/Checkbox";
+
 type Props = {
   // Template yang sedang diubah (null = template baru)
   templateId: string | null;
@@ -42,13 +44,7 @@ export function KpiPositionPicker({ templateId, positions, selected, error, disa
           return (
             <li key={position.id} className="border-t border-border-subtle first:border-t-0">
               <label className="flex min-h-12 cursor-pointer items-center gap-3 px-3.5 py-2.5 has-disabled:cursor-default">
-                <input
-                  type="checkbox"
-                  className="size-4.5 shrink-0 accent-accent"
-                  checked={checked}
-                  onChange={(e) => toggle(position.id, e.target.checked)}
-                  disabled={disabled}
-                />
+                <Checkbox checked={checked} onChange={(e) => toggle(position.id, e.target.checked)} disabled={disabled} />
                 <span className="flex min-w-0 flex-col">
                   <span className="text-[14.5px] font-bold text-text-primary">{position.name}</span>
                   {elsewhere ? (

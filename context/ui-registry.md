@@ -500,3 +500,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola AttendanceMonthNav + MyLeaveRequestList (feature 19, izin user)
 - **Pola kelas kunci:** strip `surface-solid grid grid-cols-8 gap-1 rounded-[20px] p-1.5`, chip Link `min-h-14 rounded-[14px]` hari `text-xs` + tanggal `font-display text-[17px] font-extrabold`, terpilih `bg-accent-soft text-accent-strong`, tanpa absen `text-text-muted`; daftar `surface-solid rounded-card px-4.5 pt-4.5` baris = jam `w-11 font-display text-[15px] font-extrabold` + judul + realisasi + catatan + foto `size-20 rounded-inner` (tautan tab baru) + Badge status; aksi teks "Ubah" `text-accent-strong` / "Hapus" `text-danger-text` → Dialog konfirmasi Button `dark`
 - **Catatan:** Strip & List server-safe, Actions client (`deleteTaskLog` + `router.refresh()`). Tanggal di URL `?date=YYYY-MM-DD` (hari ini tanpa param). Foto lewat Route Handler `/me/tasks/[id]/photo?v=<updatedAt>`
+
+### TaskVerificationList / TaskVerificationRow / TaskDecisionActions / TaskVerificationFilter
+- **Path:** apps/web/components/tasks/TaskVerificationList.tsx, TaskVerificationRow.tsx, TaskDecisionActions.tsx, TaskVerificationFilter.tsx
+- **Dipakai di:** /kpi/verification
+- **Referensi desain:** tanpa referensi — pola LeaveRequestTable/LeaveDecisionActions + TaskLogList + action bar EmployeeForm (feature 20, izin user)
+- **Pola kelas kunci:** kelompok per karyawan + tanggal = card `glass-data rounded-card`, kepala `px-4.5 pt-4 pb-3.5 lg:px-6` (checkbox grup + EmployeeAvatar `md` + nama `text-[15px] font-bold` + "Jabatan · tanggal panjang" `text-small` + "N menunggu" `text-caption`); baris `border-t border-border-subtle px-4.5 py-3.5 lg:px-6` = checkbox (label `size-11`) + jam `w-11 font-display text-[15px] font-extrabold` + judul `text-[14.5px] font-bold` + realisasi `font-display text-[15px] font-extrabold` (koreksi: `<s>` `text-text-tertiary` → angka baru) + target `text-caption text-text-tertiary` + catatan + foto `size-20 rounded-inner` + keputusan `text-small` (ditolak `text-danger-text`); aksi kanan (desktop) / di bawah (mobile, grid rata): Tolak secondary · Koreksi secondary (hanya indikator) · Setujui primary; bilah bawah `glass-data sticky bottom-2.5 rounded-[26px] lg:rounded-card` checkbox "Pilih semua (n)" / "N dipilih" + Button `lg` "Setujui N"; dialog: kotak ringkasan `rounded-inner bg-fill-subtle`, TextField realisasi (koreksi), TextAreaField alasan, Button `danger` untuk tolak
+- **Catatan:** List client (state pilihan, Server Action `approveTaskLogs` → FormAlert hasil "N disetujui, M dilewati"); Row dipakai di dalam List; Actions client (`useId`, validasi `taskDecisionSchema`, Server Action `decideTaskLog` + `router.refresh()`); Filter `?status=` via `taskVerificationHref`. Kelompok dibentuk `groupByEmployeeDay` (`lib/taskVerificationLabels.ts`) dari urutan API. Foto lewat Route Handler `/kpi/verification/[id]/photo`. Checkbox hanya di filter Menunggu
+
+### Checkbox
+- **Path:** apps/web/components/common/Checkbox.tsx
+- **Dipakai di:** KpiPositionPicker, TaskVerificationList/Row
+- **Referensi desain:** tanpa referensi — checkbox native (feature 18/20)
+- **Pola kelas kunci:** `size-4.5 shrink-0 accent-accent`; pemanggil membungkus dengan `<label>` area sentuh ≥ 44px
+- **Catatan:** server-safe; props input tanpa `type`/`className`

@@ -19,6 +19,13 @@ function quantityOf(log: TaskLog): string | null {
   return log.indicator && log.quantity ? `${formatQuantity(log.quantity)} ${log.indicator.unit}` : null;
 }
 
+// Keputusan atasan (feature 20): "Dikoreksi oleh Andi: struk hanya 41 cup"
+function decisionText(log: TaskLog, corrected: boolean): string | null {
+  if (log.status === "pending" || (log.status === "approved" && !corrected && !log.decisionNote)) return null;
+  const verb = log.status === "rejected" ? "Ditolak" : corrected ? "Dikoreksi" : "Disetujui";
+  return `${verb}${log.decidedByName ? ` oleh ${log.decidedByName}` : ""}${log.decisionNote ? `: ${log.decisionNote}` : ""}`;
+}
+
 // Catatan tugas satu tanggal milik sendiri, terbaru di atas: jam catat + indikator/pekerjaan lain + realisasi + catatan
 // + foto + status. Tanpa referensi desain — pola MyLeaveRequestList (card solid, baris berpemisah) (feature 19, izin user).
 export function TaskLogList({ logs, indicators, timeZone }: Props) {
@@ -33,7 +40,9 @@ export function TaskLogList({ logs, indicators, timeZone }: Props) {
         <ul>
           {logs.map((log) => {
             const quantity = quantityOf(log);
-            const edited = log.updatedAt !== log.createdAt;
+            const corrected = log.verifiedQuantity !== null && log.quantity !== null && log.verifiedQuantity !== log.quantity;
+            const decision = decisionText(log, corrected);
+            const edited = log.editedAt !== null;
             return (
               <li key={log.id} className="flex gap-3.5 border-t border-border-subtle py-3.5 first:border-t-0">
                 <time dateTime={log.createdAt} className="w-11 shrink-0 pt-0.5 font-display text-[15px] font-extrabold text-text-primary tabular-nums">
@@ -43,11 +52,27 @@ export function TaskLogList({ logs, indicators, timeZone }: Props) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="text-[14.5px] font-bold text-text-primary">{titleOf(log)}</span>
-                      {quantity ? <span className="font-display text-[15px] font-extrabold text-text-primary tabular-nums">{quantity}</span> : null}
+                      {quantity ? (
+                        <span className="flex flex-wrap items-baseline gap-x-2 font-display text-[15px] font-extrabold text-text-primary tabular-nums">
+                          {corrected && log.indicator && log.verifiedQuantity ? (
+                            <>
+                              <s className="font-bold text-text-tertiary">{formatQuantity(log.quantity ?? "")}</s>
+                              <span>
+                                {formatQuantity(log.verifiedQuantity)} {log.indicator.unit}
+                              </span>
+                            </>
+                          ) : (
+                            quantity
+                          )}
+                        </span>
+                      ) : null}
                     </div>
-                    <Badge tone={TASK_STATUS_TONES[log.status]}>{TASK_LOG_STATUS_LABELS[log.status]}</Badge>
+                    <Badge tone={TASK_STATUS_TONES[log.status]}>{corrected ? "Dikoreksi" : TASK_LOG_STATUS_LABELS[log.status]}</Badge>
                   </div>
                   {log.note ? <p className="text-small text-pretty break-words text-text-primary">{log.note}</p> : null}
+                  {decision ? (
+                    <p className={`text-small text-pretty break-words ${log.status === "rejected" ? "text-danger-text" : "text-text-secondary"}`}>{decision}</p>
+                  ) : null}
                   {log.photo ? (
                     <a
                       href={myTaskPhotoHref(log.id, log.updatedAt)}
@@ -61,7 +86,7 @@ export function TaskLogList({ logs, indicators, timeZone }: Props) {
                   ) : null}
                   {edited || log.editable ? (
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                      <span className="text-caption text-text-tertiary">{edited ? `Diubah ${formatClockTime(log.updatedAt, timeZone)}` : ""}</span>
+                      <span className="text-caption text-text-tertiary">{edited && log.editedAt ? `Diubah ${formatClockTime(log.editedAt, timeZone)}` : ""}</span>
                       {log.editable ? <TaskLogActions log={log} indicators={indicators} summary={[titleOf(log), quantity].filter(Boolean).join(" · ")} /> : null}
                     </div>
                   ) : null}

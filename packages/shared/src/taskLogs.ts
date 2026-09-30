@@ -103,6 +103,13 @@ export const taskLogSchema = z.object({
   status: z.enum(TASK_LOG_STATUSES),
   createdAt: z.string(),
   updatedAt: z.string(),
+  // Terakhir diubah karyawan; null = belum pernah diubah
+  editedAt: z.string().nullable(),
+  // Keputusan atasan (feature 20). verifiedQuantity = realisasi yang diakui (≠ quantity → dikoreksi atasan)
+  verifiedQuantity: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+  decidedByName: z.string().nullable(),
+  decisionNote: z.string().nullable(),
   // Masih bisa diubah/dihapus pemiliknya (menunggu verifikasi & tanggal di dalam jendela catat)
   editable: z.boolean(),
 });
@@ -113,7 +120,7 @@ export const taskIndicatorDaySchema = z.object({
   ...indicatorRefSchema.shape,
   target: z.string(),
   targetPeriod: z.enum(KPI_TARGET_PERIODS),
-  // Jumlah realisasi entri yang tidak ditolak
+  // Jumlah realisasi entri yang tidak ditolak (yang sudah dikoreksi atasan memakai angka koreksi)
   total: z.string(),
   entryCount: z.number().int(),
   pendingCount: z.number().int(),
@@ -144,3 +151,84 @@ export const myTaskDaySchema = z.object({
   days: z.array(z.object({ date: z.string(), checkedIn: z.boolean(), count: z.number().int() })),
 });
 export type MyTaskDay = z.infer<typeof myTaskDaySchema>;
+
+// ——— Verifikasi atasan (feature 20, /kpi/verification) ———
+// Atasan langsung atau owner/admin memutuskan tiap catatan: setujui, tolak (beralasan), atau koreksi angka (beralasan,
+// = disetujui dengan realisasi yang diakui berbeda). Keputusan final. Hanya catatan indikator yang disetujui masuk skor KPI.
+
+export const TASK_DECISIONS = ["approve", "reject", "correct"] as const;
+export type TaskDecision = (typeof TASK_DECISIONS)[number];
+
+export const TASK_DECISION_NOTE_MIN = 3;
+export const TASK_BULK_APPROVE_MAX = 100;
+export const TASK_VERIFICATION_PAGE_SIZE = 50;
+
+// Versi isi catatan saat dibaca atasan (mikrodetik epoch updated_at). Keputusan ditolak bila karyawan mengubahnya sesudah itu.
+const versionSchema = z.string().regex(/^[0-9]{1,20}$/, "Versi catatan tidak valid");
+
+export const taskDecisionSchema = z
+  .object({
+    decision: z.enum(TASK_DECISIONS),
+    version: versionSchema,
+    // Hanya untuk koreksi: realisasi yang diakui
+    quantity: z.preprocess(blankToNull, taskQuantitySchema.nullable()).default(null),
+    note: z.string().trim().max(TASK_LOG_NOTE_MAX, `Catatan maksimal ${TASK_LOG_NOTE_MAX} karakter`).default(""),
+  })
+  .superRefine((input, ctx) => {
+    if (input.decision === "correct" && input.quantity === null) ctx.addIssue({ code: "custom", path: ["quantity"], message: "Isi realisasi yang benar" });
+    if (input.decision !== "correct" && input.quantity !== null) ctx.addIssue({ code: "custom", path: ["quantity"], message: "Realisasi hanya diisi saat mengoreksi" });
+    if (input.decision !== "approve" && input.note.length < TASK_DECISION_NOTE_MIN) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["note"],
+        message: `${input.decision === "reject" ? "Tulis alasan penolakan" : "Tulis alasan koreksi"} (minimal ${TASK_DECISION_NOTE_MIN} karakter)`,
+      });
+    }
+  });
+export type TaskDecisionInput = z.input<typeof taskDecisionSchema>;
+export type TaskDecisionData = z.output<typeof taskDecisionSchema>;
+
+// Setujui sekaligus: catatan yang sudah diputuskan / diubah karyawan sejak dibaca dilewati
+export const taskBulkApproveSchema = z.object({
+  items: z
+    .array(z.object({ id: z.uuid("Catatan tidak valid"), version: versionSchema }))
+    .min(1, "Pilih minimal satu catatan")
+    .max(TASK_BULK_APPROVE_MAX, `Maksimal ${TASK_BULK_APPROVE_MAX} catatan sekaligus`)
+    .refine((items) => new Set(items.map((item) => item.id)).size === items.length, "Catatan terpilih ganda"),
+});
+export type TaskBulkApproveInput = z.infer<typeof taskBulkApproveSchema>;
+
+export const taskBulkApproveResultSchema = z.object({ approved: z.number().int(), skipped: z.number().int() });
+export type TaskBulkApproveResult = z.infer<typeof taskBulkApproveResultSchema>;
+
+export const TASK_VERIFICATION_FILTERS = ["pending", "approved", "rejected", "all"] as const;
+export type TaskVerificationFilter = (typeof TASK_VERIFICATION_FILTERS)[number];
+
+export const taskVerificationQuerySchema = z.object({
+  status: z.enum(TASK_VERIFICATION_FILTERS).catch("pending"),
+  page: z.coerce.number().int().min(1).catch(1),
+});
+export type TaskVerificationQuery = z.infer<typeof taskVerificationQuerySchema>;
+
+export const taskVerificationItemSchema = taskLogSchema.omit({ indicator: true, editable: true }).extend({
+  // Indikator + target template saat ini (konteks koreksi)
+  indicator: indicatorRefSchema.extend({ target: z.string(), targetPeriod: z.enum(KPI_TARGET_PERIODS) }).nullable(),
+  employee: z.object({ id: z.string(), fullName: z.string(), positionName: z.string() }),
+  version: z.string(),
+  // Menunggu & bukan catatan milik sendiri
+  canDecide: z.boolean(),
+});
+export type TaskVerificationItem = z.infer<typeof taskVerificationItemSchema>;
+
+export const taskVerificationListSchema = z.object({
+  // Urut: menunggu → tanggal kerja terlama dulu; selainnya → keputusan terbaru dulu. Dikelompokkan per karyawan + tanggal di UI.
+  items: z.array(taskVerificationItemSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  pendingCount: z.number().int(),
+  // all = owner/admin (semua karyawan), subordinates = atasan (bawahan langsung)
+  scope: z.enum(["all", "subordinates"]),
+  timeZone: z.string(),
+});
+export type TaskVerificationList = z.infer<typeof taskVerificationListSchema>;

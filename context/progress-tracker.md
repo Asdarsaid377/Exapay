@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 4 — Tugas Harian & KPI
-**Terakhir selesai:** 19 Log Tugas Harian Karyawan (2026-10-01)
-**Berikutnya:** 20 Verifikasi Atasan
+**Terakhir selesai:** 20 Verifikasi Atasan (2026-10-01)
+**Berikutnya:** 21 Skor Ad-hoc
 
 ---
 
@@ -40,7 +40,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 4 — Tugas Harian & KPI
 - [x] 18 Template KPI per Jabatan
 - [x] 19 Log Tugas Harian Karyawan
-- [ ] 20 Verifikasi Atasan
+- [x] 20 Verifikasi Atasan
 - [ ] 21 Skor Ad-hoc
 
 ### Phase 5 — Penilaian Periodik & AI
@@ -190,6 +190,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Keputusan user: **banyak catatan per indikator per hari** (realisasi harian = jumlah entri yang tidak ditolak), karyawan boleh mencatat **pekerjaan lain** tanpa indikator (deskripsi wajib, diverifikasi atasan, **tidak masuk skor KPI**); **jendela catat hari ini + 7 hari ke belakang** (zona waktu usaha, tidak sebelum tanggal masuk); **wajib absen masuk** di tanggal itu. Hanya indikator `numeric`/`count` template jabatan saat ini yang dicatat karyawan (rating dinilai atasan, system dari absensi); `count` bilangan bulat; maks. 50 catatan/hari. Ubah/hapus hanya selama `pending` & tanggal di jendela; semua peran yang akunnya tertaut karyawan aktif boleh mencatat. Pencatatan tanpa audit log (verifikasi feature 20 yang diaudit).
 - 2026-10-01 — Migration `0017_task_logs`: `task_logs` (enum `task_log_status` pending/approved/rejected — kolom keputusan ditambah feature 20), `quantity numeric(18,2)`, CHECK jenis (indikator ⇔ quantity; tanpa indikator ⇒ note), foto opsional (metadata, jenis JPG/PNG/WebP). **FK komposit `(tenant_id, employee_id, work_date)` → `attendance_records`** = wajib absen masuk di DB; FK `(tenant_id, indicator_id)` → `kpi_indicators` **RESTRICT**. app_user SELECT/INSERT/UPDATE/DELETE. Unique `(tenant_id, id)` untuk feature 20.
 - 2026-10-01 — TODO feature 18 selesai: `KpiTemplatesService` menolak (409) hapus indikator / ganti tipe indikator yang sudah punya log, dan hapus template yang indikatornya punya log (FK violation `task_logs_indicator_fk` juga dipetakan 409). `trimDecimal` dipindah ke `@exapay/shared` (money.ts). Modul API `tasks/` (`task-logs.service`, `my-task-logs.controller` `/tasks/me`, `task-logs.controller` `GET /tasks/logs/:id/photo` — pemilik, atasan langsung, owner/admin; dipakai ulang feature 20); `AttendanceService` kini diekspor `AttendanceModule`. Foto: key `tenants/<tenant_id>/task-logs/<log_id>/<uuid>.<ext>`, diperkecil di browser (`lib/imageResize.ts`, sisi maks 1600px JPEG) sebelum dikirim.
+- 2026-10-01 — **Verifikasi atasan (feature 20):** `/kpi/verification` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola /attendance/requests + TaskLogList; kelompok per karyawan + tanggal (card `glass-data`), bilah sticky "Setujui N". Diverifikasi user ("sudah sesuai"). Keputusan user: pemutus = **atasan langsung + owner/admin** (sama dengan izin feature 15; karyawan tanpa atasan diverifikasi owner/admin), **setujui sekaligus** (tolak & koreksi satu per satu). Keputusan **final** (tidak bisa diubah).
+- 2026-10-01 — Aturan verifikasi: setujui (catatan opsional) · tolak (alasan wajib) · koreksi (hanya catatan indikator, alasan wajib, angka ≠ angka karyawan, count bulat) = disetujui dengan angka koreksi. `quantity` = angka asli karyawan (tidak ditimpa); `verified_quantity` = angka yang diakui, terisi hanya untuk catatan indikator yang disetujui → **satu-satunya angka untuk skor** (`verifiedTaskTotals` di `apps/api/src/modules/tasks/verified-task-totals.ts`, dipakai feature 21). Pekerjaan lain hanya setuju/tolak. Tidak ada yang memverifikasi catatannya sendiri (403). Audit `task_log` approve/reject/correct (per catatan, juga pada setujui sekaligus).
+- 2026-10-01 — Pengaman konkurensi: tiap item membawa `version` = mikrodetik epoch `updated_at` (dihitung di SQL — Date JS hanya milidetik); keputusan dengan versi lama → 409, setujui sekaligus melewati catatan yang sudah diputuskan/dihapus/diubah (`{ approved, skipped }`). Baris dikunci `FOR UPDATE OF task_logs`. Endpoint (owner/admin/atasan, peran dibaca ulang): `GET /tasks/verification?status&page` (50/halaman; menunggu = tanggal terlama dulu), `POST /tasks/verification/:id/decision`, `POST /tasks/verification/approve` (maks. 100).
+- 2026-10-01 — Migration `0018_task_log_verification`: kolom `edited_at`, `verified_quantity numeric(18,2)`, `decided_at`, `decided_by_user_id` (FK users SET NULL), `decided_by_name` (snapshot), `decision_note`; CHECK `task_logs_decision` / `task_logs_verified_quantity` / `task_logs_decision_note`; index `(tenant_id, status, work_date)`; backfill `edited_at` dari `updated_at` yang pernah diubah. Portal: "Diubah" memakai `edited_at`; total harian memakai angka koreksi; daftar menampilkan angka dicoret → koreksi, badge "Dikoreksi", alasan & nama pemutus. `Checkbox` diekstrak ke `components/common/` (juga dipakai `KpiPositionPicker`).
 
 ---
 
@@ -234,4 +238,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 158 + 25 unit test payroll-engine (`pnpm --filter @exapay/payroll-engine test`) per feature 17. Sekali terlihat flake 401 dengan body `{"_tag":"UnauthorizedError"}` (bukan format API kita — kemungkinan koneksi nyasar ke proses lain di localhost); tidak terulang di 3 run berikutnya.
 - Data dev: belum ada versi aturan potongan tersimpan kecuali yang dibuat user saat verifikasi feature 17. Pratinjau di `/settings/attendance` memakai karyawan dari rekap bulan berjalan.
 - Total test API 166 per feature 18. Data dev "Kopi Nusantara" dibuat sebelum feature 18 — template bawaan baru muncul setelah tombol "Pakai template bawaan" diklik di `/kpi/templates`. Urutan indikator belum bisa diatur ulang (mengikuti urutan tambah).
-- Total test API 170 per feature 19 (`task-logs.e2e.test.ts`). Data dev: Dewi (`karyawan@exapay.local`, template Sales) punya absen masuk 1 Okt 2026 04:03 WITA + 3 catatan tugas uji (Kunjungan pelanggan 3 + foto, Nilai penjualan 1.250.000,5, pekerjaan lain). Status catatan di kartu `/me` = gabungan (ada ditolak → Ditolak, ada menunggu → Menunggu verifikasi). "Diubah HH:MM" memakai `updatedAt ≠ createdAt` — sesuaikan di feature 20 agar verifikasi tidak terbaca sebagai perubahan karyawan.
+- Total test API 170 per feature 19 (`task-logs.e2e.test.ts`). Data dev: Dewi (`karyawan@exapay.local`, template Sales) punya absen masuk 1 Okt 2026 04:03 WITA + 3 catatan tugas uji (Kunjungan pelanggan 3 + foto, Nilai penjualan 1.250.000,5, pekerjaan lain). Status catatan di kartu `/me` = gabungan (ada ditolak → Ditolak, ada menunggu → Menunggu verifikasi). "Diubah HH:MM" kini memakai `editedAt` (feature 20).
+- Total test API 172 per feature 20 (`task-verification.e2e.test.ts`). Data dev: 3 catatan tugas Dewi 1 Okt 2026 diputuskan user saat verifikasi feature 20 (Rudi/`atasan@exapay.local`). Belum ada: hitungan menunggu verifikasi di sidebar; filter per karyawan di `/kpi/verification`.
