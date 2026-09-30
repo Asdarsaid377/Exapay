@@ -117,3 +117,11 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 - `response.headers.getSetCookie()` (fetch Node) untuk membaca banyak Set-Cookie
 - `next.config.ts` hanya mengambil `API_INTERNAL_URL` dari `.env` root (`node:util` `parseEnv`) — secret API/DB tidak dimuat ke proses Next
 - Klaim JWT di web dibaca **tanpa verifikasi**, hanya untuk memilih halaman; otorisasi tetap di API
+
+### read-excel-file (v9.3) + write-excel-file (v4.1) + fflate (v0.8) — impor karyawan (feature 12)
+- Import `read-excel-file/node` & `write-excel-file/node` (paket ESM, subpath wajib). `readXlsxFile(buffer, { parseNumber })` → `[{ sheet, data }]`; sel tanggal → `Date` UTC, string otomatis di-trim, baris kosong tetap ada. `parseNumber: (s) => ({ numeric: s })` dipakai untuk membedakan sel angka dari teks.
+- Error file: `InvalidInputError` (`code`: `XLS_FILE_NOT_SUPPORTED`, `NO_DATA`, `FILE_NOT_SUPPORTED`, …) dan `InvalidSpreadsheetError`.
+- `writeXlsxFile(sheets[], options).toBuffer()`; sel `{ type: Date, value: undefined, format }` wajib punya `format` (atau `dateFormat` global). Sel kosong ber-`format` tetap ditulis (gaya sel). Tidak ada data validation bawaan → sisipkan `<dataValidations>` tepat setelah `</sheetData>` lewat `features[].files.transform["xl/worksheets/sheet{id}.xml"]`.
+- `fflate.unzipSync(buf, { filter })` dengan filter `false` hanya membaca direktori zip — dipakai untuk menjumlah `originalSize` (cegah zip bomb).
+- Upload NestJS: `FileInterceptor` dari `@nestjs/platform-express` (multer 2.x dibundel; tanpa `dest` = memory storage, `file.buffer`). `limits.fileSize` terlampaui → `PayloadTooLargeException` (413).
+

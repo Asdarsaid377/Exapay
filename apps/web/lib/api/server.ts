@@ -9,6 +9,7 @@ export type ApiResult<T> =
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
+  // Objek → JSON; FormData (upload file) dikirim apa adanya sebagai multipart
   body?: unknown;
   // Nilai header Cookie yang diteruskan ke API (sesi user)
   cookieHeader?: string;
@@ -30,13 +31,15 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
 export async function apiRequest<T>(path: string, parse: (data: unknown) => T, options: RequestOptions = {}): Promise<ApiResult<T>> {
   let response: Response;
   try {
+    const multipart = options.body instanceof FormData;
     response = await fetch(`${apiBaseUrl()}${path}`, {
       method: options.method ?? "GET",
       headers: {
-        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+        // Multipart: Content-Type (dengan boundary) diisi fetch sendiri
+        ...(options.body !== undefined && !multipart ? { "Content-Type": "application/json" } : {}),
         ...(options.cookieHeader ? { Cookie: options.cookieHeader } : {}),
       },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: options.body instanceof FormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined,
       cache: "no-store",
     });
   } catch (error: unknown) {
@@ -63,6 +66,17 @@ export async function apiRequest<T>(path: string, parse: (data: unknown) => T, o
   } catch (error: unknown) {
     console.error(`[web/api] ${path} respons tidak sesuai: ${error instanceof Error ? error.message : String(error)}`);
     return { ok: false, status: response.status, error: NETWORK_ERROR, setCookies };
+  }
+}
+
+// Unduhan file dari API (mis. template Excel) untuk Route Handler. Respons diteruskan apa adanya;
+// null = API tidak terjangkau.
+export async function apiFetchFile(path: string, cookieHeader: string | undefined): Promise<Response | null> {
+  try {
+    return await fetch(`${apiBaseUrl()}${path}`, { headers: cookieHeader ? { Cookie: cookieHeader } : {}, cache: "no-store" });
+  } catch (error: unknown) {
+    console.error(`[web/api] ${path} gagal: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
   }
 }
 

@@ -38,6 +38,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private messageOf(exception: HttpException): string {
     // Route tidak ada: pesan bawaan Nest "Cannot GET /path" (berbahasa Inggris, membocorkan path)
     if (exception.getStatus() === HttpStatus.NOT_FOUND && /^Cannot [A-Z]+ /.test(exception.message)) return "Halaman atau data tidak ditemukan";
+    // Batas ukuran upload multer (pesan bawaan "File too large")
+    if (exception.getStatus() === HttpStatus.PAYLOAD_TOO_LARGE) return "File terlalu besar";
     return exception.message;
   }
 }

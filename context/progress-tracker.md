@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 2 — Master Data
-**Terakhir selesai:** 11 Daftar & Detail Karyawan (2026-09-30)
-**Berikutnya:** 12 Impor Karyawan dari Excel
+**Phase:** 3 — Absensi
+**Terakhir selesai:** 12 Impor Karyawan dari Excel (2026-09-30)
+**Berikutnya:** 13 Jadwal Kerja & Hari Libur
 
 ---
 
@@ -28,7 +28,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 09 Profil Usaha
 - [x] 10 Departemen & Jabatan
 - [x] 11 Daftar & Detail Karyawan
-- [ ] 12 Impor Karyawan dari Excel
+- [x] 12 Impor Karyawan dari Excel
 
 ### Phase 3 — Absensi
 - [ ] 13 Jadwal Kerja & Hari Libur
@@ -148,6 +148,13 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — **Enkripsi kolom sensitif:** `FieldCipher` (folder baru `apps/api/src/common/crypto/`, CryptoModule global) — AES-256-GCM `v1:…`, AAD = tenant + kolom; NIK juga blind index HMAC (`nik_hash`, unik per tenant; kunci turunan HKDF). Env `DATA_ENCRYPTION_KEY` (32 byte base64) kini **wajib** saat API start. Owner/admin melihat tersamar; nilai penuh lewat `POST /employees/:id/reveal` (audit `reveal_sensitive`, POST agar tidak di-prefetch). Atasan tidak menerima data pajak & rekening sama sekali. Nilai sensitif tidak pernah masuk audit log.
 - 2026-09-30 — API `/employees` (list/options/detail/create/update/deactivate/reactivate/reveal); peran dibaca ulang dari DB. Nomor rekening wajib disertai bank. Karyawan nonaktif tidak bisa diubah (aktifkan kembali dulu). TODO feature 10 ditutup: hapus departemen/jabatan yang masih dipakai karyawan → 409 dengan jumlah karyawan.
 
+- 2026-09-30 — **Impor karyawan (feature 12):** `/employees/import` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola FormSection + EmployeeTable + action bar EmployeeForm. Komponen dasar baru `FileDropzone`.
+- 2026-09-30 — Departemen/jabatan/atasan di file yang tidak ditemukan → **baris ditolak** (keputusan user), bukan dibuat otomatis. Atasan dicocokkan lewat nomor induk lalu nama (karyawan terdaftar atau baris lain di file yang sama); ganda/nonaktif/diri sendiri/saling menunjuk ditolak, bawahan dari baris bermasalah ikut ditolak.
+- 2026-09-30 — Alur impor **tanpa state di server**: `POST /employees/import/preview` (multipart, tidak menyimpan) → `POST /employees/import` mengirim ulang file yang sama, diperiksa ulang, hanya baris valid disimpan dalam satu transaksi (id dibuat di app agar atasan dari file bisa dirujuk). File tidak disimpan ke S3/disk (multer memory). Bentrok unique/FK saat simpan → 409 "unggah ulang". Audit per karyawan `create` + `source: "import"`. Pratinjau tidak pernah memuat NIK/NPWP/rekening.
+- 2026-09-30 — Validasi baris memakai `employeeInputSchema` yang sama dengan form (+ `EmployeesService.plainColumns/sensitiveColumns/auditView/manager/nikHash` dibuka untuk dipakai ulang). Duplikat nomor induk & NIK (blind index) dicek sesama baris file dan terhadap DB.
+- 2026-09-30 — Library Excel: **`read-excel-file` + `write-excel-file`** (MIT, aktif) — bukan `exceljs` (tidak rilis sejak 2023) atau `xlsx` npm (usang, ada CVE). Sel angka di kolom NIK/NPWP/rekening/HP **ditolak** (Excel presisi 15 digit → digit NIK hilang); template memformat kolom tsb sebagai Teks. Dropdown template disisipkan ke XML sheet lewat `features` (write-excel-file tidak mendukung data validation). Batas 1 MB / 500 baris; isi zip > 30 MB ditolak (zip bomb); file .xls lama ditolak dengan pesan jelas. `experimental.serverActions.bodySizeLimit: "2mb"` di `next.config.ts`.
+- 2026-09-30 — Unduh template lewat Route Handler `app/(main)/employees/import/template/route.ts` (`apiFetchFile` di `lib/api/server.ts`); gagal → redirect `?template=error`. `apiRequest` kini menerima body `FormData`. API 413 → pesan "File terlalu besar" (AllExceptionsFilter).
+
 ---
 
 ## Catatan (Notes)
@@ -168,7 +175,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
 - Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
-- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 100 test per feature 11. Sekali terlihat flake 405 di test undangan `users.e2e` (kemungkinan port supertest) — lulus saat diulang.
+- Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 106 test per feature 12. Sekali terlihat flake 405 di test undangan `users.e2e` (kemungkinan port supertest) — lulus saat diulang.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
 - `pnpm dev` dari root menjalankan api (4000), web (3000), worker. Butuh `docker compose up -d postgres redis mailpit` dan migration terbaru.
 - Daftar tenant super-admin difilter & dipaginasi di aplikasi (semua baris `admin_tenant_overview()`); pindahkan ke SQL jika tenant sudah ribuan.
@@ -179,3 +186,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Component yang dirender dua kali (tabel desktop + daftar mobile) tidak boleh memakai `name`/`id` statis — pakai `useId` (grup radio bernama sama saling menimpa status checked).
 - Data dev "Kopi Nusantara" berisi 4 karyawan contoh dari verifikasi feature 11 (Rudi Hartono tertaut ke `atasan@exapay.local`, bawahan: Dewi & Rina; Siti tanpa atasan).
 - Belum ada: login karyawan nonaktif tetap bisa masuk portal selama membership ada (putuskan di feature 14/37 — mis. tolak absen untuk karyawan nonaktif); bawahan dari atasan yang dinonaktifkan tetap menunjuk atasan tsb (peringatan/pemindahan belum ada); `PageHeader` di mobile menumpuk tombol di bawah judul (desain menaruhnya di kanan).
+- Template impor belum pernah dibuka di Microsoft Excel asli (hanya divalidasi XML + QuickLook macOS) — cek dropdown saat uji coba klien. Data dev "Kopi Nusantara" mungkin berisi 24 karyawan contoh "… Pratama" dari verifikasi feature 12.

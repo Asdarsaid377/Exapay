@@ -3,7 +3,7 @@ import { CloudOff, Plus, SearchX, Upload, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Button, buttonClassName } from "@/components/common/Button";
+import { buttonClassName } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Pagination } from "@/components/common/Pagination";
 import { EmployeeFilters } from "@/components/employees/EmployeeFilters";
@@ -50,11 +50,10 @@ export default async function EmployeesPage({ searchParams }: Props) {
 
   const actions = manage ? (
     <>
-      {/* TODO(feature 12): tautkan ke /employees/import */}
-      <Button variant="secondary" disabled aria-label="Impor Excel (segera hadir)" title="Segera hadir" className="max-sm:size-11 max-sm:px-0">
+      <Link href="/employees/import" aria-label="Impor Excel" className={buttonClassName({ variant: "secondary", className: "max-sm:size-11 max-sm:px-0" })}>
         <Upload aria-hidden className="size-4.25" />
         <span className="max-sm:hidden">Impor Excel</span>
-      </Button>
+      </Link>
       <Link href="/employees/new" className={buttonClassName({ className: "max-sm:h-11" })}>
         <Plus aria-hidden className="size-4.25" />
         <span className="sm:hidden">Tambah</span>
@@ -87,11 +86,16 @@ export default async function EmployeesPage({ searchParams }: Props) {
           <EmptyState
             icon={Users}
             title="Belum ada karyawan"
-            description="Tambahkan karyawan satu per satu. Impor sekaligus dari file Excel segera hadir."
+            description="Tambahkan karyawan satu per satu, atau impor sekaligus dari file Excel."
             action={
-              <Link href="/employees/new" className={buttonClassName()}>
-                Tambah karyawan
-              </Link>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                <Link href="/employees/import" className={buttonClassName({ variant: "secondary" })}>
+                  Impor Excel
+                </Link>
+                <Link href="/employees/new" className={buttonClassName()}>
+                  Tambah karyawan
+                </Link>
+              </div>
             }
           />
         ) : (

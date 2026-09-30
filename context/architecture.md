@@ -68,7 +68,7 @@
 │           ├── company/          → profil usaha aktif (/company — owner/admin, feature 09)
 │           ├── regions/          → referensi provinsi & kabupaten/kota Kemendagri (/regions, data platform)
 │           ├── organization/     → departemen & jabatan (/organization, feature 10)
-│   │           ├── employees/        → data karyawan (/employees, feature 11)
+│   │           ├── employees/        → data karyawan (/employees, feature 11) + impor Excel (employee-import.*: parser, template, service, controller — feature 12)
 │   │           ├── tasks/
 │   │           ├── kpi/
 │   │           ├── payroll/
@@ -92,11 +92,11 @@
 │       │   ├── (main)/settings/users/ → pengguna & undangan usaha (feature 08)
 │       │   ├── (main)/settings/company/ → profil usaha (feature 09)
 │       │   ├── (main)/organization/ → departemen & jabatan (feature 10)
-│       │   ├── (main)/employees/ → daftar, tambah (new), detail [id] karyawan (feature 11)
+│       │   ├── (main)/employees/ → daftar, tambah (new), detail [id] karyawan (feature 11), impor (import/ + import/template/route.ts unduh template — feature 12)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
-│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, TextAreaField, SelectField, Combobox, SegmentedControl, FormSection, Banner, DropdownMenu, EmptyState, Badge, StatTile, Dialog, Pagination)
+│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, TextAreaField, SelectField, Combobox, FileDropzone, SegmentedControl, FormSection, Banner, DropdownMenu, EmptyState, Badge, StatTile, Dialog, Pagination)
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)

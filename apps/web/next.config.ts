@@ -17,6 +17,12 @@ try {
   // Tidak ada .env — pakai env dari proses
 }
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  experimental: {
+    // Upload file impor karyawan (maks 1 MB, EMPLOYEE_IMPORT_MAX_BYTES) lewat Server Action — bawaan Next 1 MB
+    // belum termasuk overhead multipart
+    serverActions: { bodySizeLimit: "2mb" },
+  },
+};
 
 export default nextConfig;

@@ -618,7 +618,8 @@ export class EmployeesService {
     };
   }
 
-  private async manager(tx: Transaction, ctx: TenantContext): Promise<Viewer> {
+  // Dipakai juga EmployeeImportService (feature 12)
+  async manager(tx: Transaction, ctx: TenantContext): Promise<Viewer> {
     const viewer = await this.viewer(tx, ctx);
     if (!viewer.manage)
       throw new ForbiddenException(
@@ -674,7 +675,7 @@ export class EmployeesService {
       );
   }
 
-  private plainColumns(input: EmployeeInput) {
+  plainColumns(input: EmployeeInput) {
     return {
       fullName: input.fullName,
       employeeNumber: input.employeeNumber,
@@ -697,7 +698,7 @@ export class EmployeesService {
   }
 
   // keepMissing (ubah): kolom sensitif yang tidak diisi tidak ikut di-SET sama sekali
-  private sensitiveColumns(
+  sensitiveColumns(
     ctx: TenantContext,
     input: EmployeeInput,
     { keepMissing = false } = {},
@@ -736,7 +737,12 @@ export class EmployeesService {
   }
 
   // Isi audit tanpa nilai sensitif
-  private auditView(input: EmployeeInput): Record<string, unknown> {
+  // Blind index NIK (sama dengan kolom nik_hash) — cek duplikat tanpa mendekripsi
+  nikHash(ctx: TenantContext, nik: string): string {
+    return this.cipher.blindIndex(nik, { tenantId: ctx.tenantId, field: FIELD.nik });
+  }
+
+  auditView(input: EmployeeInput): Record<string, unknown> {
     const { nik, npwp, bankAccountNumber, ...rest } = input;
     return {
       ...rest,

@@ -339,3 +339,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** context/designs/employees-detail.html
 - **Pola kelas kunci:** header avatar `lg` + nama `text-[22px] lg:text-h1` + meta + Badge; aksi Ubah (secondary) + ⋯ DropdownMenu (item bahaya `text-danger-text`); **tab bar** `border-b border-text-primary/10 gap-7`, tab `h-11.5 text-[15px]`, aktif `font-bold shadow-[inset_0_-2px_0_var(--color-accent)]`; field baca `dt text-[13px] text-text-tertiary` / `dd text-[15px] font-medium`, nilai tersamar `tracking-[0.04em]`
 - **Catatan:** client. Tab Gaji/KPI/Absensi = EmptyState "Segera hadir" (isi di feature 28/19–22/16). Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`
+
+### FileDropzone
+- **Path:** apps/web/components/common/FileDropzone.tsx
+- **Dipakai di:** /employees/import
+- **Referensi desain:** diturunkan dari Input design-tokens.html (tanpa snapshot — feature 12, izin user)
+- **Pola kelas kunci:** label `min-h-44 rounded-field border-2 border-dashed border-border-control bg-control px-5 py-8 text-center`, hover `border-accent bg-surface-solid`, drag `border-accent bg-accent/6`, error `border-danger`; fokus `has-[:focus-visible]:ring-3 ring-accent/45`; ikon Upload `size-6 text-text-secondary` (loading: LoaderCircle spin `text-accent-strong`); judul `text-[15px] font-bold`, hint `text-caption text-text-tertiary`
+- **Catatan:** client. Props `id`, `accept`, `hint`, `onSelect(file)`, `loading?`, `loadingLabel?`, `disabled?`, `error?`. Input file asli `sr-only` (tetap bisa difokus keyboard), dikosongkan setelah memilih agar file yang sama bisa dipilih lagi. Pakai ulang untuk lampiran izin (feature 15) & foto bukti tugas (feature 19)
+
+### EmployeeImportFlow / ImportPreviewTable
+- **Path:** apps/web/components/employees/EmployeeImportFlow.tsx, ImportPreviewTable.tsx
+- **Dipakai di:** /employees/import
+- **Referensi desain:** diturunkan dari pola employees-new.html (FormSection, action bar) + employees.html (data-table) — tanpa snapshot halaman ini (feature 12, izin user)
+- **Pola kelas kunci:** langkah pilih = 2 FormSection ("1. Unduh template" tautan `<a>` bergaya secondary, "2. Unggah file" FileDropzone); pratinjau = card file `glass-strong rounded-card` (nama `font-display font-bold` + ringkasan `text-small tabular-nums` + Periksa ulang/Ganti file secondary), Banner warning/danger, SegmentedControl filter (Perlu diperbaiki/Siap/Semua — mobile `fullWidth`, label "Salah"), tabel `glass-data rounded-card` pola EmployeeTable (kolom Baris, Nama, Jabatan · Departemen, Status kerja, Tanggal masuk, Hasil pemeriksaan; sel `align-top`), kesalahan `li text-small` = kolom `font-bold text-danger-text` + pesan `text-text-secondary`, baris valid Badge success "Siap diimpor"; mobile card `glass-data rounded-[20px]`; action bar = pola EmployeeForm (sticky mobile); selesai = EmptyState ikon CircleCheck success + 2 tombol
+- **Catatan:** EmployeeImportFlow client, state `select → preview → done`; File disimpan di state browser dan dikirim ulang saat konfirmasi (Server Action `previewEmployeeImport` / `importEmployees`). Prop `templateError` dari `?template=error`. ImportPreviewTable server-safe (props `rows`)
