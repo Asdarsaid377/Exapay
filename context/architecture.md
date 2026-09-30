@@ -75,16 +75,22 @@
 │       │   ├── globals.css           → Import Tailwind + @theme tokens
 │       │   ├── layout.tsx
 │       │   ├── (auth)/login/page.tsx
-│       │   └── (main)/dashboard/page.tsx
+│       │   ├── (main)/layout.tsx     → AppShell (sidebar) area owner/admin/atasan
+│       │   ├── (main)/dashboard/page.tsx
+│       │   ├── (main)/[...slug]/     → "Segera hadir" untuk menu yang belum dibangun (selain itu 404)
+│       │   ├── (portal)/layout.tsx   → PortalShell (bottom nav) portal karyawan
+│       │   └── (portal)/me/[...slug]/ → "Segera hadir" portal
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
-│       │   ├── layout/               → Navbar, Sidebar
+│       │   ├── common/               → komponen dasar lintas fitur (Button, TextField, DropdownMenu, EmptyState)
+│       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
 │       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie), mis. auth.ts
 │       ├── lib/
 │       │   ├── api/                  → Client pemanggil API NestJS (server.ts)
-│       │   └── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
+│       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
+│       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)
 │       └── proxy.ts                  → Proteksi route + refresh sesi otomatis (Next 16: pengganti middleware.ts)
 ├── packages/
 │   ├── shared/                       → zod schema, DTO type, enum (role, status) — dipakai api & web

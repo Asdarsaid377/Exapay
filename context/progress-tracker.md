@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 1 — Foundation
-**Terakhir selesai:** 05 Signup Owner & Verifikasi Email (2026-09-30)
-**Berikutnya:** 06 App Shell & Navigasi
+**Terakhir selesai:** 06 App Shell & Navigasi (2026-09-30)
+**Berikutnya:** 07 Panel Super-Admin
 
 ---
 
@@ -20,7 +20,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 03 Auth Backend
 - [x] 04 Halaman Login & Lupa Password
 - [x] 05 Signup Owner & Verifikasi Email
-- [ ] 06 App Shell & Navigasi
+- [x] 06 App Shell & Navigasi
 - [ ] 07 Panel Super-Admin
 - [ ] 08 Undang Pengguna & Kelola Peran
 
@@ -106,13 +106,19 @@ _Format: tanggal — keputusan — alasan._
 - 2026-09-30 — Reset password (feature 04): token acak 32 byte, hanya hash SHA-256 di `password_reset_tokens` (migration `0002`, RLS per user + lookup `auth_find_password_reset()` SECURITY DEFINER), berlaku 60 menit, cooldown 60 detik, sekali pakai; reset mencabut semua refresh token. `forgot-password` selalu 200 (tanpa enumerasi email). Email dikirim fire-and-forget (belum BullMQ).
 - 2026-09-30 — Refresh token: kolom `rotated_at` dipisah dari `revoked_at` (migration `0003`). Token yang dirotasi boleh dipakai ulang ≤ 30 detik (request paralel proxy Next.js) dan dilayani; token yang dicabut (logout/reset/pencurian) tidak pernah berlaku lagi. Menggantikan perilaku feature 03 (reuse dalam jendela = ditolak).
 - 2026-09-30 — Web auth: browser hanya berbicara dengan web. Server Action (`apps/web/actions/auth.ts`) & `proxy.ts` (Next 16, pengganti middleware) meneruskan cookie sesi ke API dan `Set-Cookie` dari API ke browser. Proxy me-refresh sesi otomatis, redirect per peran (karyawan → `/me`, owner/admin/atasan → `/dashboard`, super-admin → `/admin/tenants`, multi usaha tanpa pilihan → langkah pilih usaha di `/login`). Klaim JWT di web dibaca tanpa verifikasi — hanya routing.
-- 2026-09-30 — `/dashboard`, `/me`, `/admin/tenants` sementara memakai `SessionPlaceholder` (hapus di 06/07/14/37). Skrip seed dev `pnpm --filter @exapay/api db:seed` (akun per peran, password `password123`).
+- 2026-09-30 — `/dashboard`, `/me`, `/admin/tenants` sementara memakai `SessionPlaceholder` (dilepas dari `/dashboard` & `/me` di feature 06; tersisa `/admin/tenants` → hapus component di 07). Skrip seed dev `pnpm --filter @exapay/api db:seed` (akun per peran, password `password123`).
 - 2026-09-30 — `next.config.ts` hanya mengambil `API_INTERNAL_URL` dari `.env` root; secret API/DB tidak dimuat ke proses Next. Env baru API: `APP_WEB_URL`.
 - 2026-09-30 — Signup (feature 05): `POST /auth/signup` membuat user + tenant + membership owner + audit log (`tenant/signup`) dalam satu `withTenant` (uuid dibuat di app), lalu token verifikasi di transaksi yang sama. **Sesi tidak dibuat** — login setelah verifikasi. Respons selalu sama (anti enumerasi): email terverifikasi → email pemberitahuan "sudah terdaftar" (cooldown 1 jam via Redis `signup:existing-notice:*`, dilewati jika Redis mati); terdaftar belum terverifikasi → kirim ulang tautan. Unique violation paralel diperlakukan sebagai email terdaftar.
 - 2026-09-30 — Verifikasi email: `users.email_verified_at` (null = belum) + `email_verification_tokens` (migration `0004`, pola sama dengan reset password: hash SHA-256, RLS per user, lookup `auth_find_email_verification()` SECURITY DEFINER). Berlaku 24 jam, cooldown kirim ulang 60 detik, hanya tautan terbaru berlaku; verifikasi idempoten (token terpakai + user terverifikasi = sukses). `auth_find_user_by_email()` kini juga mengembalikan `email_verified_at` (DROP + CREATE).
 - 2026-09-30 — Login akun belum terverifikasi → **403** (dicek setelah password benar; password salah tetap 401). Web memetakan 403 login ke state "unverified" + tombol kirim ulang. Akun lama dibackfill terverifikasi di migration (FORCE RLS `users` dilepas sementara di transaksi migration — tanpa itu UPDATE kena 0 baris). Seed & helper test membuat user dengan `emailVerifiedAt`. User buatan feature 07/08 wajib men-set `email_verified_at` saat undangan diterima.
 - 2026-09-30 — Halaman `/signup` & `/verify-email` dibangun **tanpa referensi visual** (opsi 3 ui-workflow, izin user) — mengikuti gaya auth feature 04 (`AuthShell` + komponen form). `/verify-email` memverifikasi otomatis saat dibuka (client component → Server Action).
 - 2026-09-30 — Data bawaan tenant baru: `seedTenantDefaults(tx, ctx)` di `apps/api/src/modules/tenants/tenant-defaults.ts` (placeholder, dipanggil di transaksi signup) — diisi feature 13/18/22/28; dipakai juga feature 07.
+
+- 2026-09-30 — App shell (feature 06) dibangun **tanpa referensi visual** (opsi 3 ui-workflow, izin user) — hanya `ui-rules.md` + `ui-tokens.md`, tema sama dengan halaman auth. Area owner/admin/atasan: sidebar tetap ≥lg (`bg-surface border-r`), drawer di mobile; header berisi `TenantSwitcher` (kiri) + `UserMenu` avatar inisial (kanan, tombol Keluar). Portal `/me`: header ringkas + bottom nav 5 menu (`fixed`, safe-area), konten `max-w-lg`.
+- 2026-09-30 — Menu: satu sumber `apps/web/lib/navigation.ts` (tanpa import component — ikut dimuat proxy) untuk sidebar, bottom nav, judul "Segera hadir", dan guard route. Peran mengikuti project-overview: atasan tidak melihat Payroll & Pengaturan (juga Koreksi absensi & Template KPI — khusus owner/admin); **Kepatuhan tetap terlihat atasan** (sesuai overview, bisa ditinjau di feature 33). Grup (Absensi, KPI, Payroll, Pengaturan) punya sub-menu yang terbuka hanya saat grup aktif; href grup = child pertama yang boleh dilihat peran.
+- 2026-09-30 — `proxy.ts` menolak path menu di luar peran (`canAccessStaffPath`, tautan paling spesifik menang) → redirect ke halaman awal. Hanya routing; API tetap memeriksa peran.
+- 2026-09-30 — Menu yang halamannya belum dibangun → catch-all `app/(main)/[...slug]/page.tsx` & `app/(portal)/me/[...slug]/page.tsx` menampilkan "Segera hadir" hanya untuk href menu yang persis sama; selain itu 404. Feature berikutnya cukup menambah `page.tsx` di route-nya (route statis menang atas catch-all) — tidak ada placeholder yang perlu dihapus.
+- 2026-09-30 — `getSession()` dibungkus `React.cache` agar layout + page satu request hanya memanggil `GET /auth/me` sekali. Layout `(main)` & `(portal)` memuat sesi dan redirect cadangan (proxy tetap garis pertama).
 
 ---
 

@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { apiRequest } from "@/lib/api/server";
 import { homePathFor, readSessionClaims, type SessionClaims } from "@/lib/auth/session";
 import { parseSetCookie } from "@/lib/auth/setCookieHeader";
+import { canAccessStaffPath } from "@/lib/navigation";
 
 // Proteksi route web (Next.js 16: pengganti middleware.ts).
 // - Access token habis tapi refresh token ada → refresh ke API, cookie baru diteruskan ke browser & request ini
@@ -38,8 +39,9 @@ function guard(pathname: string, claims: SessionClaims): string | null {
   if (pathname === "/login") return home;
   if (pathname.startsWith("/admin")) return claims.isSuperAdmin ? null : home;
   if (pathname === "/me" || pathname.startsWith("/me/")) return claims.tenantId ? null : home;
-  // Area owner/admin/atasan: karyawan diarahkan ke portal karyawan
-  return claims.role && claims.role !== "karyawan" ? null : home;
+  // Area owner/admin/atasan: karyawan diarahkan ke portal karyawan; menu di luar peran (mis. atasan → /payroll) ke halaman awal
+  if (!claims.role || claims.role === "karyawan") return home;
+  return canAccessStaffPath(pathname, claims.role) ? null : home;
 }
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {

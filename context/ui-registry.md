@@ -75,10 +75,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### ExapayLogo
 - **Path:** apps/web/components/auth/ExapayLogo.tsx
-- **Dipakai di:** AuthShell
+- **Dipakai di:** AuthShell, AppShell
 - **Referensi desain:** tanpa file desain — ui-rules + ui-tokens, tema mengacu solvexaerp.tech (feature 04, tercatat di progress-tracker)
 - **Pola kelas kunci:** ikon `size-9 rounded-xl bg-accent text-on-accent shadow-accent` + wordmark `font-display text-xl font-extrabold`
-- **Catatan:** prop `tone` default|inverse (latar gelap). Placeholder sampai ada logo resmi (nama produk masih sementara). Kandidat dipakai ulang di sidebar (feature 06)
+- **Catatan:** prop `tone` default|inverse (latar gelap). Placeholder sampai ada logo resmi (nama produk masih sementara). Dipakai juga di sidebar & drawer AppShell
 
 ### BackToLoginLink
 - **Path:** apps/web/components/auth/BackToLoginLink.tsx
@@ -122,9 +122,65 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** Button secondary fullWidth + FormAlert success/danger di atasnya (`flex flex-col gap-3`)
 - **Catatan:** props `email`, `startWithCooldown`. Hitung mundur 60 detik (sama dengan cooldown API). Pola cooldown bisa dipakai ulang untuk kirim ulang undangan (feature 08)
 
+### AppShell
+- **Path:** apps/web/components/layout/AppShell.tsx
+- **Dipakai di:** app/(main)/layout.tsx — semua halaman owner/admin/atasan
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** `lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]`; sidebar `sticky top-0 h-dvh border-r border-border bg-surface` (logo `h-16 px-6`); header `sticky top-0 z-20 h-16 border-b border-border bg-background px-4 sm:px-6 lg:px-8`; konten `mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8`; drawer mobile `fixed inset-0 z-40` + overlay `bg-inverse/40` + panel `w-72 max-w-[85vw] bg-surface shadow-card`
+- **Catatan:** client component (state drawer). Props `user`, `activeTenant`, `tenants`, `sections` (hasil `staffMenuFor(role)` di server). Drawer: kunci scroll body, tutup via X / overlay / Escape / klik menu
+
+### SidebarNav
+- **Path:** apps/web/components/layout/SidebarNav.tsx
+- **Dipakai di:** AppShell (sidebar desktop & drawer)
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** item `flex items-center gap-3 rounded-field px-3 py-2.5 text-sm` + ikon `size-5`; aktif `bg-accent-soft font-semibold text-accent-strong`; grup aktif `font-semibold text-text-primary` (tanpa latar); normal `font-medium text-text-secondary hover:bg-surface-secondary`; sub-menu `ml-5 border-l border-border pl-3`, item `rounded-field px-3 py-2` tanpa ikon
+- **Catatan:** ikon hanya di menu level atas (fungsional/navigasi). Aktif = tautan paling spesifik (`findStaffLink`). Prop `onNavigate` untuk menutup drawer
+
+### PortalShell / PortalBottomNav
+- **Path:** apps/web/components/layout/PortalShell.tsx, PortalBottomNav.tsx
+- **Dipakai di:** app/(portal)/layout.tsx — semua halaman /me
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** header `sticky top-0 z-20 h-14 border-b border-border bg-surface`, isi `max-w-lg`; konten `max-w-lg px-4 py-6`, wrapper `pb-[calc(4.5rem+env(safe-area-inset-bottom))]`; bottom nav `fixed inset-x-0 bottom-0 z-20 border-t bg-surface pb-[env(safe-area-inset-bottom)]` grid 5 kolom, item `flex-col items-center gap-1 py-2.5 text-xs`, aktif `font-semibold text-accent-strong`, normal `text-text-muted`
+- **Catatan:** menu dari `PORTAL_MENU` (lib/navigation.ts). Beranda aktif hanya tepat di `/me`
+
+### TenantSwitcher
+- **Path:** apps/web/components/layout/TenantSwitcher.tsx
+- **Dipakai di:** header AppShell & PortalShell
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** label nama usaha `text-sm font-semibold truncate` + peran `text-xs text-text-muted`; trigger `max-w-64 rounded-field px-3 py-2 hover:bg-surface-secondary` + ChevronDown; item `rounded-field px-3 py-2.5 hover:bg-surface-secondary`, usaha aktif ikon Check `text-accent-strong`
+- **Catatan:** 1 usaha → teks statis (bukan tombol). Pindah usaha via Server Action `selectTenant` → `router.replace(redirectTo)` + `refresh` (halaman awal bisa berubah sesuai peran). Error tampil di panel. Pola berbeda dari `TenantPicker` (kartu besar di /login)
+
+### UserMenu
+- **Path:** apps/web/components/layout/UserMenu.tsx
+- **Dipakai di:** header AppShell & PortalShell
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** trigger avatar `size-9 rounded-full bg-accent-soft text-sm font-semibold text-accent-strong`; panel nama `text-sm font-semibold` + email `text-xs text-text-muted`, pemisah `border-t border-border`, tombol Keluar `rounded-field px-3 py-2.5 text-sm font-medium` + ikon LogOut
+- **Catatan:** inisial dari kata pertama + terakhir nama. Keluar = `<form action={logout}>` (spinner saat submit)
+
+### DropdownMenu
+- **Path:** apps/web/components/common/DropdownMenu.tsx
+- **Dipakai di:** TenantSwitcher, UserMenu
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** panel `absolute top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-field border border-border bg-surface p-2 shadow-card`
+- **Catatan:** props `label` (aria), `trigger`, `triggerClassName`, `align` start|end, `children(close)`. Tertutup saat klik di luar / Escape (fokus kembali ke trigger). Pakai ini untuk dropdown berikutnya — jangan buat varian baru
+
+### PageHeader
+- **Path:** apps/web/components/layout/PageHeader.tsx
+- **Dipakai di:** /dashboard, /me, halaman "Segera hadir" — semua halaman di dalam shell
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** judul `font-display text-2xl font-extrabold tracking-tight`; deskripsi `text-sm text-text-secondary`; wrapper `flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between`
+- **Catatan:** props `title`, `description`, `actions` (tombol kanan). Halaman shell memakai wrapper `flex flex-col gap-6` di bawah PageHeader
+
+### EmptyState
+- **Path:** apps/web/components/common/EmptyState.tsx
+- **Dipakai di:** /dashboard, /me, halaman "Segera hadir"
+- **Referensi desain:** tanpa file desain — ui-rules + ui-tokens (tema solvexaerp.tech), tercatat di progress-tracker feature 06
+- **Pola kelas kunci:** card `rounded-card border border-border bg-surface px-6 py-12 text-center shadow-card`; ikon `size-11 rounded-field bg-accent-soft text-accent`; judul `font-display text-base font-bold`; teks `text-sm text-text-muted`
+- **Catatan:** props `icon` (LucideIcon, opsional), `title`, `description`, `action`. Tautan CTA: salin kelas Button primary/secondary ke `<Link>` (lihat dashboard & catch-all)
+
 ### SessionPlaceholder (SEMENTARA)
 - **Path:** apps/web/components/auth/SessionPlaceholder.tsx
-- **Dipakai di:** /dashboard, /me, /admin/tenants
+- **Dipakai di:** /admin/tenants (dilepas dari /dashboard & /me di feature 06)
 - **Referensi desain:** tanpa — halaman sementara untuk verifikasi redirect per peran (feature 04)
 - **Pola kelas kunci:** card auth (`rounded-card border border-border bg-surface shadow-card`) + `dl grid grid-cols-[auto_1fr]`
 - **Catatan:** server component; logout via `<form action={logout}>`. **Hapus** saat halaman aslinya dibangun (06 dashboard, 07 admin, 14/37 portal)
