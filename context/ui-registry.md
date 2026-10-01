@@ -314,7 +314,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### Banner
 - **Path:** apps/web/components/common/Banner.tsx
-- **Dipakai di:** form karyawan (error simpan / "N isian perlu diperbaiki"), detail karyawan (Nonaktif sejak …)
+- **Dipakai di:** form karyawan (error simpan / "N isian perlu diperbaiki"), detail karyawan (Nonaktif sejak …), /compliance (MinimumWageBanner)
 - **Referensi desain:** context/designs/design-tokens.html ("banner")
 - **Pola kelas kunci:** `rounded-[18px] border px-4.5 py-3.5`; neutral `border-border-neutral bg-surface-solid/92`, danger `border-danger-border bg-danger-surface`, warning `border-warning-border bg-warning-surface`; ikon 20px, judul `text-[14.5px] font-bold`
 - **Catatan:** server-safe. Props `tone`, `title`, `description?`, `action?`, `icon?`. Selebar konten halaman; FormAlert tetap untuk pesan kecil di dalam form/dialog
@@ -324,7 +324,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /employees
 - **Referensi desain:** context/designs/employees.html ("data-table", "filter-bar")
 - **Pola kelas kunci:** tabel `glass-data rounded-card`, thead `bg-table-head h-11` teks `text-caption font-bold text-text-secondary whitespace-nowrap`, baris `h-16 border-t hover:bg-row-hover` (tautan menutupi baris), baris nonaktif `text-text-tertiary` + avatar netral + Badge outline; footer tabel = Pagination / "Menampilkan x–y dari n"; mobile = card `glass-data rounded-[20px]`. Filter desktop = panel `glass rounded-card p-2.5` (cari + 2 SelectField `labelHidden` + SegmentedControl), mobile = cari + segmented + tombol Filter → Dialog
-- **Catatan:** EmployeeTable server-safe, prop `compact` = tampilan atasan (Nama, Jabatan, Status, Tanggal masuk). Kolom Keterangan dari `employeeNote()` (kontrak/percobaan ≤30 hari = peringatan). Filter di URL (`employeesHref` di lib/employeeLabels.ts — **jangan ekspor helper dari modul "use client" untuk dipanggil server**). EmployeeAvatar = inisial di `bg-shape-sand` (beda dengan UserAvatar gelap untuk akun login). **Pola acuan tabel data berikutnya** (rekap absensi, payroll)
+- **Catatan:** EmployeeTable server-safe, prop `compact` = tampilan atasan (Nama, Jabatan, Status, Tanggal masuk). Kolom Keterangan dari `employeeNote()` (kontrak/percobaan ≤30 hari = peringatan) + feature 34: prop `minimumWage` (dari `EmployeeList`) → `minimumWageNote()` "Di bawah UMP 2026" / "… mulai 1 Jan 2027" (warn) di atas catatan lain, bertumpuk `flex-col gap-0.5`. Filter di URL (`employeesHref` di lib/employeeLabels.ts — **jangan ekspor helper dari modul "use client" untuk dipanggil server**). EmployeeAvatar = inisial di `bg-shape-sand` (beda dengan UserAvatar gelap untuk akun login). **Pola acuan tabel data berikutnya** (rekap absensi, payroll)
 
 ### EmployeeForm
 - **Path:** apps/web/components/employees/EmployeeForm.tsx
@@ -643,3 +643,9 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** card `glass-strong rounded-card` header `px-5 pt-5 pb-3 lg:px-6` judul `font-display text-h2 font-bold` + jumlah `text-text-tertiary`; baris `min-h-16 border-t border-border-subtle px-5 py-3` = CalendarDate + judul `text-[14.5px] font-bold` + sub `text-small` (masa / nama karyawan tautan ke /employees/[id], "· ditandai <nama>") + Badge tenggat (`complianceDueBadge`: success Selesai · danger Terlewat n hari/Hari ini · warning Besok/H-≤7 · neutral H-n) + tautan teks aksi (accent "Tandai selesai" / secondary "Batalkan"); selesai = tanggal & judul diredupkan. MonthNav: panel `glass rounded-card p-2` panah `size-11` + label `font-display text-[17px] font-bold`, tautan "Bulan ini" (sm+) bila bukan bulan berjalan; bulan depan boleh dibuka
 - **Catatan:** List & MonthNav server, Action client (Server Action `completeComplianceReminder`/`reopenComplianceReminder` + `router.refresh()`, error kecil di bawah). Halaman: PageHeader + 4 StatTile (Terlewat + badge danger "Perlu tindakan", 7 hari ke depan, Belum selesai, Selesai) + card "Terlewat" (bila ada) + MonthNav + card bulan / EmptyState success CalendarCheck + catatan sumber aturan. Label di `lib/complianceLabels.ts`, judul jenis dari `COMPLIANCE_REMINDER_KIND_LABELS` (`@exapay/shared`). URL `?month=YYYY-MM`
 
+### MinimumWageBanner
+- **Path:** apps/web/components/compliance/MinimumWageBanner.tsx
+- **Dipakai di:** /compliance (di bawah PageHeader, di atas StatTile)
+- **Referensi desain:** context/designs/dashboard.html (banner "N karyawan bergaji pokok di bawah UMK …") lewat Banner (design-tokens "banner")
+- **Pola kelas kunci:** Banner warning per status (`below` / `below_upcoming`), description = teks + `ul mt-1.5 flex-col gap-1` nama tautan `font-bold text-accent-strong` + "— upah Rp …" `tabular-nums`; Banner neutral ikon MapPin bila lokasi usaha belum diatur (aksi Button secondary "Atur lokasi usaha" → /settings/company) atau data upah minimum belum ada
+- **Catatan:** server component, prop `summary: MinimumWageSummary`. Tidak merender apa pun bila tidak ada karyawan tertandai. Label lewat `minimumWageLabel` (@exapay/shared) + `minimumWageReferenceOf` (lib/employeeLabels.ts). Dipakai ulang kartu dashboard feature 35

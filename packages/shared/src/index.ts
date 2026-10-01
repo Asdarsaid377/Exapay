@@ -632,3 +632,16 @@ export {
   type ComplianceReminderStatus,
   type ComplianceSource,
 } from "./compliance.js";
+export {
+  MINIMUM_WAGE_FLAG_STATUSES,
+  minimumWageEmployeeSchema,
+  minimumWageFlagSchema,
+  minimumWageLabel,
+  minimumWageReferenceSchema,
+  minimumWageSummarySchema,
+  type MinimumWageEmployee,
+  type MinimumWageFlag,
+  type MinimumWageFlagStatus,
+  type MinimumWageReference,
+  type MinimumWageSummary,
+} from "./minimumWage.js";

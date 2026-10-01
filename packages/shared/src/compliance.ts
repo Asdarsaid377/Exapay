@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { EmploymentStatus } from "./employees.js";
+import { minimumWageSummarySchema } from "./minimumWage.js";
 import { isoDateSchema } from "./workCalendar.js";
 
 // Kalender kepatuhan (feature 33). Pengingat DIHITUNG saat dibaca (tidak disimpan) dari:
@@ -227,6 +228,8 @@ export const complianceCalendarSchema = z.object({
     openThisMonth: z.number().int(),
     doneThisMonth: z.number().int(),
   }),
+  // Peringatan upah minimum (feature 34) — keadaan hari ini, tidak bergantung bulan yang ditampilkan
+  minimumWage: minimumWageSummarySchema,
 });
 export type ComplianceCalendar = z.infer<typeof complianceCalendarSchema>;
 

@@ -13,7 +13,7 @@ import {
   type TerKind,
 } from "@exapay/shared";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, isNull, lte, or, type Column, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, gte, isNull, lte, min, or, type Column, type SQL } from "drizzle-orm";
 
 import { DRIZZLE } from "../../database/database.module.js";
 import type { Database } from "../../database/tenant-transaction.js";
@@ -178,5 +178,26 @@ export class RegulationsService {
       effectiveTo: row.effectiveTo,
       source: row.source,
     };
+  }
+
+  // Versi upah minimum berikutnya: berlaku mulai tanggal terdekat setelah `date` (UMK didahulukan atas UMP pada tanggal
+  // itu, aturan sama dengan minimumWage); null jika belum ada datanya (feature 34 — peringatan dini)
+  async nextMinimumWage(regencyCode: string, date: string): Promise<MinimumWage | null> {
+    const [regency] = await this.db
+      .select({ provinceCode: regencies.provinceCode })
+      .from(regencies)
+      .where(eq(regencies.code, regencyCode));
+    if (!regency) return null;
+
+    const [next] = await this.db
+      .select({ effectiveFrom: min(minimumWages.effectiveFrom) })
+      .from(minimumWages)
+      .where(
+        and(
+          or(eq(minimumWages.regencyCode, regencyCode), eq(minimumWages.provinceCode, regency.provinceCode)),
+          gt(minimumWages.effectiveFrom, date),
+        ),
+      );
+    return next?.effectiveFrom ? this.minimumWage(regencyCode, next.effectiveFrom) : null;
   }
 }

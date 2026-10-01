@@ -1,4 +1,14 @@
-import type { EmployeeActivityFilter, EmployeeListItem, EmployeeListQuery, EmploymentStatus, Gender, PtkpStatus } from "@exapay/shared";
+import {
+  type EmployeeActivityFilter,
+  type EmployeeListItem,
+  type EmployeeListQuery,
+  type EmploymentStatus,
+  type Gender,
+  type MinimumWageFlag,
+  minimumWageLabel,
+  type MinimumWageReference,
+  type PtkpStatus,
+} from "@exapay/shared";
 
 import type { BadgeTone } from "@/components/common/Badge";
 import { daysBetween, formatIsoDate } from "@/lib/datetime";
@@ -58,6 +68,28 @@ export function employeeNote(employee: EmployeeListItem, today: string): Employe
     return { text: `Percobaan selesai ${formatIsoDate(employee.probationEndDate)}`, warn: days <= END_DATE_WARNING_DAYS };
   }
   return null;
+}
+
+// Upah minimum yang dipakai pembanding sebuah tanda (feature 34): versi berikutnya bila tanggal pembanding sudah
+// masuk masa berlakunya, selain itu yang berlaku sekarang
+export function minimumWageReferenceOf(
+  flag: MinimumWageFlag,
+  current: MinimumWageReference | null,
+  upcoming: MinimumWageReference | null,
+): MinimumWageReference | null {
+  return upcoming && flag.checkedOn >= upcoming.effectiveFrom ? upcoming : current;
+}
+
+// Keterangan daftar karyawan: "Di bawah UMK 2026" · "Di bawah UMP 2027 mulai 1 Jan 2027"
+export function minimumWageNote(
+  flag: MinimumWageFlag | undefined,
+  current: MinimumWageReference | null,
+  upcoming: MinimumWageReference | null,
+): EmployeeNote {
+  if (!flag) return null;
+  const reference = minimumWageReferenceOf(flag, current, upcoming);
+  const label = reference ? minimumWageLabel(reference, false) : "upah minimum";
+  return { text: flag.status === "below_upcoming" ? `Di bawah ${label} mulai ${formatIsoDate(flag.checkedOn)}` : `Di bawah ${label}`, warn: true };
 }
 
 export function initialsOf(fullName: string): string {

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { type MinimumWageFlag, minimumWageFlagSchema, type MinimumWageReference, minimumWageReferenceSchema } from "./minimumWage.js";
+
 // Data karyawan (feature 11, /employees). NIK, NPWP, dan nomor rekening disimpan terenkripsi di API
 // dan hanya keluar dalam bentuk tersamar — nilai penuh lewat aksi "Tampilkan" (owner/admin, tercatat di audit log).
 
@@ -189,6 +191,13 @@ export type EmployeeList = {
   counts: { active: number; inactive: number };
   // all = owner/admin; subordinates = atasan (hanya bawahan langsung, hanya baca)
   scope: "all" | "subordinates";
+  // Peringatan upah minimum (feature 34) untuk karyawan di halaman ini — owner/admin saja (null untuk atasan)
+  minimumWage: {
+    current: MinimumWageReference | null;
+    upcoming: MinimumWageReference | null;
+    // Per id karyawan; karyawan yang tidak ditandai tidak ada di sini
+    flags: Record<string, MinimumWageFlag>;
+  } | null;
 };
 
 // Pilihan untuk form: departemen, jabatan, calon atasan, akun anggota usaha yang belum tertaut
@@ -250,6 +259,13 @@ export const employeeListSchema: z.ZodType<EmployeeList> = z.object({
   pageSize: z.number(),
   counts: z.object({ active: z.number(), inactive: z.number() }),
   scope: z.enum(["all", "subordinates"]),
+  minimumWage: z
+    .object({
+      current: minimumWageReferenceSchema.nullable(),
+      upcoming: minimumWageReferenceSchema.nullable(),
+      flags: z.record(z.string(), minimumWageFlagSchema),
+    })
+    .nullable(),
 });
 
 export const employeeFormOptionsSchema: z.ZodType<EmployeeFormOptions> = z.object({

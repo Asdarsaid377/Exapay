@@ -146,7 +146,7 @@ export default async function EmployeesPage({ searchParams }: Props) {
           }
         />
       ) : (
-        <EmployeeTable employees={list.items} today={todayIso()} compact={!manage} footer={footer} />
+        <EmployeeTable employees={list.items} today={todayIso()} compact={!manage} minimumWage={list.minimumWage} footer={footer} />
       )}
     </>
   );

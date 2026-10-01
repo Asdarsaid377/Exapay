@@ -1,11 +1,11 @@
-import type { EmployeeListItem } from "@exapay/shared";
+import type { EmployeeList, EmployeeListItem } from "@exapay/shared";
 import { ChevronRight, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/common/Badge";
 import { EmployeeAvatar } from "@/components/employees/EmployeeAvatar";
 import { formatIsoDate } from "@/lib/datetime";
-import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES, type EmployeeNote, employeeNote } from "@/lib/employeeLabels";
+import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES, type EmployeeNote, employeeNote, minimumWageNote } from "@/lib/employeeLabels";
 
 type Props = {
   employees: EmployeeListItem[];
@@ -13,6 +13,8 @@ type Props = {
   today: string;
   // Tampilan atasan (bawahan langsung): kolom ringkas tanpa atasan & keterangan
   compact?: boolean;
+  // Peringatan upah minimum (feature 34) — owner/admin; null untuk atasan
+  minimumWage?: EmployeeList["minimumWage"];
   footer?: React.ReactNode;
 };
 
@@ -24,8 +26,27 @@ function StatusBadge({ employee }: { employee: EmployeeListItem }) {
   return <Badge tone={EMPLOYMENT_STATUS_TONES[employee.employmentStatus]}>{EMPLOYMENT_STATUS_LABELS[employee.employmentStatus]}</Badge>;
 }
 
-function Note({ note, inactive }: { note: EmployeeNote; inactive: boolean }) {
-  if (!note) return <span className="text-small text-text-secondary">—</span>;
+// Keterangan baris: peringatan upah minimum lebih dulu, lalu kontrak/percobaan/keluar
+function notesOf(employee: EmployeeListItem, today: string, minimumWage: EmployeeList["minimumWage"] | undefined): NonNullable<EmployeeNote>[] {
+  const notes = [
+    minimumWage ? minimumWageNote(minimumWage.flags[employee.id], minimumWage.current, minimumWage.upcoming) : null,
+    employeeNote(employee, today),
+  ];
+  return notes.filter((note): note is NonNullable<EmployeeNote> => note !== null);
+}
+
+function Notes({ notes, inactive }: { notes: NonNullable<EmployeeNote>[]; inactive: boolean }) {
+  if (notes.length === 0) return <span className="text-small text-text-secondary">—</span>;
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      {notes.map((note) => (
+        <Note key={note.text} note={note} inactive={inactive} />
+      ))}
+    </div>
+  );
+}
+
+function Note({ note, inactive }: { note: NonNullable<EmployeeNote>; inactive: boolean }) {
   return (
     <span className={`flex min-w-0 items-center gap-1.75 text-small whitespace-nowrap ${note.warn ? "font-bold text-warning-text" : inactive ? "text-text-tertiary" : "text-text-secondary"}`}>
       {note.warn ? <TriangleAlert aria-hidden className="size-3.75 shrink-0 text-warning-icon" /> : null}
@@ -36,7 +57,7 @@ function Note({ note, inactive }: { note: EmployeeNote; inactive: boolean }) {
 
 // Daftar karyawan (design employees "data-table"): desktop tabel di permukaan paling solid, mobile daftar card.
 // Seluruh baris adalah tautan ke detail. Karyawan nonaktif: teks redup, avatar netral, badge outline.
-export function EmployeeTable({ employees, today, compact = false, footer }: Props) {
+export function EmployeeTable({ employees, today, compact = false, minimumWage, footer }: Props) {
   return (
     <>
       <section className="hidden overflow-hidden rounded-card glass-data lg:block">
@@ -105,7 +126,7 @@ export function EmployeeTable({ employees, today, compact = false, footer }: Pro
                   <td className={`${CELL} text-sm tabular-nums ${secondary}`}>{formatIsoDate(employee.joinDate)}</td>
                   {compact ? null : (
                     <td className={CELL}>
-                      <Note note={employeeNote(employee, today)} inactive={inactive} />
+                      <Notes notes={notesOf(employee, today, minimumWage)} inactive={inactive} />
                     </td>
                   )}
                   <td className={CELL}>
@@ -123,7 +144,7 @@ export function EmployeeTable({ employees, today, compact = false, footer }: Pro
         <ul className="flex flex-col gap-3">
           {employees.map((employee) => {
             const inactive = !!employee.endDate;
-            const note = compact ? null : employeeNote(employee, today);
+            const notes = compact ? [] : notesOf(employee, today, minimumWage);
             return (
               <li key={employee.id}>
                 <Link
@@ -142,9 +163,9 @@ export function EmployeeTable({ employees, today, compact = false, footer }: Pro
                     </div>
                     <StatusBadge employee={employee} />
                   </div>
-                  {note ? (
+                  {notes.length > 0 ? (
                     <div className="border-t border-border-subtle pt-2.5">
-                      <Note note={note} inactive={inactive} />
+                      <Notes notes={notes} inactive={inactive} />
                     </div>
                   ) : null}
                 </Link>

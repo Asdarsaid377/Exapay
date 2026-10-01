@@ -20,6 +20,7 @@ import { localClock } from "../attendance/attendance-clock.js";
 import { AttendanceService } from "../attendance/attendance.service.js";
 import { loadAttendanceViewer } from "../attendance/attendance-viewer.js";
 import { AuditService } from "../audit/audit.service.js";
+import { MinimumWageService } from "../payroll/minimum-wage.service.js";
 
 const NOT_FOUND = "Pengingat tidak ditemukan atau sudah tidak berlaku";
 
@@ -35,13 +36,15 @@ function lastDayOf(month: string): string {
 
 // Kalender kepatuhan (feature 33) — owner/admin (peran dibaca ulang). Pengingat dihitung saat dibaca dari aturan tenggat
 // (compliance_deadlines, data regulasi) + data karyawan lewat fungsi murni @exapay/shared — sama dengan worker email.
-// compliance_reminders hanya menyimpan status selesai (+ jejak email dari worker).
+// compliance_reminders hanya menyimpan status selesai (+ jejak email dari worker). Peringatan upah minimum (feature 34)
+// ikut dikirim sebagai keadaan hari ini (bukan pengingat bertanggal — tidak bisa ditandai selesai, hilang setelah gaji disesuaikan).
 @Injectable()
 export class ComplianceService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly attendance: AttendanceService,
     private readonly audit: AuditService,
+    private readonly minimumWages: MinimumWageService,
   ) {}
 
   // month null = bulan berjalan (zona waktu usaha)
@@ -72,6 +75,7 @@ export class ComplianceService {
         };
       };
       const reminders = monthItems.map(toReminder);
+      const minimumWage = await this.minimumWages.summary(tx, ctx.tenantId);
       const overdue = pastItems.map(toReminder).filter((reminder) => reminder.status === "open");
       return {
         month,
@@ -85,6 +89,7 @@ export class ComplianceService {
           openThisMonth: reminders.filter((reminder) => reminder.status === "open").length,
           doneThisMonth: reminders.filter((reminder) => reminder.status === "done").length,
         },
+        minimumWage,
       };
     });
   }

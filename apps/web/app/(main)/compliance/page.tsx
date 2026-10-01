@@ -1,4 +1,4 @@
-import { type ComplianceReminder, complianceMonthSchema } from "@exapay/shared";
+import { type ComplianceReminder, complianceMonthSchema, formatRupiah, minimumWageLabel } from "@exapay/shared";
 import { CalendarCheck, CloudOff } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { StatTile } from "@/components/common/StatTile";
 import { ComplianceMonthNav } from "@/components/compliance/ComplianceMonthNav";
 import { ComplianceReminderList } from "@/components/compliance/ComplianceReminderList";
+import { MinimumWageBanner } from "@/components/compliance/MinimumWageBanner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchComplianceCalendar } from "@/lib/api/compliance";
 import { monthLabel } from "@/lib/attendanceLabels";
@@ -21,6 +22,7 @@ const DESCRIPTION = "Tenggat setor BPJS, setor & lapor PPh 21, kontrak berakhir,
 
 // Kalender kepatuhan (feature 33): pengingat terlewat (lintas bulan) + daftar tenggat satu bulan, tandai selesai.
 // Tanpa referensi desain halaman — turunan kartu "Pengingat kepatuhan" dashboard.html + pola StatTile/OrgListCard (izin user).
+// Feature 34: banner upah minimum (pola banner "di bawah UMK" dashboard.html) di atas ringkasan.
 export default async function CompliancePage({ searchParams }: Props) {
   const raw = await searchParams;
   const requested = complianceMonthSchema.safeParse(typeof raw.month === "string" ? raw.month : undefined);
@@ -36,11 +38,13 @@ export default async function CompliancePage({ searchParams }: Props) {
   }
 
   const calendar = result.data;
-  const { summary } = calendar;
+  const { summary, minimumWage } = calendar;
   const label = monthLabel(calendar.month);
   return (
     <>
       <PageHeader title="Kepatuhan" description={DESCRIPTION} />
+
+      <MinimumWageBanner summary={calendar.minimumWage} />
 
       <div className="grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4">
         <StatTile
@@ -74,6 +78,13 @@ export default async function CompliancePage({ searchParams }: Props) {
       <p className="px-1.5 text-small text-pretty text-text-secondary">
         Tenggat dari aturan resmi: BPJS Kesehatan tanggal 10 bulan berjalan, BPJS Ketenagakerjaan tanggal 15 bulan berikutnya, setor PPh 21 tanggal 15 dan
         lapor SPT Masa tanggal 20 bulan berikutnya (PMK 81/2024). Jika jatuh pada hari libur, batasnya bergeser ke hari kerja berikutnya.
+        {minimumWage.current ? (
+          <>
+            {" "}
+            Upah minimum yang berlaku: {minimumWageLabel(minimumWage.current)} {formatRupiah(minimumWage.current.monthlyAmount)}/bulan, dibandingkan dengan gaji
+            pokok + tunjangan tetap karyawan aktif.
+          </>
+        ) : null}
       </p>
     </>
   );

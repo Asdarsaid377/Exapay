@@ -61,6 +61,7 @@ import {
   withTenant,
 } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
+import { MinimumWageService } from "../payroll/minimum-wage.service.js";
 
 const NO_ACCESS = "Anda tidak memiliki akses ke data karyawan";
 const NOT_FOUND = "Karyawan tidak ditemukan";
@@ -163,6 +164,7 @@ export class EmployeesService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly audit: AuditService,
     private readonly cipher: FieldCipher,
+    private readonly minimumWages: MinimumWageService,
   ) {}
 
   async list(user: AuthUser, query: EmployeeListQuery): Promise<EmployeeList> {
@@ -211,6 +213,15 @@ export class EmployeesService {
         .from(employees)
         .where(scope);
 
+      // Peringatan upah minimum (feature 34) — butuh data gaji, jadi hanya owner/admin
+      const minimumWage = viewer.manage
+        ? await this.minimumWages.summary(
+            tx,
+            ctx.tenantId,
+            rows.map((row) => row.id),
+          )
+        : null;
+
       return {
         items: rows.map(toListItem),
         total: totalRow?.total ?? 0,
@@ -221,6 +232,15 @@ export class EmployeesService {
           inactive: counts?.inactive ?? 0,
         },
         scope: viewer.manage ? "all" : "subordinates",
+        minimumWage: minimumWage
+          ? {
+              current: minimumWage.current,
+              upcoming: minimumWage.upcoming,
+              flags: Object.fromEntries(
+                minimumWage.employees.map((item) => [item.employee.id, item.flag]),
+              ),
+            }
+          : null,
       };
     });
   }
