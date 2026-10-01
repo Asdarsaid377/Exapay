@@ -72,7 +72,8 @@ type Viewer = {
   ownEmployeeId: string | null;
 };
 
-const FIELD = {
+// Nama kolom konteks enkripsi — juga dipakai ekspor transfer bank (feature 32)
+export const FIELD = {
   nik: "employees.nik",
   npwp: "employees.npwp",
   bankAccount: "employees.bank_account",

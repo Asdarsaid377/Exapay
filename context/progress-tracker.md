@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 6 — Payroll
-**Terakhir selesai:** 31 Slip Gaji PDF (2026-10-01)
-**Berikutnya:** 32 Laporan & Ekspor Payroll
+**Phase:** 7 — Kepatuhan, Dashboard & Portal
+**Terakhir selesai:** 32 Laporan & Ekspor Payroll (2026-10-01)
+**Berikutnya:** 33 Kalender Kepatuhan
 
 ---
 
@@ -58,7 +58,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 30 Finalisasi Payroll
 - [x] 30b Tanggal Tutup Buku Absensi (sisipan, keputusan user 2026-10-01)
 - [x] 31 Slip Gaji PDF
-- [ ] 32 Laporan & Ekspor Payroll
+- [x] 32 Laporan & Ekspor Payroll
 
 ### Phase 7 — Kepatuhan, Dashboard & Portal
 - [ ] 33 Kalender Kepatuhan
@@ -238,6 +238,9 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — **Slip gaji (feature 31):** migration `0027_payslips` — tabel `payslips` (enum `payslip_status` pending/generating/ready/failed, `payslip_email_status` queued/sent/failed; FK komposit `(tenant_id, run_id, employee_id)` → `payroll_run_employees`; CHECK file/terbit/email; trigger `payslips_guard`: insert hanya pending untuk karyawan `calculated`, identitas baris tetap, slip ready tidak bisa diganti, terbit tidak bisa dibatalkan; RLS + FORCE; app_user SELECT/INSERT + UPDATE kolom status/file/terbit/email, tanpa DELETE). Finalisasi menyisipkan baris slip di transaksi yang sama (`PayslipsService.createForRun`) lalu enqueue **setelah commit** (gagal enqueue → slip tetap pending, tombol "Proses ulang"). Antrean BullMQ baru **`payslips`** (job `payslip-generate` & `payslip-email`, payload `{ tenantId, payslipId }`, `PAYSLIP_QUEUE` di RedisModule API — koneksi produsen kini dipakai bersama semua antrean). Endpoint owner/admin `GET /payroll/runs/:id/slips`, `POST …/slips/retry|publish`, `POST …/slips/:payslipId/email`, `GET …/slips/:payslipId/pdf` (boleh sebelum terbit); portal `GET /payroll/me/payslips`, `GET /payroll/me/payslips/:id/pdf` (milik sendiri & terbit saja, selain itu 404). Audit `payroll_run`/`publish_payslips`, `payslip`/`resend_email`. Key storage `tenants/<tid>/payslips/<run_id>/<payslip_id>.pdf`.
 - 2026-10-01 — Worker feature 31: PDF dengan **pdfkit** (font standar Helvetica/WinAnsi — tanpa file font; minus ASCII), isi slip fungsi murni `apps/worker/src/payslips/payslip-content.ts` dari snapshot final (tidak menghitung ulang; cek jumlah baris = total & bruto − potongan = diterima, tidak cocok → gagal permanen). **Email slip dikirim worker** (bukan API) — worker kini punya `FileStorage`/`S3FileStorage` (put saja, `src/storage/`) dan `Mailer`/`SmtpMailer` (`src/email/`), env worker + `S3_*`, `SMTP_*`, `APP_WEB_URL` (sama dengan `.env` API). Worker kini punya vitest (`apps/worker/test/`).
 
+- 2026-10-01 — Keputusan user (feature 32): UI `/payroll/reports` **tanpa referensi visual** (turunkan dari pola, izin user); **transfer bank = Excel umum + sheet per bank** (format upload khusus bank belum); **rekap setor per periode + rekap tahunan**. Keputusan sendiri (disetujui saat verifikasi): nomor rekening di file transfer = data karyawan **saat diunduh** (bukan snapshot), ekspor dicatat audit `payroll_run`/`export_transfer`; Excel dibuat sinkron di API (bukan antrean — kecil); NIK/NPWP tidak dimasukkan (e-Bupot di luar MVP).
+- 2026-10-01 — **Laporan & ekspor (feature 32):** tanpa migration. `PayrollReportsService` (`GET /payroll/reports?year=` — default tahun berjalan zona waktu usaha; `GET /payroll/reports/runs/:id/transfer|contributions` → xlsx, periode draf 409), owner/admin. Total = SUM numeric `payroll_run_employees` status `calculated` per periode final (= jumlah slip = total snapshot periode). Builder murni `payroll-reports.excel.ts` (`write-excel-file`): transfer → sheet Semua + per kode bank + "Tanpa rekening" (rekening sel Teks, keterangan rekening kosong/nominal ≤ 0, baris total); rekap setor → Ringkasan setor (per program perusahaan/karyawan/total + subtotal + PPh 21), BPJS per karyawan, PPh 21 per karyawan. Nominal ditulis angka (format ribuan), total dijumlah decimal.js. `FIELD` (konteks cipher) kini diekspor dari `employees.service.ts`.
+
 ---
 
 ## Catatan (Notes)
@@ -300,3 +303,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Temuan dari data uji coba** — sudah diputuskan user 2026-10-01 (lihat Decisions): (1) → feature 30b; (2) → label Masuk/Keluar di 30b; (3) → tetap.
 - Total test API 255 per feature 31 (`payslips.e2e.test.ts` 2 skenario — hasil worker ditiru di DB; `tenant-isolation` + `payslips`) + 161 unit test payroll-engine + 4 unit test worker (`payslip-content.test.ts`: isi slip, PPh 21 negatif, total tidak cocok, render PDF). Worker sungguhan diverifikasi ujung-ke-ujung (PDF + email Mailpit). Data dev: usaha **"Demo Slip Gaji"** (`owner|admin|karyawan@demo-slip.local`, password `password123`) dengan payroll September 2026 final + 2 slip terbit — dibuat untuk verifikasi visual.
 - Email API lain (reset password, verifikasi, undangan) masih fire-and-forget — bisa dipindah ke antrean worker memakai `Mailer` worker bila dibutuhkan.
+- Total test API 256 per feature 32 (`payroll-reports.e2e.test.ts`: rekap = jumlah slip = total snapshot, isi Excel dibaca `read-excel-file`, audit, akses, draf 409) + 4 unit test worker. Data dev "Demo Slip Gaji": karyawan belum punya rekening (semua di sheet "Tanpa rekening").

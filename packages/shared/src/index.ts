@@ -587,3 +587,10 @@ export {
   type PayslipStatus,
   type PublishPayslipsResult,
 } from "./payslips.js";
+export {
+  type PayrollReport,
+  type PayrollReportMonth,
+  payrollReportMonthSchema,
+  payrollReportSchema,
+  payrollReportYearSchema,
+} from "./payrollReports.js";
