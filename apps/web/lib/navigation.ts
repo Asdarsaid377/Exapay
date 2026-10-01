@@ -88,16 +88,20 @@ export const ADMIN_MENU: readonly NavSection[] = [{ label: "Tenant", icon: "tena
 
 export type PortalIconKey = "home" | "tasks" | "attendance" | "payslips" | "profile";
 
-export type PortalLink = { label: string; href: string; icon: PortalIconKey };
+// whenInactive: tetap terbuka untuk karyawan nonaktif (sudah keluar / belum mulai) — keputusan user feature 37: hanya slip & profil
+export type PortalLink = { label: string; href: string; icon: PortalIconKey; whenInactive: boolean };
 
 // Bottom nav portal karyawan (project-overview.md): Beranda, Tugas, Absensi, Slip, Profil
 export const PORTAL_MENU: readonly PortalLink[] = [
-  { label: "Beranda", href: "/me", icon: "home" },
-  { label: "Tugas", href: "/me/tasks", icon: "tasks" },
-  { label: "Absensi", href: "/me/attendance", icon: "attendance" },
-  { label: "Slip", href: "/me/payslips", icon: "payslips" },
-  { label: "Profil", href: "/me/profile", icon: "profile" },
+  { label: "Beranda", href: "/me", icon: "home", whenInactive: false },
+  { label: "Tugas", href: "/me/tasks", icon: "tasks", whenInactive: false },
+  { label: "Absensi", href: "/me/attendance", icon: "attendance", whenInactive: false },
+  { label: "Slip", href: "/me/payslips", icon: "payslips", whenInactive: true },
+  { label: "Profil", href: "/me/profile", icon: "profile", whenInactive: true },
 ];
+
+// Halaman awal portal untuk karyawan nonaktif
+export const INACTIVE_PORTAL_HOME = "/me/payslips";
 
 // Halaman portal yang tidak ada di bottom nav (dibuka dari halaman lain)
 export const PORTAL_EXTRA_LINKS: readonly { label: string; href: string }[] = [{ label: "Kinerja saya", href: "/me/performance" }];

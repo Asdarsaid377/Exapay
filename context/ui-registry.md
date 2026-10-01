@@ -115,7 +115,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** app/(portal)/layout.tsx — semua halaman /me
 - **Referensi desain:** context/designs/me.html + design-tokens.html
 - **Pola kelas kunci:** wrapper `mx-auto max-w-lg px-3.5 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] gap-3.5`; header `glass sticky top-3 h-15 rounded-[20px]`; bottom nav mengambang `fixed inset-x-0 bottom-0 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]` → `glass h-18 rounded-[24px] p-1.5 grid-cols-5 gap-1`, item `rounded-[18px] text-xs`, aktif `bg-accent-soft font-bold text-accent-strong`, default `text-text-secondary`
-- **Catatan:** maks 3 lapisan blur di portal (header, kartu utama, bottom nav) — card lain `surface-solid`. Beranda aktif hanya tepat di `/me`
+- **Catatan:** maks 3 lapisan blur di portal (header, kartu utama, bottom nav) — card lain `surface-solid`. Beranda aktif hanya tepat di `/me`. Prop `inactive` (feature 37): karyawan nonaktif → hanya item `whenInactive` (Slip & Profil) `grid-cols-2`; layout portal mengisinya lewat `isInactiveEmployee()` (`lib/portalAccess.ts`)
 
 ### PageHeader
 - **Path:** apps/web/components/layout/PageHeader.tsx
@@ -408,7 +408,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /me/attendance
 - **Referensi desain:** tanpa snapshot — diturunkan dari pola me.html (tile "Kehadiran bulan ini", card solid) (feature 14, izin user)
 - **Pola kelas kunci:** nav bulan `surface-solid rounded-[20px] p-1.5` + panah `size-11 rounded-field hover:bg-fill-subtle` + label `font-display text-[17px] font-bold` (bulan depan dari bulan berjalan = panah `text-text-muted` nonaktif); tile `surface-solid rounded-[20px] p-4 gap-1.5` grid 2 kolom (label `text-[13px]`, angka `font-display text-[30px] font-extrabold tabular-nums` + satuan `text-[13px] font-bold`, catatan `text-[12.5px] text-text-tertiary`); daftar `surface-solid rounded-card px-4.5 pt-4.5` judul `text-[17px] font-bold`, baris `border-t border-border-subtle py-3.5` = CalendarDate + hari `text-[14.5px] font-bold` + jam `text-small tabular-nums` + Badge status (success Tepat waktu / warning Telat / neutral Di luar hari kerja)
-- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hadir, telat, + tile "Izin & cuti" (grid 3 kolom, prop `leave`, feature 15); riwayat menggabungkan hari izin disetujui (Badge `info` jenis). Alpa belum tampil di portal (rekap staf feature 16 memakai `recapEmployee` di API). Pola acuan halaman daftar portal berikutnya (slip, tugas)
+- **Catatan:** semua server component. Bulan di URL `?month=YYYY-MM` (`myAttendanceHref`). Kosong = EmptyState `surface="solid"`. Ringkasan hadir, telat, + tile "Izin & cuti" (grid 3 kolom, prop `leave`, feature 15); riwayat menggabungkan hari izin disetujui (Badge `info` jenis). Catatan tile Hadir = "Alpa n hari" / "Tanpa alpa" (`summary.absent`, feature 37). Pola acuan halaman daftar portal berikutnya (slip, tugas)
 
 ### NewLeaveRequestButton / LeaveRequestFormDialog
 - **Path:** apps/web/components/attendance/NewLeaveRequestButton.tsx, LeaveRequestFormDialog.tsx
@@ -526,7 +526,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Path:** apps/web/components/kpi/KpiMyScoreCard.tsx, KpiScoreTile.tsx
 - **Dipakai di:** /me/performance (Card), /me (Tile)
 - **Referensi desain:** tile "Skor bulan ini" `context/designs/me.html`; Card diturunkan darinya (feature 21)
-- **Pola kelas kunci:** Tile = Link `surface-solid rounded-[20px] p-4` (label `text-[13px]`, angka `font-display text-[30px] font-extrabold` + predikat teks berwarna `text-[13px] font-bold`, periode `text-[12.5px] text-text-tertiary`, kanan "Rincian ›" `text-accent-strong`); Card = `surface-solid rounded-[22px] p-4.5`, angka `text-[44px] font-extrabold` + Badge predikat
+- **Pola kelas kunci:** Tile = Link `surface-solid rounded-[20px] p-4` (label `text-[13px]`, angka `font-display text-[30px] font-extrabold` + predikat teks berwarna `text-[13px] font-bold`, periode `text-[12.5px] text-text-tertiary`, tanpa chevron — satu sel grid tile beranda sejak feature 37); Card = `surface-solid rounded-[22px] p-4.5`, angka `text-[44px] font-extrabold` + Badge predikat
 - **Catatan:** server component. Tile hanya tampil jika akun tertaut & jabatan punya template. Rincian di /me/performance = KpiIndicatorBreakdown di card `surface-solid rounded-[22px]`; navigasi bulan = AttendanceMonthNav `basePath="/me/performance"`
 
 ### KpiCycleForm
@@ -662,3 +662,31 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /dashboard (peran atasan)
 - **Referensi desain:** tanpa snapshot khusus — turunan context/designs/dashboard.html (feature 36, izin user)
 - **Kelas/komponen:** PageHeader (sapaan + "Periode … · N bawahan aktif · N hal menunggu"), grid `grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4` StatTile (Bawahan aktif & Rata-rata KPI tim `max-xl:col-span-2`), PendingActionsCard (`emptyDescription` versi atasan) di atas, lalu grid `xl:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]` AttendanceChartCard + KpiPredicateDistribution. EmptyState `UserRoundX` bila akun belum tertaut data karyawan; `CloudOff` bila gagal muat.
+
+### AttendanceMonthTile / LatestPayslipTile (grid tile beranda /me)
+- **Path:** apps/web/components/attendance/AttendanceMonthTile.tsx, apps/web/components/payroll/LatestPayslipTile.tsx
+- **Dipakai di:** /me (grid `grid-cols-2 gap-2.5` bersama KpiScoreTile, di bawah kartu Tugas hari ini)
+- **Referensi desain:** context/designs/me.html (tile "Kehadiran bulan ini", "Slip gaji terakhir · <bulan>")
+- **Pola kelas kunci:** AttendanceMonthTile = Link `surface-solid rounded-[20px] p-4 gap-1.5` ke /me/attendance, angka `font-display text-[30px] font-extrabold` + "hadir" `text-[13px] font-bold`, catatan "n telat · n alpa" `text-[12.5px] text-text-tertiary`; prop `wide` → `col-span-2` (tile skor tidak tampil). LatestPayslipTile = `surface-solid col-span-2 rounded-[20px] px-4 py-3` label `text-[13px] text-text-secondary` + MaskedAmount (Lihat/Sembunyikan)
+- **Catatan:** server component. Tile yang datanya gagal dimuat / tidak relevan dilewati (slip hanya bila ada slip terbit; kehadiran bila akun tertaut)
+
+### MyProfileView / ChangePasswordButton / ReadFields
+- **Path:** apps/web/components/employees/MyProfileView.tsx, apps/web/components/auth/ChangePasswordButton.tsx, apps/web/components/common/ReadFields.tsx
+- **Dipakai di:** /me/profile (ReadFields juga di EmployeeDataSections /employees/[id])
+- **Referensi desain:** tanpa referensi — pola me.html (card solid) + section baca detail karyawan (feature 37, izin user)
+- **Pola kelas kunci:** card identitas `surface-solid rounded-card p-4.5` = EmployeeAvatar `lg` + nama `font-display text-[19px] font-extrabold` + "jabatan · departemen" `text-sm text-text-secondary` + Badge status kerja (Nonaktif = neutral) + "No. induk …" `text-[13px] text-text-tertiary`; section `surface-solid rounded-card p-4.5 gap-4` judul `font-display text-[17px] font-bold` (+ catatan gembok `text-[13px]` untuk Pajak & rekening) berisi ReadFields (`dl grid gap-x-6 gap-y-5.5 sm:grid-cols-2`, dt `text-[13px] text-text-tertiary`, dd `text-[15px] font-medium`, tersamar `tracking-[0.04em]`); section Akun = ReadFields (email masuk, usaha, peran) + Button secondary lg fullWidth "Ganti password" (ikon KeyRound) + tombol Keluar secondary `text-danger-text` (`<form action={logout}>`)
+- **Catatan:** MyProfileView server; ChangePasswordButton client — Dialog 3 PasswordField (saat ini, baru, konfirmasi) validasi `changePasswordSchema`, Server Action `changePassword`, sukses = isi dialog berganti "Password berhasil diubah" + tombol Selesai. Tanpa reveal data sensitif. Akun belum tertaut / nonaktif = FormAlert info
+
+### MyKpiReviewList
+- **Path:** apps/web/components/kpi/MyKpiReviewList.tsx
+- **Dipakai di:** /me/performance (section "Penilaian periodik" di bawah skor bulanan)
+- **Referensi desain:** tanpa referensi — pola KpiMyScoreCard + baris terlipat KpiScoreList (feature 37, izin user)
+- **Pola kelas kunci:** heading section `font-display text-[19px] font-extrabold` + deskripsi `text-small`; card per periode `surface-solid rounded-card p-4.5 gap-3`: judul `reviewPeriodLabel` `text-[17px] font-bold` + siklus · rentang `text-small`, kanan skor `font-display text-[30px] font-extrabold` + Badge predikat; "Catatan kinerja" `rounded-inner bg-fill-subtle px-4 py-3` teks `text-sm whitespace-pre-line`; `<details>` "Rincian indikator" (summary `text-sm font-bold text-accent-strong` + ChevronDown berputar) berisi KpiIndicatorBreakdown; footer `text-caption text-text-tertiary` "Template … · difinalkan <tgl>"
+- **Catatan:** server component, prop `reviews: MyKpiReview[]` (hanya final). Kosong = EmptyState solid ikon ClipboardCheck; gagal = EmptyState CloudOff (skor bulanan tetap tampil)
+
+### PWA (manifest, service worker, offline)
+- **Path:** apps/web/app/manifest.ts, apps/web/public/sw.js, apps/web/public/offline.html, apps/web/public/icons/*, apps/web/components/common/ServiceWorkerRegistrar.tsx
+- **Dipakai di:** root layout (`ServiceWorkerRegistrar`, metadata `appleWebApp`/`icons`, `viewport.themeColor`)
+- **Referensi desain:** token ui-tokens.md (background `#fbf8f3`, accent `#f2790f`, card 22px, tombol pill); ikon = logo placeholder ExapayLogo
+- **Catatan:** offline.html statis mandiri dengan `<style>` sendiri (bukan component — tidak boleh bergantung CSS/JS aplikasi yang belum ter-cache). SW tidak meng-cache halaman/data
+

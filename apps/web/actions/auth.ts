@@ -3,6 +3,7 @@
 import {
   ACCESS_COOKIE,
   authSessionSchema,
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   REFRESH_COOKIE,
@@ -18,7 +19,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { apiRequest, sessionCookieHeader } from "@/lib/api/server";
-import type { LoginOutcome, SelectTenantOutcome, SimpleOutcome } from "@/lib/auth/outcomes";
+import type { ChangePasswordOutcome, LoginOutcome, SelectTenantOutcome, SimpleOutcome } from "@/lib/auth/outcomes";
 import { homePathFor } from "@/lib/auth/session";
 import { parseSetCookie } from "@/lib/auth/setCookieHeader";
 
@@ -103,6 +104,20 @@ export async function selectTenant(tenantId: string): Promise<SelectTenantOutcom
 
   await relayCookies(result.setCookies);
   return { kind: "success", redirectTo: homeOf(result.data) ?? "/login" };
+}
+
+// Ganti password dari /me/profile (feature 37). Refresh token sesi ini ikut terkirim lewat cookie → API mempertahankan sesi
+// ini dan mengakhiri sesi lain. Pesan API (mis. "Password saat ini salah") diteruskan apa adanya.
+export async function changePassword(input: { currentPassword: string; newPassword: string }): Promise<ChangePasswordOutcome> {
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
+
+  const result = await apiRequest("/auth/change-password", ignoreData, {
+    method: "POST",
+    body: { currentPassword: parsed.data.currentPassword, newPassword: parsed.data.newPassword },
+    cookieHeader: await currentCookieHeader(),
+  });
+  return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
 }
 
 export async function requestPasswordReset(email: string): Promise<SimpleOutcome> {

@@ -18,6 +18,7 @@ import {
   maskNik,
   maskNpwp,
   type MembershipRole,
+  type MyProfile,
   type RevealedSensitive,
   type SensitiveSection,
 } from "@exapay/shared";
@@ -60,6 +61,8 @@ import {
   type Transaction,
   withTenant,
 } from "../../database/tenant-transaction.js";
+import { localClock } from "../attendance/attendance-clock.js";
+import { AttendanceService } from "../attendance/attendance.service.js";
 import { AuditService } from "../audit/audit.service.js";
 import { MinimumWageService } from "../payroll/minimum-wage.service.js";
 
@@ -81,6 +84,9 @@ export const FIELD = {
 } as const;
 
 const supervisor = alias(employees, "supervisor");
+
+// Kolom bank_code berupa text di DB; nilainya dibatasi CHECK ke BANK_CODES (sama dengan detail())
+type MyEmployeeBankCode = Extract<MyProfile, { access: "ok" | "inactive" }>["employee"]["confidential"]["bankCode"];
 
 // Kolom daftar + detail non-sensitif (tanpa ciphertext)
 const LIST_COLUMNS = {
@@ -165,6 +171,7 @@ export class EmployeesService {
     private readonly audit: AuditService,
     private readonly cipher: FieldCipher,
     private readonly minimumWages: MinimumWageService,
+    private readonly attendance: AttendanceService,
   ) {}
 
   async list(user: AuthUser, query: EmployeeListQuery): Promise<EmployeeList> {
@@ -321,6 +328,58 @@ export class EmployeesService {
           : null,
         canManage: viewer.manage,
         updatedAt: row.updatedAt.toISOString(),
+      };
+    });
+  }
+
+  // Profil milik sendiri (portal /me/profile, feature 37): semua peran, hanya data karyawan yang tertaut ke akun ini.
+  // Nilai sensitif tersamar (didekripsi hanya untuk disamarkan, tidak ada reveal). Tanpa endReason (catatan internal admin).
+  async myProfile(user: AuthUser): Promise<MyProfile> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      const [row] = await tx
+        .select({
+          ...LIST_COLUMNS,
+          email: employees.email,
+          phone: employees.phone,
+          birthDate: employees.birthDate,
+          gender: employees.gender,
+          ptkpStatus: employees.ptkpStatus,
+          nikEncrypted: employees.nikEncrypted,
+          npwpEncrypted: employees.npwpEncrypted,
+          bankCode: employees.bankCode,
+          bankAccountEncrypted: employees.bankAccountEncrypted,
+          bankAccountHolder: employees.bankAccountHolder,
+        })
+        .from(employees)
+        .innerJoin(departments, eq(departments.id, employees.departmentId))
+        .innerJoin(positions, eq(positions.id, employees.positionId))
+        .leftJoin(supervisor, eq(supervisor.id, employees.supervisorId))
+        .where(eq(employees.userId, user.userId));
+      if (!row) return { access: "not_linked" };
+
+      const today = localClock(new Date(), await this.attendance.tenantTimeZone(tx, ctx.tenantId)).date;
+      const access = this.attendance.accessOf(row, today) === "ok" ? "ok" : "inactive";
+      const context = (field: string): CipherContext => ({ tenantId: ctx.tenantId, field });
+      return {
+        access,
+        employee: {
+          ...toListItem(row),
+          email: row.email,
+          phone: row.phone,
+          birthDate: row.birthDate,
+          gender: row.gender,
+          confidential: {
+            ptkpStatus: row.ptkpStatus,
+            nikMasked: row.nikEncrypted ? maskNik(this.cipher.decrypt(row.nikEncrypted, context(FIELD.nik))) : null,
+            npwpMasked: row.npwpEncrypted ? maskNpwp(this.cipher.decrypt(row.npwpEncrypted, context(FIELD.npwp))) : null,
+            bankCode: row.bankCode as MyEmployeeBankCode,
+            bankAccountMasked: row.bankAccountEncrypted
+              ? maskBankAccount(this.cipher.decrypt(row.bankAccountEncrypted, context(FIELD.bankAccount)))
+              : null,
+            bankAccountHolder: row.bankAccountHolder,
+          },
+        },
       };
     });
   }

@@ -17,6 +17,7 @@ import {
   type KpiScoreResult,
   type KpiSettings,
   type KpiSettingsInput,
+  type MyKpiReviewList,
   trimDecimal,
 } from "@exapay/shared";
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
@@ -585,6 +586,47 @@ export class KpiReviewsService {
     const parsed = kpiReviewSnapshotSchema.safeParse(review.snapshot);
     if (!parsed.success) throw new Error(`[kpi-reviews/snapshot] snapshot penilaian ${review.id} tidak valid`);
     return parsed.data;
+  }
+
+  // ——— portal karyawan (feature 37) ———
+
+  // Penilaian FINAL milik sendiri, terbaru dulu — dibaca dari snapshot terkunci (skor + rincian + narasi yang sudah ditinjau).
+  // Draft/reviewed tidak dikirim sama sekali: skor & narasi belum final tidak boleh terlihat karyawan.
+  async mine(user: AuthUser): Promise<MyKpiReviewList> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      const own = await this.attendance.ownEmployee(tx, user.userId);
+      if (!own) return { access: "not_linked" };
+      const rows = await tx
+        .select({
+          id: kpiReviews.id,
+          cycle: kpiReviewPeriods.cycle,
+          startDate: kpiReviewPeriods.startDate,
+          endDate: kpiReviewPeriods.endDate,
+          finalizedAt: kpiReviews.finalizedAt,
+          snapshot: kpiReviews.snapshot,
+        })
+        .from(kpiReviews)
+        .innerJoin(kpiReviewPeriods, and(eq(kpiReviewPeriods.tenantId, kpiReviews.tenantId), eq(kpiReviewPeriods.id, kpiReviews.periodId)))
+        .where(and(eq(kpiReviews.employeeId, own.id), eq(kpiReviews.status, "final")))
+        .orderBy(desc(kpiReviewPeriods.startDate));
+      return {
+        access: "ok",
+        reviews: rows.map((row) => {
+          const parsed = kpiReviewSnapshotSchema.safeParse(row.snapshot);
+          if (!parsed.success || !row.finalizedAt) throw new Error(`[kpi-reviews/mine] snapshot penilaian final ${row.id} tidak valid`);
+          const snapshot = parsed.data;
+          return {
+            id: row.id,
+            period: { cycle: row.cycle, startDate: row.startDate, endDate: row.endDate },
+            templateName: snapshot.template.name,
+            result: snapshot.result,
+            finalizedAt: row.finalizedAt.toISOString(),
+            summary: snapshot.summary ? { body: snapshot.summary.body } : null,
+          };
+        }),
+      };
+    });
   }
 
   private async tenantCycle(tx: Transaction, ctx: TenantContext): Promise<KpiReviewCycle> {

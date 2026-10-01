@@ -14,6 +14,7 @@ import { fetchAttendanceHistory } from "@/lib/api/attendance";
 import { fetchMyLeaveRequests } from "@/lib/api/leaveRequests";
 import { monthLabel } from "@/lib/attendanceLabels";
 import { todayIso } from "@/lib/datetime";
+import { requireActiveEmployee } from "@/lib/portalAccess";
 
 export const metadata: Metadata = { title: "Absensi — Exapay" };
 
@@ -29,6 +30,7 @@ const ACCESS_MESSAGES = {
 // Riwayat absen masuk/pulang milik sendiri per bulan (feature 14) + pengajuan izin/sakit/cuti (feature 15).
 // Tanpa snapshot — diturunkan dari pola me.html (izin user).
 export default async function MyAttendancePage({ searchParams }: Props) {
+  await requireActiveEmployee();
   const raw = await searchParams;
   const requested = attendanceMonthSchema.safeParse(typeof raw.month === "string" ? raw.month : undefined);
   const month = requested.success ? requested.data : null;

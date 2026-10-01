@@ -3,13 +3,14 @@
 import { bankName, type EmployeeDetail, formatBankAccount, formatNik, formatNpwp, type RevealedSensitive, type SensitiveSection } from "@exapay/shared";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 
 import { revealSensitive } from "@/actions/employees";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
 import { FormSection } from "@/components/common/FormSection";
+import { ReadFields } from "@/components/common/ReadFields";
 import { formatDateTime, formatIsoDate, formatTenure, todayIso } from "@/lib/datetime";
 import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES, GENDER_LABELS, PTKP_LABELS } from "@/lib/employeeLabels";
 
@@ -17,25 +18,7 @@ type Props = {
   employee: EmployeeDetail;
 };
 
-type ReadField = { label: string; value: ReactNode; wide?: boolean; masked?: boolean };
-
 const EMPTY = "—";
-
-// Label kecil text-tertiary + nilai 15px medium (design-tokens "read-field")
-function ReadFields({ fields }: { fields: ReadField[] }) {
-  return (
-    <dl className="grid gap-x-6 gap-y-5.5 sm:grid-cols-2">
-      {fields.map((field) => (
-        <div key={field.label} className={`flex min-w-0 flex-col gap-1.25 ${field.wide ? "sm:col-span-2" : ""}`}>
-          <dt className="text-[13px] text-text-tertiary">{field.label}</dt>
-          <dd className={`flex min-h-6 flex-wrap items-center gap-2 text-[15px] font-medium text-text-primary tabular-nums ${field.masked ? "tracking-[0.04em]" : ""}`}>
-            {field.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 function RevealControl({
   open,

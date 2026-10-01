@@ -19,7 +19,7 @@ function leaveNote(leave: MyLeaveRequests["summary"]): string {
   return parts.length > 0 ? parts.join(" · ") : "Tidak ada";
 }
 
-// Ringkasan kehadiran bulan terpilih (pola tile "Kehadiran bulan ini" snapshot me.html). Alpa menyusul rekap (feature 16).
+// Ringkasan kehadiran bulan terpilih (pola tile "Kehadiran bulan ini" snapshot me.html). Alpa dari rekap absensi (feature 37).
 export function AttendanceSummary({ summary, leave }: Props) {
   return (
     <div className={`grid gap-2.5 ${leave ? "grid-cols-3" : "grid-cols-2"}`}>
@@ -29,7 +29,7 @@ export function AttendanceSummary({ summary, leave }: Props) {
           <span className="font-display text-[30px] leading-none font-extrabold text-text-primary tabular-nums">{summary.present}</span>
           <span className="text-[13px] font-bold text-text-primary">hari</span>
         </div>
-        <span className="text-[12.5px] text-text-tertiary">Hari dengan absen masuk</span>
+        <span className="text-[12.5px] text-text-tertiary">{summary.absent > 0 ? `Alpa ${summary.absent} hari` : "Tanpa alpa"}</span>
       </div>
       <div className={TILE_CLASSES}>
         <span className="text-[13px] text-text-secondary">Telat</span>

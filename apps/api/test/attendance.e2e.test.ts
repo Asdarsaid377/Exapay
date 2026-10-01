@@ -283,7 +283,8 @@ describe("riwayat absensi", () => {
     expect(september.status).toBe(200);
     expect(september.body.data).toMatchObject({ access: "ok", month: "2026-09", currentMonth: "2026-10", timeZone: "Asia/Makassar" });
     expect(september.body.data.records.map((r: { workDate: string }) => r.workDate)).toEqual(["2026-09-30", "2026-09-29", "2026-09-28"]);
-    expect(september.body.data.summary).toEqual({ present: 3, late: 2, lateMinutes: 27 });
+    // Alpa (feature 37): 22 hari kerja September − 3 hadir = 19
+    expect(september.body.data.summary).toEqual({ present: 3, late: 2, lateMinutes: 27, absent: 19 });
 
     // Tanpa bulan → bulan berjalan
     const current = await get(token, "/attendance/me/history");

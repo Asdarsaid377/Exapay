@@ -95,6 +95,8 @@ export const attendanceHistorySchema = z.object({
     present: z.number().int(),
     late: z.number().int(),
     lateMinutes: z.number().int(),
+    // Alpa: hari kerja yang sudah lewat tanpa absen & tanpa izin disetujui (feature 37, sama dengan rekap absensi)
+    absent: z.number().int(),
   }),
 });
 export type AttendanceHistory = z.infer<typeof attendanceHistorySchema>;

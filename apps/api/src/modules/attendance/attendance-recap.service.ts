@@ -4,6 +4,7 @@ import type {
   AttendanceDailyRecap,
   AttendanceDay,
   AttendanceDayStatus,
+  AttendanceHistory,
   AttendancePeriodQuery,
   AttendanceRecap,
   EmployeeAttendanceDays,
@@ -239,6 +240,23 @@ export class AttendanceRecapService {
         }),
       ]),
     );
+  }
+
+  // Riwayat absensi milik sendiri + jumlah alpa bulan itu (portal /me & /me/attendance, feature 37) — angka alpa sama
+  // dengan rekap absensi (recapEmployee). Hari kerja hari ini & sesudahnya belum dihitung alpa.
+  async myHistory(user: AuthUser, month: string | undefined): Promise<AttendanceHistory> {
+    const history = await this.attendance.history(user, month);
+    const ctx = tenantContextOf(user);
+    const absent = await withTenant(this.db, ctx, async (tx) => {
+      const own = await this.attendance.ownEmployee(tx, user.userId);
+      if (!own) return 0;
+      const today = localClock(new Date(), history.timeZone).date;
+      const period = monthRange(history.month);
+      const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
+      const result = (await this.recapEmployees(tx, [own], period, today, calendar)).get(own.id);
+      return result?.summary.absent ?? 0;
+    });
+    return { ...history, summary: { ...history.summary, absent } };
   }
 
   // ——— helper ———

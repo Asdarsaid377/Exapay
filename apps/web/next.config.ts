@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
     // + overhead multipart — bawaan Next 1 MB
     serverActions: { bodySizeLimit: "6mb" },
   },
+  // Service worker PWA (feature 37) selalu diambil ulang agar pembaruan langsung berlaku (panduan PWA Next.js)
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

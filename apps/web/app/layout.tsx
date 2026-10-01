@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+
+import { ServiceWorkerRegistrar } from "@/components/common/ServiceWorkerRegistrar";
 
 import "./globals.css";
 
@@ -11,7 +13,14 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakart
 export const metadata: Metadata = {
   title: "Exapay",
   description: "Payroll, absensi, dan KPI untuk UMKM",
+  // PWA (feature 37): manifest dari app/manifest.ts; iOS memakai apple-touch-icon & mode standalone
+  applicationName: "Exapay",
+  appleWebApp: { capable: true, title: "Exapay", statusBarStyle: "default" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
+
+// Warna bilah status/judul browser = token background
+export const viewport: Viewport = { themeColor: "#fbf8f3" };
 
 type Props = {
   children: ReactNode;
@@ -20,7 +29,10 @@ type Props = {
 export default function RootLayout({ children }: Props) {
   return (
     <html lang="id" className={`${dmSans.variable} ${jakarta.variable}`}>
-      <body className="bg-background font-sans text-text-primary antialiased">{children}</body>
+      <body className="bg-background font-sans text-text-primary antialiased">
+        {children}
+        <ServiceWorkerRegistrar />
+      </body>
     </html>
   );
 }

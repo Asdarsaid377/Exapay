@@ -14,14 +14,20 @@ const ICONS: Record<PortalIconKey, typeof House> = {
   profile: UserRound,
 };
 
+type Props = {
+  // Karyawan nonaktif: hanya menu Slip & Profil (feature 37)
+  inactive: boolean;
+};
+
 // Bottom navigation portal karyawan — panel kaca mengambang. Beranda hanya aktif tepat di /me.
-export function PortalBottomNav() {
+export function PortalBottomNav({ inactive }: Props) {
   const pathname = usePathname();
+  const items = inactive ? PORTAL_MENU.filter((item) => item.whenInactive) : PORTAL_MENU;
 
   return (
     <nav aria-label="Menu portal" className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-      <ul className="glass mx-auto grid h-18 max-w-[calc(32rem-1.5rem)] grid-cols-5 gap-1 rounded-[24px] p-1.5">
-        {PORTAL_MENU.map((item) => {
+      <ul className={`glass mx-auto grid h-18 max-w-[calc(32rem-1.5rem)] gap-1 rounded-[24px] p-1.5 ${inactive ? "grid-cols-2" : "grid-cols-5"}`}>
+        {items.map((item) => {
           const Icon = ICONS[item.icon];
           const current = item.href === "/me" ? pathname === "/me" : matchesPath(pathname, item.href);
           return (

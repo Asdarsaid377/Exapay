@@ -141,6 +141,26 @@ export const kpiReviewDetailSchema = z.object({
 });
 export type KpiReviewDetail = z.infer<typeof kpiReviewDetailSchema>;
 
+// ——— Portal karyawan (/me/performance, feature 37) ———
+
+// Penilaian milik sendiri yang sudah FINAL saja (draft/reviewed tidak terlihat karyawan), terbaru dulu. Isi dari snapshot
+// final: skor + rincian + narasi yang sudah ditinjau (null = final tanpa narasi). Tanpa nama penilai & data model AI.
+export const myKpiReviewSchema = z.object({
+  id: z.string(),
+  period: periodRangeSchema.extend({ cycle: z.enum(KPI_REVIEW_CYCLES) }),
+  templateName: z.string(),
+  result: kpiScoreResultSchema,
+  finalizedAt: z.string(),
+  summary: z.object({ body: z.string() }).nullable(),
+});
+export type MyKpiReview = z.infer<typeof myKpiReviewSchema>;
+
+export const myKpiReviewListSchema = z.discriminatedUnion("access", [
+  z.object({ access: z.literal("not_linked") }),
+  z.object({ access: z.literal("ok"), reviews: z.array(myKpiReviewSchema) }),
+]);
+export type MyKpiReviewList = z.infer<typeof myKpiReviewListSchema>;
+
 // ——— Mutasi ———
 
 const versionSchema = z.string().regex(/^[0-9]{1,20}$/, "Versi tidak valid");

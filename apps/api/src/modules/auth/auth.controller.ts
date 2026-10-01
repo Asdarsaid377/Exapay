@@ -3,6 +3,8 @@ import {
   type AuthClient,
   type AuthResult,
   type AuthSession,
+  type ChangePasswordInput,
+  changePasswordSchema,
   type ForgotPasswordInput,
   forgotPasswordSchema,
   type LoginInput,
@@ -139,6 +141,19 @@ export class AuthController {
     @Body(new ZodValidationPipe(resendVerificationSchema)) body: ResendVerificationInput,
   ): Promise<ApiResponse<null>> {
     await this.emailVerificationService.resend(body.email);
+    return { success: true, data: null };
+  }
+
+  // Semua akun yang login (tanpa @Roles: super-admin tanpa usaha juga boleh). 400 jika password saat ini salah.
+  @Post("change-password")
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(changePasswordSchema)) body: ChangePasswordInput,
+    @Req() req: Request,
+  ): Promise<ApiResponse<null>> {
+    const refreshToken = body.refreshToken ?? readCookie(req, REFRESH_COOKIE) ?? undefined;
+    await this.authService.changePassword(user, body.currentPassword, body.newPassword, refreshToken);
     return { success: true, data: null };
   }
 

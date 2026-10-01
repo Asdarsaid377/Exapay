@@ -12,3 +12,5 @@ export type LoginOutcome =
 export type SelectTenantOutcome = { kind: "error"; message: string } | { kind: "success"; redirectTo: string };
 
 export type SimpleOutcome = { kind: "error"; message: string } | { kind: "invalid-token" } | { kind: "success" };
+
+export type ChangePasswordOutcome = { kind: "error"; message: string } | { kind: "success" };

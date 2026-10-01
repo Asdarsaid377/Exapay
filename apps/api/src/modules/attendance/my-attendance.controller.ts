@@ -14,13 +14,17 @@ import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
+import { AttendanceRecapService } from "./attendance-recap.service.js";
 import { AttendanceService, type AttendanceTodayResult } from "./attendance.service.js";
 
 // Absen masuk/pulang milik sendiri (feature 14, portal /me). Semua peran; syaratnya akun tertaut data karyawan aktif (dicek service).
 @Controller("attendance/me")
 @Roles(...MEMBERSHIP_ROLES)
 export class MyAttendanceController {
-  constructor(private readonly attendance: AttendanceService) {}
+  constructor(
+    private readonly attendance: AttendanceService,
+    private readonly recap: AttendanceRecapService,
+  ) {}
 
   @Get("today")
   async today(@CurrentUser() user: AuthUser): Promise<ApiResponse<AttendanceTodayResult>> {
@@ -50,6 +54,6 @@ export class MyAttendanceController {
     @CurrentUser() user: AuthUser,
     @Query(new ZodValidationPipe(attendanceHistoryQuerySchema)) query: AttendanceHistoryQuery,
   ): Promise<ApiResponse<AttendanceHistory>> {
-    return { success: true, data: await this.attendance.history(user, query.month) };
+    return { success: true, data: await this.recap.myHistory(user, query.month) };
   }
 }

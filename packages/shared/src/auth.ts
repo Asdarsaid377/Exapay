@@ -47,6 +47,20 @@ export const resetPasswordSchema = z.object({
 });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
+// Ganti password dari halaman profil (feature 37). Sesi lain (refresh token family lain) diakhiri; sesi ini tetap.
+// refreshToken: client mobile mengirim lewat body, web lewat cookie — dipakai untuk mengenali sesi yang dipertahankan.
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Password saat ini wajib diisi").max(128, "Password maksimal 128 karakter"),
+    newPassword: newPasswordSchema,
+    refreshToken: z.string().min(1).optional(),
+  })
+  .refine((input) => input.newPassword !== input.currentPassword, {
+    path: ["newPassword"],
+    message: "Password baru harus berbeda dari password saat ini",
+  });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 // Signup owner (feature 05): membuat akun + usaha + membership owner sekaligus
 export const signupSchema = z.object({
   fullName: z.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(100, "Nama lengkap maksimal 100 karakter"),

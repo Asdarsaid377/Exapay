@@ -27,6 +27,9 @@ export type AttendanceTodayResult = {
 
 export type OwnEmployee = { id: string; joinDate: string; endDate: string | null };
 
+// Riwayat tanpa jumlah alpa — alpa butuh kalender kerja + izin disetujui, dilengkapi AttendanceRecapService.myHistory
+export type OwnAttendanceHistory = Omit<AttendanceHistory, "summary"> & { summary: Omit<AttendanceHistory["summary"], "absent"> };
+
 const recordColumns = {
   id: attendanceRecords.id,
   workDate: attendanceRecords.workDate,
@@ -160,7 +163,7 @@ export class AttendanceService {
     });
   }
 
-  async history(user: AuthUser, month: string | undefined): Promise<AttendanceHistory> {
+  async history(user: AuthUser, month: string | undefined): Promise<OwnAttendanceHistory> {
     const now = new Date();
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {

@@ -6,8 +6,11 @@ import {
   type EmployeeList,
   type EmployeeListQuery,
   employeeListSchema,
+  type MyProfile,
+  myProfileSchema,
 } from "@exapay/shared";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { type ApiResult, apiRequest, sessionCookieHeader } from "@/lib/api/server";
 
@@ -37,3 +40,9 @@ export async function fetchEmployeeFormOptions(excludeId?: string): Promise<ApiR
   const query = excludeId ? `?excludeId=${encodeURIComponent(excludeId)}` : "";
   return apiRequest(`/employees/options${query}`, (data) => employeeFormOptionsSchema.parse(data), { cookieHeader: await cookieHeader() });
 }
+
+// Profil milik sendiri (portal /me/profile, feature 37). Di-cache per request: layout portal (menu karyawan nonaktif) +
+// halaman memanggilnya bersamaan.
+export const fetchMyProfile = cache(async (): Promise<ApiResult<MyProfile>> => {
+  return apiRequest("/employees/me", (data) => myProfileSchema.parse(data), { cookieHeader: await cookieHeader() });
+});

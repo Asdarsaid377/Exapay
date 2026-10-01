@@ -5,6 +5,8 @@ import {
   kpiReviewListSchema,
   type KpiSettings,
   kpiSettingsSchema,
+  type MyKpiReviewList,
+  myKpiReviewListSchema,
 } from "@exapay/shared";
 import { cookies } from "next/headers";
 
@@ -28,4 +30,9 @@ export async function fetchKpiReviews(periodId: string | null): Promise<ApiResul
 
 export async function fetchKpiReview(id: string): Promise<ApiResult<KpiReviewDetail>> {
   return apiRequest(`/kpi/reviews/${id}`, (data) => kpiReviewDetailSchema.parse(data), { cookieHeader: await cookieHeader() });
+}
+
+// Penilaian final milik sendiri (portal /me/performance, feature 37)
+export async function fetchMyKpiReviews(): Promise<ApiResult<MyKpiReviewList>> {
+  return apiRequest("/kpi/me/reviews", (data) => myKpiReviewListSchema.parse(data), { cookieHeader: await cookieHeader() });
 }

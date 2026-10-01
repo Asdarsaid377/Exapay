@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fbf8f3" />
+    <title>Offline — Exapay</title>
+    <!--
+      Tampilan offline PWA (feature 37), disajikan service worker /sw.js saat navigasi gagal karena jaringan.
+      File statis mandiri (tanpa CSS/JS aplikasi yang mungkin belum ter-cache) — warna & ukuran disalin dari token
+      ui-tokens.md (background, surface-solid, text, accent, radius card 22px, tombol pill). Font sistem sebagai cadangan.
+    -->
+    <style>
+      :root {
+        --background: #fbf8f3;
+        --surface-solid: #fffdf9;
+        --text-primary: #221208;
+        --text-secondary: #5b4636;
+        --accent: #f2790f;
+        --on-accent: #221208;
+        --border-subtle: rgba(34, 18, 8, 0.07);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+        background: var(--background);
+        color: var(--text-primary);
+        font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 28px 24px;
+        border-radius: 22px;
+        background: var(--surface-solid);
+        border: 1px solid var(--border-subtle);
+        box-shadow: 0 14px 34px -12px rgba(74, 42, 16, 0.18);
+      }
+      .logo {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--accent);
+        color: var(--on-accent);
+        font: 800 24px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+      }
+      h1 {
+        margin: 0;
+        font: 800 22px/1.25 "Plus Jakarta Sans", system-ui, sans-serif;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.55;
+        color: var(--text-secondary);
+      }
+      button {
+        height: 48px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--on-accent);
+        font: 700 15px "Plus Jakarta Sans", system-ui, sans-serif;
+        cursor: pointer;
+      }
+      button:focus-visible { outline: 3px solid rgba(242, 121, 15, 0.45); outline-offset: 2px; }
+      button:active { transform: scale(0.98); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="logo" aria-hidden="true">e</span>
+      <h1>Anda sedang offline</h1>
+      <p>Exapay butuh koneksi internet. Absen dan catat tugas memakai jam server, jadi tidak bisa dilakukan saat offline.</p>
+      <p>Periksa koneksi Anda, lalu coba lagi.</p>
+      <button type="button" onclick="location.reload()">Coba lagi</button>
+    </main>
+  </body>
+</html>

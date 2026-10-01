@@ -11,12 +11,14 @@ type Props = {
   user: SessionUser;
   activeTenant: TenantMembership;
   tenants: TenantMembership[];
+  // Karyawan nonaktif: menu hanya Slip & Profil (feature 37)
+  inactive: boolean;
   children: ReactNode;
 };
 
 // Kerangka portal karyawan /me (snapshot context/designs/me.html): header kaca + bottom nav kaca mengambang.
 // Maks 3 lapisan blur di portal (header, kartu utama halaman, bottom nav) — card lain memakai surface-solid.
-export function PortalShell({ user, activeTenant, tenants, children }: Props) {
+export function PortalShell({ user, activeTenant, tenants, inactive, children }: Props) {
   return (
     <>
       <BackdropShapes variant="portal" />
@@ -30,7 +32,7 @@ export function PortalShell({ user, activeTenant, tenants, children }: Props) {
         </header>
         <main className="flex flex-col gap-3.5">{children}</main>
       </div>
-      <PortalBottomNav />
+      <PortalBottomNav inactive={inactive} />
     </>
   );
 }

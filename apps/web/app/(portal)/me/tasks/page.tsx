@@ -11,6 +11,7 @@ import { TaskDayStrip } from "@/components/tasks/TaskDayStrip";
 import { TaskLogList } from "@/components/tasks/TaskLogList";
 import { TaskSummaryCard } from "@/components/tasks/TaskSummaryCard";
 import { fetchMyTaskDay } from "@/lib/api/taskLogs";
+import { requireActiveEmployee } from "@/lib/portalAccess";
 import { longDate } from "@/lib/taskLogLabels";
 
 export const metadata: Metadata = { title: "Tugas — Exapay" };
@@ -30,6 +31,7 @@ const ACCESS_MESSAGES = {
 // ringkasan per indikator, daftar catatan (ubah/hapus selama menunggu verifikasi).
 // Tanpa snapshot halaman ini — diturunkan dari pola me.html (kartu "Tugas hari ini") & /me/attendance (izin user).
 export default async function MyTasksPage({ searchParams }: Props) {
+  await requireActiveEmployee();
   const raw = await searchParams;
   const requested = isoDateSchema.safeParse(typeof raw.date === "string" ? raw.date : undefined);
   const result = await fetchMyTaskDay(requested.success ? requested.data : null);

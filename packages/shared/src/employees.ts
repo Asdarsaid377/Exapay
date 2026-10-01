@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ATTENDANCE_ACCESS } from "./attendance.js";
 import { type MinimumWageFlag, minimumWageFlagSchema, type MinimumWageReference, minimumWageReferenceSchema } from "./minimumWage.js";
 
 // Data karyawan (feature 11, /employees). NIK, NPWP, dan nomor rekening disimpan terenkripsi di API
@@ -230,6 +231,19 @@ export type EmployeeDetail = EmployeeListItem & {
   updatedAt: string;
 };
 
+// Profil milik sendiri di portal /me/profile (feature 37) — hanya baca; perubahan data lewat admin.
+// access sama dengan portal absensi: inactive = sudah keluar / belum mulai bekerja (portal hanya slip & profil).
+// Tanpa endReason (catatan internal admin), tanpa userAccount/canManage. Data pajak & rekening tersamar, tanpa "Tampilkan".
+export type MyEmployeeProfile = EmployeeListItem & {
+  email: string | null;
+  phone: string | null;
+  birthDate: string | null;
+  gender: Gender | null;
+  confidential: EmployeeConfidential;
+};
+
+export type MyProfile = { access: "not_linked" } | { access: "ok" | "inactive"; employee: MyEmployeeProfile };
+
 export type RevealedSensitive =
   | { section: "tax"; nik: string | null; npwp: string | null; revealedAt: string; revealedBy: string }
   | { section: "bank"; bankAccountNumber: string | null; revealedAt: string; revealedBy: string };
@@ -275,6 +289,15 @@ export const employeeFormOptionsSchema: z.ZodType<EmployeeFormOptions> = z.objec
   users: z.array(z.object({ id: z.string(), fullName: z.string(), email: z.string() })),
 });
 
+const confidentialSchema = z.object({
+  ptkpStatus: z.enum(PTKP_STATUSES),
+  nikMasked: z.string().nullable(),
+  npwpMasked: z.string().nullable(),
+  bankCode: z.enum(BANK_CODES).nullable(),
+  bankAccountMasked: z.string().nullable(),
+  bankAccountHolder: z.string().nullable(),
+});
+
 export const employeeDetailSchema: z.ZodType<EmployeeDetail> = z.object({
   ...employeeListItemShape,
   email: z.string().nullable(),
@@ -283,19 +306,25 @@ export const employeeDetailSchema: z.ZodType<EmployeeDetail> = z.object({
   gender: z.enum(GENDERS).nullable(),
   endReason: z.string().nullable(),
   userAccount: z.object({ id: z.string(), email: z.string() }).nullable(),
-  confidential: z
-    .object({
-      ptkpStatus: z.enum(PTKP_STATUSES),
-      nikMasked: z.string().nullable(),
-      npwpMasked: z.string().nullable(),
-      bankCode: z.enum(BANK_CODES).nullable(),
-      bankAccountMasked: z.string().nullable(),
-      bankAccountHolder: z.string().nullable(),
-    })
-    .nullable(),
+  confidential: confidentialSchema.nullable(),
   canManage: z.boolean(),
   updatedAt: z.string(),
 });
+
+export const myProfileSchema: z.ZodType<MyProfile> = z.discriminatedUnion("access", [
+  z.object({ access: z.literal("not_linked") }),
+  z.object({
+    access: z.enum(ATTENDANCE_ACCESS).exclude(["not_linked"]),
+    employee: z.object({
+      ...employeeListItemShape,
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+      birthDate: z.string().nullable(),
+      gender: z.enum(GENDERS).nullable(),
+      confidential: confidentialSchema,
+    }),
+  }),
+]);
 
 export const revealedSensitiveSchema: z.ZodType<RevealedSensitive> = z.discriminatedUnion("section", [
   z.object({ section: z.literal("tax"), nik: z.string().nullable(), npwp: z.string().nullable(), revealedAt: z.string(), revealedBy: z.string() }),

@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { memberships, refreshTokens, tenants, users } from "@exapay/db";
 import type { AuthSession, AuthTokens, LoginInput, TenantMembership } from "@exapay/shared";
-import { ForbiddenException, Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { hash, verify } from "@node-rs/argon2";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, ne, sql } from "drizzle-orm";
 
 import type { AccessTokenPayload, AuthUser } from "../../common/auth/auth-user.js";
 import type { Env } from "../../common/config/env.js";
@@ -112,6 +112,34 @@ export class AuthService {
 
   async getSession(user: AuthUser): Promise<AuthSession> {
     return withUser(this.db, user.userId, async (tx) => (await this.loadSession(tx, user.userId, user.tenantId)).session);
+  }
+
+  // Ganti password dari profil (feature 37): password saat ini wajib benar (400 — bukan 401, sesi tetap sah). Sesi lain
+  // diakhiri (refresh token family lain dicabut); sesi yang sedang dipakai tetap. Access token sesi lain masih berlaku
+  // ≤ 15 menit (sama dengan reset password & cabut akses).
+  async changePassword(user: AuthUser, currentPassword: string, newPassword: string, refreshToken: string | undefined): Promise<void> {
+    const [account] = await withUser(this.db, user.userId, (tx) =>
+      tx.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, user.userId)),
+    );
+    const valid = account?.passwordHash ? await verify(account.passwordHash, currentPassword) : await this.verifyDummy(currentPassword);
+    if (!valid) throw new BadRequestException("Password saat ini salah");
+
+    const payload = refreshToken ? await this.verifyRefreshToken(refreshToken) : null;
+    const keepFamily = payload?.sub === user.userId ? payload.fam : null;
+    const passwordHash = await this.hashPassword(newPassword);
+    await withUser(this.db, user.userId, async (tx) => {
+      await tx.update(users).set({ passwordHash }).where(eq(users.id, user.userId));
+      await tx
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(
+          and(
+            eq(refreshTokens.userId, user.userId),
+            isNull(refreshTokens.revokedAt),
+            keepFamily ? ne(refreshTokens.familyId, keepFamily) : undefined,
+          ),
+        );
+    });
   }
 
   async hashPassword(password: string): Promise<string> {
