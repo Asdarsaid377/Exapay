@@ -2,17 +2,19 @@ import "reflect-metadata";
 import { randomUUID } from "node:crypto";
 
 import * as schema from "@exapay/db";
-import { attendanceRecords, departments, employees, leaveRequests, memberships, positions, taskLogs, tenants, users } from "@exapay/db";
+import { attendanceRecords, departments, employees, kpiReviewPeriods, kpiReviews, leaveRequests, memberships, positions, taskLogs, tenants, users } from "@exapay/db";
 import type {
   AttendanceRecap,
   ComplianceCalendar,
   EmployeeList,
+  KpiReviewList,
   KpiScoreList,
   LeaveRequestList,
   MembershipRole,
   OwnerDashboard,
   PayrollRunDetail,
   SalaryComponentSettings,
+  SupervisorDashboard,
   TaskVerificationList,
 } from "@exapay/shared";
 import type { INestApplication } from "@nestjs/common";
@@ -30,7 +32,8 @@ import { type Database, withTenant, withUser } from "../src/database/tenant-tran
 import { seedTenantDefaults } from "../src/modules/tenants/tenant-defaults.js";
 
 // Verifikasi feature 35 (API): angka dashboard owner/admin cocok dengan halaman sumbernya — rekap absensi, skor KPI,
-// periode gaji, kepatuhan, karyawan aktif, tab Menunggu verifikasi tugas & pengajuan izin. Atasan ditolak (feature 36).
+// periode gaji, kepatuhan, karyawan aktif, tab Menunggu verifikasi tugas & pengajuan izin. Atasan ditolak.
+// Feature 36: dashboard atasan (/dashboard/team) hanya menghitung bawahan langsung, cocok dengan halaman sumber versi atasan.
 
 const PASSWORD = "password-dashboard-123";
 const ROLES = ["owner", "admin", "atasan"] as const;
@@ -221,6 +224,118 @@ describe("dashboard owner/admin", () => {
 
     // Atasan: dashboard owner/admin ditolak
     const atasan = await tokenOf(f.emails.atasan);
+    expect((await send("get", atasan, "/dashboard")).status).toBe(403);
+  });
+});
+
+// Atasan tertaut ke Rudi; bawahan langsung Ani & Budi (Budi keluar 30 Sep), Citra bukan bawahan. Tiap karyawan punya
+// satu catatan tugas menunggu, pengajuan izin menunggu, dan penilaian draft — hanya milik bawahan yang terhitung.
+async function createTeamFixture(): Promise<{ emails: Record<"owner" | "atasan" | "atasanLain", string> }> {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-05T03:00:00Z"));
+  const tenantId = randomUUID();
+  const passwordHash = await hash(PASSWORD);
+  const emails = { owner: "", atasan: "", atasanLain: "" };
+  const userIds = { owner: randomUUID(), atasan: randomUUID(), atasanLain: randomUUID() };
+  for (const key of ["owner", "atasan", "atasanLain"] as const) {
+    const id = userIds[key];
+    emails[key] = `${key.toLowerCase()}-${randomUUID().slice(0, 8)}@test.exapay.local`;
+    await withUser(db, id, (tx) => tx.insert(users).values({ id, email: emails[key], fullName: `${key} Tim`, passwordHash, emailVerifiedAt: new Date() }));
+    await withTenant(db, { tenantId, userId: id }, async (tx) => {
+      if (key === "owner") {
+        await tx.insert(tenants).values({ id: tenantId, name: "Kopi Tim", regencyCode: "73.71" });
+        await seedTenantDefaults(tx, { tenantId, userId: id });
+      }
+      await tx.insert(memberships).values({ tenantId, userId: id, role: key === "owner" ? "owner" : "atasan" });
+    });
+  }
+
+  await withTenant(db, { tenantId, userId: null }, async (tx) => {
+    const [department] = await tx.insert(departments).values({ tenantId, name: "Operasional" }).returning({ id: departments.id });
+    const [position] = await tx.insert(positions).values({ tenantId, name: "Barista" }).returning({ id: positions.id });
+    if (!department || !position) throw new Error("gagal membuat departemen/jabatan");
+    const base = { tenantId, departmentId: department.id, positionId: position.id, joinDate: "2025-01-01", ptkpStatus: "TK/0" as const, employmentStatus: "permanent" as const };
+    const rudi = randomUUID();
+    const team = { ani: randomUUID(), budi: randomUUID(), citra: randomUUID() };
+    await tx.insert(employees).values({ ...base, id: rudi, fullName: "Rudi", userId: userIds.atasan });
+    await tx.insert(employees).values([
+      { ...base, id: team.ani, fullName: "Ani", supervisorId: rudi },
+      { ...base, id: team.budi, fullName: "Budi", supervisorId: rudi, endDate: "2026-09-30" },
+      { ...base, id: team.citra, fullName: "Citra" },
+    ]);
+    const attend = (employeeId: string, workDate: string) =>
+      tx.insert(attendanceRecords).values({
+        tenantId,
+        employeeId,
+        workDate,
+        timeZone: "Asia/Makassar",
+        scheduledStart: "08:00",
+        scheduledEnd: "17:00",
+        lateMinutes: 0,
+        checkInAt: new Date(`${workDate}T08:00:00+08:00`),
+        checkInLatitude: -5.14,
+        checkInLongitude: 119.42,
+      });
+    await attend(team.ani, "2026-10-05");
+    const [period] = await tx
+      .insert(kpiReviewPeriods)
+      .values({ tenantId, cycle: "monthly", startDate: "2026-09-01", endDate: "2026-09-30" })
+      .returning({ id: kpiReviewPeriods.id });
+    if (!period) throw new Error("gagal membuat periode penilaian");
+    for (const employeeId of Object.values(team)) {
+      // Catatan tugas wajib absen masuk di tanggal itu
+      await attend(employeeId, "2026-09-29");
+      await tx.insert(taskLogs).values({ tenantId, employeeId, workDate: "2026-09-29", note: "Catatan" });
+      await tx.insert(leaveRequests).values({ tenantId, employeeId, type: "permit", startDate: "2026-09-30", endDate: "2026-09-30", reason: "Keperluan" });
+      await tx.insert(kpiReviews).values({ tenantId, periodId: period.id, employeeId });
+    }
+  });
+  return { emails };
+}
+
+describe("dashboard atasan", () => {
+  it("hanya bawahan langsung, cocok dengan halaman sumber versi atasan", async () => {
+    const f = await createTeamFixture();
+    const atasan = await tokenOf(f.emails.atasan);
+    const dashboard = await getJson<SupervisorDashboard>(atasan, "/dashboard/team");
+    expect(dashboard.today).toBe("2026-10-05");
+    expect(dashboard.linked).toBe(true);
+    expect(dashboard.team).toEqual({ active: 1 });
+
+    // Tab Menunggu versi atasan: Ani & Budi (sudah keluar, data lama tetap diputuskan atasan), bukan Citra
+    const tasks = await getJson<TaskVerificationList>(atasan, "/tasks/verification?status=pending");
+    expect(dashboard.pending.taskLogs).toEqual({ count: tasks.pendingCount, oldestWorkDate: "2026-09-29" });
+    expect(tasks.pendingCount).toBe(2);
+    const leaves = await getJson<LeaveRequestList>(atasan, "/attendance/leave-requests?status=pending");
+    expect(dashboard.pending.leaveRequests).toEqual({ count: leaves.pendingCount, permit: 2, sick: 0, leave: 0 });
+    const reviews = await getJson<KpiReviewList>(atasan, "/kpi/reviews");
+    expect(dashboard.pending.kpiReviews).toEqual({ count: reviews.periods[0]?.counts.draft, periodId: reviews.periods[0]?.id });
+    expect(dashboard.pending.kpiReviews.count).toBe(2);
+
+    // Rekap periode berjalan & skor KPI = halaman versi atasan
+    const recap = await getJson<AttendanceRecap>(atasan, "/attendance/recap");
+    expect(dashboard.attendance).toMatchObject({ month: recap.month, from: recap.from, to: recap.to, employeeCount: recap.rows.length });
+    expect(recap.rows.map((row) => row.employee.fullName)).toEqual(["Ani"]);
+    expect(dashboard.attendance.days.find((day) => day.date === "2026-10-05")).toMatchObject({ expected: 1, onTime: 1 });
+    const scores = await getJson<KpiScoreList>(atasan, "/kpi/scores");
+    expect(dashboard.kpi.from).toBe(scores.from);
+    expect(dashboard.kpi.averageScore).toBe(scores.averageScore);
+    expect(dashboard.kpi.predicateCounts).toEqual(scores.predicateCounts);
+
+    // Atasan tanpa data karyawan tertaut: tidak punya bawahan
+    const lain = await getJson<SupervisorDashboard>(await tokenOf(f.emails.atasanLain), "/dashboard/team");
+    expect(lain.linked).toBe(false);
+    expect(lain.team.active).toBe(0);
+    expect(lain.attendance.employeeCount).toBe(0);
+    expect(lain.pending).toEqual({
+      taskLogs: { count: 0, oldestWorkDate: null },
+      leaveRequests: { count: 0, permit: 0, sick: 0, leave: 0 },
+      kpiReviews: { count: 0, periodId: null },
+    });
+
+    // Peran dipisah: owner tidak memakai versi atasan, atasan tidak memakai versi owner
+    const owner = await tokenOf(f.emails.owner);
+    expect((await send("get", owner, "/dashboard/team")).status).toBe(403);
     expect((await send("get", atasan, "/dashboard")).status).toBe(403);
   });
 });

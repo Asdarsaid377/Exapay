@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 7 — Kepatuhan, Dashboard & Portal
-**Terakhir selesai:** 35 Dashboard Owner/Admin (2026-10-01)
-**Berikutnya:** 36 Dashboard Atasan
+**Terakhir selesai:** 36 Dashboard Atasan (2026-10-01)
+**Berikutnya:** 37 Portal Karyawan Lengkap & PWA
 
 ---
 
@@ -64,7 +64,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 33 Kalender Kepatuhan
 - [x] 34 Peringatan UMK
 - [x] 35 Dashboard Owner/Admin
-- [ ] 36 Dashboard Atasan
+- [x] 36 Dashboard Atasan
 - [ ] 37 Portal Karyawan Lengkap & PWA
 
 ### Phase 8 — Siap Produksi
@@ -247,6 +247,8 @@ _Format: tanggal — keputusan — alasan._
 
 - 2026-10-01 — Keputusan user (feature 35): grafik kehadiran memakai **periode absensi berjalan (tutup buku)** = default /attendance (bukan 30 hari bergulir dari teks desain); **biaya gaji = bruto + BPJS perusahaan** periode gaji terbaru yang dibuka. Keputusan sendiri: tindakan tertunda ditambah **penilaian KPI berstatus reviewed (menunggu difinalkan)**; skor KPI = skor ad-hoc bulan kalender berjalan (sama dengan /kpi/scores — tanggal 1 semua 0 / Perlu Perbaikan, belum ada tampilan "belum cukup data"); pengingat = terlewat + tenggat ≤ 45 hari ke depan, maks. 4, hanya baca; legenda grafik "Tepat waktu" (hadir − telat) agar batang bertumpuk tidak menghitung ganda. UI mengikuti snapshot dashboard.html.
 - 2026-10-01 — **Dashboard owner/admin (feature 35):** tanpa migration. Modul API baru `dashboard` (`GET /dashboard`, `@Roles("owner","admin")` + peran dibaca ulang via `loadAttendanceViewer`) merangkai service halaman sumber agar angka identik: `AttendanceRecapService.dailyRecap` (baru — `recap()` & `dailyRecap()` kini berbagi `loadRecap` privat), `KpiScoresService.list(user, {})`, `PayrollRunsService.list` + `detail` (periode terbaru), `ComplianceService.upcoming` (baru), `MinimumWageService.summary`; hitungan tertunda (task_logs pending + tanggal terlama, leave_requests pending per jenis, kpi_reviews reviewed, karyawan aktif per status kerja) query langsung dengan filter sama dengan tab Menunggu. Ekspor baru: `KpiModule` → KpiScoresService, `PayrollModule` → PayrollRunsService, `ComplianceModule` → ComplianceService. Tipe `OwnerDashboard`/`AttendanceDailyRecap` di `@exapay/shared` `dashboard.ts`. Atasan → 403 (web menampilkan placeholder sampai feature 36).
+- 2026-10-01 — Keputusan user (feature 36): UI **tanpa referensi visual khusus** (turunan dashboard.html, izin user); isi = 3 tindakan tertunda build-plan **+ ringkasan tim** (tile bawahan aktif, kehadiran hari ini, telat periode ini, rata-rata KPI tim; grafik rekap kehadiran periode berjalan; sebaran predikat KPI tim) — tanpa gaji/payroll/kepatuhan/UMK. Keputusan sendiri: "penilaian perlu review" untuk atasan = **penilaian draft bawahan yang perlu diisi** (owner/admin tetap reviewed menunggu difinalkan), tautan ke periode terlama yang masih punya draft (`/kpi/reviews?period=`); tindakan tertunda di atas grafik (pekerjaan utama atasan); atasan tanpa data karyawan tertaut → empty state "belum tertaut".
+- 2026-10-01 — **Dashboard atasan (feature 36):** tanpa migration. `GET /dashboard/team` (`@Roles("atasan")` di method menimpa `@Roles` kelas; peran dibaca ulang — owner/admin 403, atasan tetap 403 di `/dashboard`) — cakupan `viewerEmployeeScope` (bawahan langsung): `dailyRecap` + `KpiScoresService.list` (sudah ber-cakupan), hitungan tertunda lewat helper `pendingTaskLogs`/`pendingLeaveRequests` (dipakai juga versi owner, kini join employees), draft `kpi_reviews` + periode terlama. Tipe `SupervisorDashboard` + `dashboardKpiSchema` di `@exapay/shared` `dashboard.ts`. Web: `SupervisorDashboardView` di `app/(main)/dashboard/page.tsx` (`fetchSupervisorDashboard`), `TodayTile` kini menerima `recap`, `teamPendingActions` dipakai owner & atasan, `PendingActionsCard` prop `emptyDescription`.
 
 ---
 
@@ -314,3 +316,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 267 per feature 33 (`compliance-reminders.test.ts` 8 unit — aturan dibaca dari seed `0028`; `compliance.e2e.test.ts` 3 skenario; `tenant-isolation` + 2 tabel). Email worker diverifikasi manual ujung-ke-ujung di dev (H-7, H-1, tanpa duplikat; data dikembalikan). Sekali terlihat flake 404 login di run gabungan — lulus saat diulang. Belum ada: pergeseran tenggat ke hari kerja berikutnya saat libur, pengingat perubahan UMK (feature 34), kartu pengingat di dashboard (feature 35).
 - Total test API 276 per feature 34 (`minimum-wage-check.test.ts` 7 unit; `minimum-wage.e2e.test.ts` 2 — fallback UMP Sulsel 2026 karena seed belum punya UMK; peringatan dini hanya teruji di unit karena seed belum punya versi 2027). Data dev: Siti Rahmawati (Kopi Nusantara) punya gaji contoh Gaji Pokok Rp3,5 jt mulai 1 Okt 2026 (di bawah UMP Sulsel) dari verifikasi feature 34. Belum ada: email/kartu dashboard peringatan UMK (dashboard di feature 35), tanda di tab Gaji detail karyawan, filter "di bawah UMK" di daftar karyawan, aturan gaji pokok ≥ 75% upah.
 - Total test API 277 per feature 35 (`dashboard.e2e.test.ts` 1 skenario — angka dashboard dibandingkan dengan /attendance/recap, /kpi/scores, /payroll/runs/:id, /compliance, /employees, /tasks/verification, /attendance/leave-requests; atasan 403). Diverifikasi visual (Playwright, desktop 1440 + mobile 390) dengan data Roti Sinar Pagi. Belum ada: pembanding skor KPI bulan lalu ("naik 3 poin" di desain), tampilan "belum cukup data" KPI awal bulan, hitungan tertunda di sidebar.
+- Total test API 278 per feature 36 (`dashboard.e2e.test.ts` + skenario atasan — hanya bawahan langsung, cocok dengan /tasks/verification, /attendance/leave-requests, /kpi/reviews, /attendance/recap, /kpi/scores versi atasan; atasan tanpa tautan semua nol; pemisahan peran 403). Diverifikasi visual (Playwright desktop 1440 + mobile 390, Hendra Roti Sinar Pagi) dan dikonfirmasi user ("sesuai"). Belum ada: pembanding skor bulan lalu, hitungan tertunda di sidebar.

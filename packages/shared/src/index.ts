@@ -650,8 +650,11 @@ export {
   attendanceDailyRecapSchema,
   DASHBOARD_REMINDER_DAYS,
   DASHBOARD_REMINDER_LIMIT,
+  dashboardKpiSchema,
   ownerDashboardSchema,
+  supervisorDashboardSchema,
   type AttendanceDailyCount,
   type AttendanceDailyRecap,
   type OwnerDashboard,
+  type SupervisorDashboard,
 } from "./dashboard.js";

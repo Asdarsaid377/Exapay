@@ -14,11 +14,15 @@ export type PendingAction = {
 
 type Props = {
   items: PendingAction[];
+  emptyDescription?: string;
 };
 
 // Tindakan tertunda (feature 35) — card snapshot dashboard.html: judul + jumlah (pill gelap), baris judul/sub + tombol
 // (primer untuk payroll, sekunder lainnya). Mobile: tombol diganti chevron 44px. Kosong: state empty snapshot.
-export function PendingActionsCard({ items }: Props) {
+export function PendingActionsCard({
+  items,
+  emptyDescription = "Log tugas, pengajuan izin, penilaian, dan payroll sudah ditangani. Hal yang perlu Anda putuskan akan muncul di sini.",
+}: Props) {
   return (
     <section aria-labelledby="pending-actions-title" className="glass-strong flex min-w-0 flex-col gap-2 rounded-card px-5 pt-5 pb-3 sm:px-6">
       <div className="flex items-center gap-2.5">
@@ -35,9 +39,7 @@ export function PendingActionsCard({ items }: Props) {
         <div className="flex flex-col items-center gap-2 px-6 pt-3 pb-5 text-center">
           <CircleCheck aria-hidden className="size-7 text-success" />
           <h3 className="font-display text-base font-bold text-text-primary">Belum ada tindakan tertunda</h3>
-          <p className="max-w-90 text-sm text-pretty text-text-secondary">
-            Log tugas, pengajuan izin, penilaian, dan payroll sudah ditangani. Hal yang perlu Anda putuskan akan muncul di sini.
-          </p>
+          <p className="max-w-90 text-sm text-pretty text-text-secondary">{emptyDescription}</p>
         </div>
       ) : (
         <ul>

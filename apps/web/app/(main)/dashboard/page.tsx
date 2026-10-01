@@ -1,5 +1,5 @@
-import { formatRupiah, LEAVE_TYPE_LABELS, LEAVE_TYPES, type OwnerDashboard } from "@exapay/shared";
-import { CalendarCheck, ChartNoAxesColumn, CloudOff } from "lucide-react";
+import { type AttendanceDailyRecap, formatRupiah, LEAVE_TYPE_LABELS, LEAVE_TYPES, type OwnerDashboard, type SupervisorDashboard } from "@exapay/shared";
+import { CalendarCheck, CloudOff, UserRoundX } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -12,7 +12,7 @@ import { AttendanceChartCard } from "@/components/dashboard/AttendanceChartCard"
 import { type PendingAction, PendingActionsCard } from "@/components/dashboard/PendingActionsCard";
 import { KpiPredicateDistribution } from "@/components/kpi/KpiPredicateDistribution";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { fetchOwnerDashboard } from "@/lib/api/dashboard";
+import { fetchOwnerDashboard, fetchSupervisorDashboard } from "@/lib/api/dashboard";
 import { getSession } from "@/lib/auth/getSession";
 import { monthLabel } from "@/lib/attendanceLabels";
 import { firstNameOf, formatIsoDate, greetingFor } from "@/lib/datetime";
@@ -26,23 +26,14 @@ const LINK = "shrink-0 text-sm font-bold text-accent-strong hover:text-accent-ho
 
 // Dashboard owner/admin (feature 35) — snapshot context/designs/dashboard.html: sapaan + ringkasan, banner upah minimum,
 // 4 stat tile, rekap kehadiran + sebaran predikat KPI (1.85fr / 1fr), tindakan tertunda + pengingat kepatuhan (2 kolom;
-// mobile: daftar sebelum grafik). Semua angka dari GET /dashboard (= halaman sumbernya). Atasan: versi feature 36.
+// mobile: daftar sebelum grafik). Semua angka dari GET /dashboard (= halaman sumbernya). Atasan: SupervisorDashboardView.
 export default async function DashboardPage() {
   const session = await getSession();
   const tenant = session?.activeTenant;
   const greeting = `${greetingFor(new Date())}, ${firstNameOf(session?.user.fullName ?? "")}`;
 
   if (tenant?.role !== "owner" && tenant?.role !== "admin") {
-    return (
-      <>
-        <PageHeader title={greeting} description={`Ringkasan ${tenant?.tenantName ?? "usaha Anda"} akan tampil di sini.`} />
-        <EmptyState
-          icon={ChartNoAxesColumn}
-          title="Ringkasan tim segera hadir"
-          description="Log tugas yang menunggu verifikasi, pengajuan izin, dan penilaian bawahan akan diringkas di sini. Sementara itu, buka menu Absensi dan KPI."
-        />
-      </>
-    );
+    return <SupervisorDashboardView greeting={greeting} />;
   }
 
   const result = await fetchOwnerDashboard();
@@ -75,7 +66,7 @@ export default async function DashboardPage() {
           value={String(data.employees.active)}
           note={`${data.employees.permanent} tetap · ${data.employees.contract} kontrak · ${data.employees.probation} percobaan`}
         />
-        <TodayTile data={data} />
+        <TodayTile recap={data.attendance} />
         <div className="max-xl:col-span-2">
           <StatTile
             label="Rata-rata KPI"
@@ -120,27 +111,7 @@ function summaryLine(data: OwnerDashboard, waiting: number): string {
 
 function pendingActions(data: OwnerDashboard): PendingAction[] {
   const { taskLogs, leaveRequests, kpiReviews, payrollDrafts } = data.pending;
-  const items: PendingAction[] = [];
-  if (taskLogs.count > 0) {
-    items.push({
-      key: "tasks",
-      title: `${taskLogs.count} log tugas menunggu verifikasi`,
-      description: taskLogs.oldestWorkDate ? `Terlama sejak ${formatIsoDate(taskLogs.oldestWorkDate)}` : "Catatan tugas harian karyawan",
-      action: "Verifikasi",
-      href: "/kpi/verification",
-    });
-  }
-  if (leaveRequests.count > 0) {
-    items.push({
-      key: "leaves",
-      title: `${leaveRequests.count} pengajuan izin menunggu persetujuan`,
-      description: LEAVE_TYPES.filter((type) => leaveRequests[type] > 0)
-        .map((type) => `${LEAVE_TYPE_LABELS[type]} ${leaveRequests[type]}`)
-        .join(" · "),
-      action: "Tinjau",
-      href: "/attendance/requests",
-    });
-  }
+  const items = teamPendingActions(taskLogs, leaveRequests);
   if (kpiReviews.count > 0) {
     items.push({
       key: "reviews",
@@ -166,6 +137,32 @@ function pendingActions(data: OwnerDashboard): PendingAction[] {
   return items;
 }
 
+// Log tugas & pengajuan izin menunggu — sama untuk owner/admin (semua karyawan) dan atasan (bawahan langsung)
+function teamPendingActions(taskLogs: OwnerDashboard["pending"]["taskLogs"], leaveRequests: OwnerDashboard["pending"]["leaveRequests"]): PendingAction[] {
+  const items: PendingAction[] = [];
+  if (taskLogs.count > 0) {
+    items.push({
+      key: "tasks",
+      title: `${taskLogs.count} log tugas menunggu verifikasi`,
+      description: taskLogs.oldestWorkDate ? `Terlama sejak ${formatIsoDate(taskLogs.oldestWorkDate)}` : "Catatan tugas harian karyawan",
+      action: "Verifikasi",
+      href: "/kpi/verification",
+    });
+  }
+  if (leaveRequests.count > 0) {
+    items.push({
+      key: "leaves",
+      title: `${leaveRequests.count} pengajuan izin menunggu persetujuan`,
+      description: LEAVE_TYPES.filter((type) => leaveRequests[type] > 0)
+        .map((type) => `${LEAVE_TYPE_LABELS[type]} ${leaveRequests[type]}`)
+        .join(" · "),
+      action: "Tinjau",
+      href: "/attendance/requests",
+    });
+  }
+  return items;
+}
+
 function PayrollTile({ data }: { data: OwnerDashboard }) {
   if (!data.payroll) {
     return <StatTile label="Biaya gaji" value="—" note="Belum ada periode gaji yang dibuka" />;
@@ -183,8 +180,8 @@ function PayrollTile({ data }: { data: OwnerDashboard }) {
   );
 }
 
-function TodayTile({ data }: { data: OwnerDashboard }) {
-  const today = data.attendance.days.find((day) => day.date === data.today);
+function TodayTile({ recap }: { recap: AttendanceDailyRecap }) {
+  const today = recap.days.find((day) => day.date === recap.today);
   if (!today || today.expected === 0) {
     return <StatTile label="Kehadiran hari ini" value="—" note="Bukan hari kerja" />;
   }
@@ -229,4 +226,99 @@ function RemindersCard({ data }: { data: OwnerDashboard }) {
       )}
     </section>
   );
+}
+
+// Dashboard atasan (feature 36) — turunan snapshot dashboard.html (izin user, tanpa desain khusus): sapaan + ringkasan,
+// 4 stat tile tim, tindakan tertunda di atas (pekerjaan utama atasan), lalu rekap kehadiran + sebaran predikat KPI.
+// Semua angka dari GET /dashboard/team — hanya bawahan langsung; tanpa gaji, payroll, kepatuhan, upah minimum.
+async function SupervisorDashboardView({ greeting }: { greeting: string }) {
+  const result = await fetchSupervisorDashboard();
+  if (!result.ok) {
+    return (
+      <>
+        <PageHeader title={greeting} />
+        <EmptyState icon={CloudOff} title="Ringkasan tidak dapat dimuat" description={result.error} />
+      </>
+    );
+  }
+
+  const data = result.data;
+  if (!data.linked) {
+    return (
+      <>
+        <PageHeader title={greeting} />
+        <EmptyState
+          icon={UserRoundX}
+          title="Akun Anda belum tertaut ke data karyawan"
+          description="Ringkasan tim dihitung dari bawahan langsung Anda. Minta pemilik atau admin menautkan akun ini di data karyawan Anda."
+        />
+      </>
+    );
+  }
+
+  const pending = supervisorPendingActions(data);
+  const waiting = data.pending.taskLogs.count + data.pending.leaveRequests.count + data.pending.kpiReviews.count;
+  const { totals } = data.attendance;
+  const summary = [
+    `Periode ${monthLabel(data.attendance.month)}`,
+    `${data.team.active} bawahan aktif`,
+    waiting > 0 ? `${waiting} hal menunggu keputusan Anda.` : "tidak ada yang menunggu keputusan Anda.",
+  ].join(" · ");
+
+  return (
+    <>
+      <PageHeader title={greeting} description={summary} />
+
+      <div className="grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4">
+        <div className="max-xl:col-span-2">
+          <StatTile label="Bawahan aktif" value={String(data.team.active)} note="Karyawan dengan atasan langsung Anda" />
+        </div>
+        <TodayTile recap={data.attendance} />
+        <StatTile label="Telat periode ini" value={String(totals.late)} note={`${totals.absent} alpa · ${totals.leave} izin/sakit/cuti`} />
+        <div className="max-xl:col-span-2">
+          <StatTile
+            label="Rata-rata KPI tim"
+            value={data.kpi.averageScore ? formatScore(data.kpi.averageScore) : "—"}
+            badge={data.kpi.averagePredicate ? <Badge tone={PREDICATE_TONES[data.kpi.averagePredicate]}>{predicateLabel(data.kpi.averagePredicate)}</Badge> : null}
+            note={`${formatDateRange(data.kpi.from, data.kpi.to)} · ${data.kpi.scoredCount} bawahan berskor`}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <PendingActionsCard
+          items={pending}
+          emptyDescription="Log tugas, pengajuan izin, dan penilaian bawahan sudah ditangani. Hal yang perlu Anda putuskan akan muncul di sini."
+        />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
+          <AttendanceChartCard recap={data.attendance} />
+          <KpiPredicateDistribution
+            title="Sebaran predikat KPI tim"
+            counts={data.kpi.predicateCounts}
+            subtitle={`${data.kpi.scoredCount} bawahan · ${monthLabel(data.kpi.from.slice(0, 7))}`}
+            action={
+              <Link href="/kpi/scores" className={LINK}>
+                Lihat skor
+              </Link>
+            }
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function supervisorPendingActions(data: SupervisorDashboard): PendingAction[] {
+  const { taskLogs, leaveRequests, kpiReviews } = data.pending;
+  const items = teamPendingActions(taskLogs, leaveRequests);
+  if (kpiReviews.count > 0) {
+    items.push({
+      key: "reviews",
+      title: `${kpiReviews.count} penilaian KPI perlu Anda isi`,
+      description: "Beri nilai indikator penilaian atasan, lalu kirim untuk difinalkan",
+      action: "Nilai",
+      href: kpiReviews.periodId ? `/kpi/reviews?period=${kpiReviews.periodId}` : "/kpi/reviews",
+    });
+  }
+  return items;
 }

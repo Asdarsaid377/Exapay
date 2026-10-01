@@ -5,7 +5,7 @@ import { KPI_PREDICATES } from "./kpiScores.js";
 import { minimumWageSummarySchema } from "./minimumWage.js";
 import { payrollRunPeriodSchema } from "./payrollRuns.js";
 
-// Dashboard owner/admin (feature 35): ringkasan yang angkanya diambil dari service halaman sumbernya
+// Dashboard owner/admin (feature 35) & atasan (feature 36): ringkasan yang angkanya diambil dari service halaman sumbernya
 // (rekap absensi, skor KPI, periode gaji, kalender kepatuhan, verifikasi tugas, pengajuan izin, penilaian).
 
 export const attendanceDailyCountSchema = z.object({
@@ -36,6 +36,21 @@ export const attendanceDailyRecapSchema = z.object({
 });
 export type AttendanceDailyRecap = z.infer<typeof attendanceDailyRecapSchema>;
 
+// Skor KPI ad-hoc bulan berjalan (= default /kpi/scores, cakupan sesuai peran)
+export const dashboardKpiSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  scoredCount: z.number().int(),
+  averageScore: z.string().nullable(),
+  averagePredicate: z.enum(KPI_PREDICATES).nullable(),
+  predicateCounts: z.object({ very_good: z.number().int(), good: z.number().int(), fair: z.number().int(), needs_improvement: z.number().int() }),
+});
+
+// = jumlah tab Menunggu /kpi/verification
+const pendingTaskLogsSchema = z.object({ count: z.number().int(), oldestWorkDate: z.string().nullable() });
+// = jumlah tab Menunggu /attendance/requests
+const pendingLeaveRequestsSchema = z.object({ count: z.number().int(), permit: z.number().int(), sick: z.number().int(), leave: z.number().int() });
+
 export const ownerDashboardSchema = z.object({
   today: z.string(),
   attendance: attendanceDailyRecapSchema,
@@ -57,20 +72,10 @@ export const ownerDashboardSchema = z.object({
       cost: z.string(),
     })
     .nullable(),
-  // Skor KPI ad-hoc bulan berjalan (= default /kpi/scores)
-  kpi: z.object({
-    from: z.string(),
-    to: z.string(),
-    scoredCount: z.number().int(),
-    averageScore: z.string().nullable(),
-    averagePredicate: z.enum(KPI_PREDICATES).nullable(),
-    predicateCounts: z.object({ very_good: z.number().int(), good: z.number().int(), fair: z.number().int(), needs_improvement: z.number().int() }),
-  }),
+  kpi: dashboardKpiSchema,
   pending: z.object({
-    // = jumlah tab Menunggu /kpi/verification
-    taskLogs: z.object({ count: z.number().int(), oldestWorkDate: z.string().nullable() }),
-    // = jumlah tab Menunggu /attendance/requests
-    leaveRequests: z.object({ count: z.number().int(), permit: z.number().int(), sick: z.number().int(), leave: z.number().int() }),
+    taskLogs: pendingTaskLogsSchema,
+    leaveRequests: pendingLeaveRequestsSchema,
     // Penilaian periodik terkirim (reviewed) yang menunggu difinalkan owner/admin
     kpiReviews: z.object({ count: z.number().int() }),
     // Periode gaji draf, terlama dulu
@@ -84,6 +89,24 @@ export const ownerDashboardSchema = z.object({
   minimumWage: minimumWageSummarySchema,
 });
 export type OwnerDashboard = z.infer<typeof ownerDashboardSchema>;
+
+// Dashboard atasan (feature 36, GET /dashboard/team): hanya bawahan langsung (supervisor_id = data karyawan atasan).
+export const supervisorDashboardSchema = z.object({
+  today: z.string(),
+  // false = akun atasan belum tertaut data karyawan → tidak punya bawahan
+  linked: z.boolean(),
+  // Bawahan langsung aktif
+  team: z.object({ active: z.number().int() }),
+  attendance: attendanceDailyRecapSchema,
+  kpi: dashboardKpiSchema,
+  pending: z.object({
+    taskLogs: pendingTaskLogsSchema,
+    leaveRequests: pendingLeaveRequestsSchema,
+    // Penilaian periodik draft bawahan yang perlu diisi atasan; periodId = periode terlama yang masih punya draft
+    kpiReviews: z.object({ count: z.number().int(), periodId: z.string().nullable() }),
+  }),
+});
+export type SupervisorDashboard = z.infer<typeof supervisorDashboardSchema>;
 
 export const DASHBOARD_REMINDER_LIMIT = 4;
 // Pengingat ditampilkan sampai sekian hari ke depan
