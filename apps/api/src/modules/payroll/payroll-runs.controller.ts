@@ -1,5 +1,7 @@
 import {
   type ApiResponse,
+  type FinalizePayrollRunInput,
+  finalizePayrollRunSchema,
   type OpenPayrollRunInput,
   openPayrollRunSchema,
   type PayrollAdjustmentInput,
@@ -21,6 +23,7 @@ const EMPLOYEE_ID = new ParseUUIDPipe({ exceptionFactory: () => new NotFoundExce
 const ADJUSTMENT_ID = new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Penyesuaian tidak ditemukan") });
 
 // Run payroll — draf & review (feature 29): daftar & buka periode, draf per periode & per karyawan, penyesuaian admin.
+// Finalisasi (feature 30): snapshot immutable; periode final dibaca dari snapshot.
 @Controller("payroll/runs")
 @Roles("owner", "admin")
 export class PayrollRunsController {
@@ -42,6 +45,17 @@ export class PayrollRunsController {
   @Get(":id")
   async detail(@CurrentUser() user: AuthUser, @Param("id", RUN_ID) id: string): Promise<ApiResponse<PayrollRunDetail>> {
     return { success: true, data: await this.runs.detail(user, id) };
+  }
+
+  @Post(":id/finalize")
+  @HttpCode(HttpStatus.OK)
+  async finalize(
+    @CurrentUser() user: AuthUser,
+    @Param("id", RUN_ID) id: string,
+    @Body(new ZodValidationPipe(finalizePayrollRunSchema)) body: FinalizePayrollRunInput,
+  ): Promise<ApiResponse<null>> {
+    await this.runs.finalize(user, id, body);
+    return { success: true, data: null };
   }
 
   @Get(":id/employees/:employeeId")

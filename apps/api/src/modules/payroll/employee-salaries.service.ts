@@ -1,4 +1,4 @@
-import { employees, employeeSalaries, employeeSalaryItems, salaryComponents, tenants, users } from "@exapay/db";
+import { employees, employeeSalaries, employeeSalaryItems, payrollRuns, salaryComponents, tenants, users } from "@exapay/db";
 import {
   BPJS_PROGRAMS,
   type BpjsProgram,
@@ -9,16 +9,17 @@ import {
 } from "@exapay/shared";
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Decimal } from "decimal.js";
-import { asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { asc, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
 import { exclusionViolationConstraint } from "../../database/errors.js";
 import { type Database, type TenantContext, type Transaction, withTenant } from "../../database/tenant-transaction.js";
-import { localClock } from "../attendance/attendance-clock.js";
+import { localClock, monthRange } from "../attendance/attendance-clock.js";
 import { previousDate, versionStatus } from "../attendance/attendance-deduction-rules.js";
 import { AttendanceService } from "../attendance/attendance.service.js";
 import { AuditService } from "../audit/audit.service.js";
+import { formatIdDate, formatIdMonth } from "./payroll-draft.js";
 import { requireSalaryManager } from "./salary-access.js";
 import { toJkkRiskLevel } from "./salary-components.service.js";
 
@@ -98,7 +99,8 @@ function toVersion(row: VersionRow, items: EmployeeSalaryItem[], today: string):
 // Gaji karyawan berlaku-tanggal (feature 28, tab Gaji /employees/[id]) — owner/admin.
 // Simpan = versi baru mulai `effectiveFrom` (≥ tanggal masuk, boleh mundur — keputusan user). Versi yang berjalan pada
 // tanggal itu ditutup sehari sebelumnya; versi yang mulai pada/sesudah tanggal itu tergantikan → dihapus (diaudit).
-// Feature 30 menambah batas: tanggal berlaku tidak boleh masuk periode payroll yang sudah final.
+// Feature 30: tanggal berlaku tidak boleh masuk/sebelum periode payroll yang sudah final (snapshot tidak berubah, tapi
+// riwayat gaji harus cocok dengan payroll yang dibayar) — koreksi lewat penyesuaian periode berikutnya.
 @Injectable()
 export class EmployeeSalariesService {
   constructor(
@@ -125,6 +127,21 @@ export class EmployeeSalariesService {
         if (input.effectiveFrom < employee.joinDate) throw new BadRequestException("Tanggal berlaku tidak boleh sebelum tanggal masuk karyawan");
         if (employee.endDate !== null && input.effectiveFrom > employee.endDate) {
           throw new BadRequestException("Tanggal berlaku tidak boleh setelah tanggal keluar karyawan");
+        }
+        // FOR SHARE periode bulan ini & sesudahnya: bergantian dengan finalisasi (FOR UPDATE) — finalisasi yang menunggu
+        // membaca versi gaji ini, atau simpan ini melihat periode yang baru final
+        const laterRuns = await tx
+          .select({ periodMonth: payrollRuns.periodMonth, status: payrollRuns.status })
+          .from(payrollRuns)
+          .where(gte(payrollRuns.periodMonth, `${input.effectiveFrom.slice(0, 7)}-01`))
+          .orderBy(desc(payrollRuns.periodMonth))
+          .for("share");
+        const lastFinal = laterRuns.find((run) => run.status === "final");
+        if (lastFinal) {
+          const { to } = monthRange(lastFinal.periodMonth.slice(0, 7));
+          throw new BadRequestException(
+            `Payroll ${formatIdMonth(lastFinal.periodMonth.slice(0, 7))} sudah final — tanggal berlaku harus setelah ${formatIdDate(to)}. Koreksi gaji periode final lewat penyesuaian periode berikutnya.`,
+          );
         }
 
         // FOR SHARE: jenis/arsip komponen tidak berubah sampai versi ini tersimpan (bergantian dengan ubah komponen)

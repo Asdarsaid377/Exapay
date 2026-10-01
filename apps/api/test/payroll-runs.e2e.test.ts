@@ -10,6 +10,7 @@ import {
   employees,
   memberships,
   payrollAdjustments,
+  payrollRunEmployees,
   payrollRuns,
   positions,
   tenants,
@@ -41,6 +42,8 @@ import { seedTenantDefaults } from "../src/modules/tenants/tenant-defaults.js";
 // Verifikasi feature 29 (API): buka periode payroll (bulan kalender), draf dihitung payroll-engine dari gaji berlaku +
 // absensi + aturan potongan + regulasi, penyesuaian admin (tambah baris, ganti nominal, batalkan potongan absensi,
 // keluarkan karyawan). Angka draf dicocokkan dengan hitungan manual 3 karyawan contoh (Oktober 2026, Kota Makassar).
+// Feature 30: finalisasi → snapshot immutable (angka sama dengan draf, tidak dihitung ulang), syarat final, sidik draf,
+// kunci database, gaji berlaku-mundur ditolak, masa PPh 21 sebelumnya dari snapshot final.
 
 const PASSWORD = "password-payroll-123";
 const ROLES = ["owner", "admin", "atasan", "karyawan"] as const;
@@ -529,5 +532,169 @@ describe("periode berjalan", () => {
     const fajar: PayrollEmployeeDetail = (await send("get", admin, `/payroll/runs/${runId}/employees/${leaver}`)).body.data;
     expect(fajar.result?.grossPay).toBe("2400000.00");
     expect(fajar.pph21?.method).toBe("annual");
+  });
+});
+
+// Pesan error Postgres dari operasi langsung sebagai app_user
+function dbError(work: Promise<unknown>): Promise<string> {
+  return work.then(
+    () => "ok",
+    (error: unknown) => (error instanceof Error && error.cause instanceof Error ? error.cause.message : String(error)),
+  );
+}
+
+async function finalize(f: Fixture, runId: string, fingerprint?: string): Promise<request.Response> {
+  return send("post", f.admin, `/payroll/runs/${runId}/finalize`, { fingerprint: fingerprint ?? (await runDetail(f, runId)).finalization?.fingerprint });
+}
+
+describe("finalisasi", () => {
+  it("syarat final: periode berakhir, semua karyawan terhitung, periode sebelumnya final", async () => {
+    const f = await createFixture("Kopi Syarat");
+    const runId = await openOctober(f);
+    const september = (await send("post", f.admin, "/payroll/runs", { month: "2026-09" })).body.data.id;
+
+    let detail = await runDetail(f, runId);
+    expect(detail.finalization?.blockers).toEqual([
+      "Payroll September 2026 masih draf — finalisasi periode sebelumnya lebih dulu.",
+      "1 karyawan belum bisa dihitung — atur gajinya atau keluarkan dari periode ini.",
+    ]);
+    let res = await finalize(f, runId);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/September 2026 masih draf/);
+
+    // Periode belum berakhir
+    setNow("2026-10-20T03:00:00Z");
+    const admin = await tokenOf(f.ws, "admin");
+    const running: PayrollRunDetail = (await send("get", admin, `/payroll/runs/${runId}`)).body.data;
+    expect(running.finalization?.blockers[0]).toBe("Periode baru bisa difinalisasi setelah berakhir (mulai 1 November 2026).");
+    vi.useRealTimers();
+    setNow();
+
+    // September: semua karyawan dikeluarkan → tidak ada yang dihitung
+    detail = await runDetail(f, september);
+    for (const row of detail.rows) {
+      expect((await adjust(f, september, row.employee.id, { kind: "exclude", reason: "Belum pakai Exapay" })).status).toBe(200);
+    }
+    expect((await runDetail(f, september)).finalization?.blockers).toEqual(["Belum ada karyawan yang dihitung di periode ini."]);
+    expect((await finalize(f, september)).status).toBe(400);
+  });
+
+  it("snapshot = angka draf; final terkunci di API & database; koreksi lewat periode berikutnya", async () => {
+    const f = await createFixture("Kopi Final");
+    const runId = await openOctober(f);
+    expect((await adjust(f, runId, f.andi, { kind: "add_line", lineKind: "variable_allowance", name: "THR", amount: "1000000" })).status).toBe(200);
+    expect((await adjust(f, runId, f.dodi, { kind: "exclude", reason: "Gaji belum disepakati" })).status).toBe(200);
+    const draft = await runDetail(f, runId);
+    const draftAndi = await employeeDetail(f, runId, f.andi);
+    expect(draft.finalization?.blockers).toEqual([]);
+
+    // Sidik basi (draf berubah setelah dibuka) → 409; sidik tidak valid → 400
+    expect((await adjust(f, runId, f.andi, { kind: "add_line", lineKind: "deduction", name: "Kasbon", amount: "200000" })).status).toBe(200);
+    expect((await finalize(f, runId, draft.finalization?.fingerprint)).status).toBe(409);
+    expect((await finalize(f, runId, "abc")).status).toBe(400);
+    const kasbon = (await employeeDetail(f, runId, f.andi)).adjustments.find((adjustment) => adjustment.name === "Kasbon");
+    expect((await send("delete", f.admin, `/payroll/runs/${runId}/adjustments/${kasbon?.id}`)).status).toBe(200);
+
+    // Hanya owner/admin
+    const atasan = await tokenOf(f.ws, "atasan");
+    expect((await send("post", atasan, `/payroll/runs/${runId}/finalize`, { fingerprint: draft.finalization?.fingerprint })).status).toBe(403);
+
+    const res = await finalize(f, runId, draft.finalization?.fingerprint);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+
+    const final = await runDetail(f, runId);
+    expect(final).toMatchObject({ status: "final", finalization: null, totals: draft.totals, rows: draft.rows, warnings: draft.warnings });
+    expect(final.finalizedByName).toBe("admin Kopi Final");
+    expect(final.finalizedAt).not.toBeNull();
+    const finalAndi = await employeeDetail(f, runId, f.andi);
+    expect({ ...finalAndi, run: null }).toEqual({ ...draftAndi, run: null });
+    expect(finalAndi.run.status).toBe("final");
+    expect((await employeeDetail(f, runId, f.dodi)).status).toBe("excluded");
+
+    // Final kedua kali, penyesuaian → 409
+    expect((await finalize(f, runId, draft.finalization?.fingerprint)).status).toBe(409);
+    expect((await adjust(f, runId, f.citra, { kind: "exclude", reason: "x" })).status).toBe(409);
+    const thr = finalAndi.adjustments[0]?.id ?? "";
+    expect((await send("delete", f.admin, `/payroll/runs/${runId}/adjustments/${thr}`)).status).toBe(409);
+
+    // Data sumber berubah setelah final → angka final tetap (tidak dihitung ulang)
+    await withTenant(db, { tenantId: f.ws.tenantId, userId: null }, (tx) =>
+      tx.update(attendanceRecords).set({ lateMinutes: 30 }).where(eq(attendanceRecords.employeeId, f.citra)),
+    );
+    await withTenant(db, { tenantId: f.ws.tenantId, userId: null }, (tx) =>
+      tx.update(attendanceDeductionRules).set({ effectiveTo: "2026-10-31" }).where(eq(attendanceDeductionRules.tenantId, f.ws.tenantId)),
+    );
+    expect((await runDetail(f, runId)).totals).toEqual(draft.totals);
+
+    // Gaji berlaku-mundur ke periode final ditolak; mulai November boleh
+    const salary = (effectiveFrom: string) =>
+      send("post", f.admin, `/employees/${f.citra}/salary`, {
+        effectiveFrom,
+        items: [{ componentId: f.componentId("Gaji Pokok"), amount: "3600000" }],
+        bpjsPrograms: ["kesehatan"],
+        note: null,
+      });
+    const backdated = await salary("2026-10-31");
+    expect(backdated.status).toBe(400);
+    expect(backdated.body.error).toBe(
+      "Payroll Oktober 2026 sudah final — tanggal berlaku harus setelah 31 Oktober 2026. Koreksi gaji periode final lewat penyesuaian periode berikutnya.",
+    );
+    expect((await salary("2026-11-01")).status).toBe(201);
+
+    // Bulan sebelum periode final tidak bisa dibuka lagi
+    const list: PayrollRunList = (await send("get", f.admin, "/payroll/runs")).body.data;
+    expect(list.openableMonths).toEqual(["2026-11"]);
+    expect((await send("post", f.admin, "/payroll/runs", { month: "2026-09" })).status).toBe(400);
+
+    // Database menolak perubahan langsung sebagai app_user
+    const tenantTx = <T>(work: Parameters<typeof withTenant<T>>[2]) => withTenant(db, { tenantId: f.ws.tenantId, userId: null }, work);
+    expect(await dbError(tenantTx((tx) => tx.update(payrollRuns).set({ status: "draft" }).where(eq(payrollRuns.id, runId))))).toMatch(/payroll final terkunci/);
+    expect(await dbError(tenantTx((tx) => tx.update(payrollRunEmployees).set({ fullName: "x" }).where(eq(payrollRunEmployees.runId, runId))))).toMatch(
+      /permission denied/,
+    );
+    expect(await dbError(tenantTx((tx) => tx.delete(payrollRunEmployees).where(eq(payrollRunEmployees.runId, runId))))).toMatch(/permission denied/);
+    expect(
+      await dbError(tenantTx((tx) => tx.insert(payrollAdjustments).values({ tenantId: f.ws.tenantId, runId, employeeId: f.citra, kind: "exclude", reason: "x" }))),
+    ).toMatch(/penyesuaian payroll final terkunci/);
+    expect(await dbError(tenantTx((tx) => tx.delete(payrollAdjustments).where(eq(payrollAdjustments.runId, runId))))).toMatch(/penyesuaian payroll final terkunci/);
+
+    const audit = await tenantTx((tx) => tx.select({ action: auditLogs.action, after: auditLogs.after }).from(auditLogs).where(eq(auditLogs.entityId, runId)));
+    expect(audit.map((entry) => entry.action).sort()).toEqual(["create", "finalize"]);
+    expect(audit.find((entry) => entry.action === "finalize")?.after).toMatchObject({ status: "final", month: "2026-10", totals: draft.totals, excluded: [f.dodi] });
+  });
+
+  it("masa pajak Desember memakai PPh 21 masa sebelumnya dari snapshot final", async () => {
+    // Usaha tanpa aturan potongan & lokasi; karyawan masuk 1 Nov 2026, gaji pokok 10 jt tanpa BPJS
+    setNow("2027-01-05T03:00:00Z");
+    const ws = await createWorkspace("Kopi Pajak");
+    const admin = await tokenOf(ws, "admin");
+    const f: Fixture = { ws, admin, componentId: () => "", andi: "", budi: "", citra: "", dodi: "" };
+    const settings: SalaryComponentSettings = (await send("get", admin, "/salary-components")).body.data;
+    const baseSalary = settings.components.find((component) => component.kind === "base_salary")?.id;
+    const employeeId = await addEmployee(ws, "Gita Pajak", "2026-11-01", "TK/0");
+    const saved = await send("post", admin, `/employees/${employeeId}/salary`, {
+      effectiveFrom: "2026-11-01",
+      items: [{ componentId: baseSalary, amount: "10000000" }],
+      bpjsPrograms: [],
+      note: null,
+    });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(201);
+    const november = (await send("post", admin, "/payroll/runs", { month: "2026-11" })).body.data.id;
+    const december = (await send("post", admin, "/payroll/runs", { month: "2026-12" })).body.data.id;
+
+    // Desember tanpa November final: belum ada masa sebelumnya → urutan final ditegakkan
+    expect((await runDetail(f, december)).finalization?.blockers).toEqual(["Payroll November 2026 masih draf — finalisasi periode sebelumnya lebih dulu."]);
+    expect((await employeeDetail(f, december, employeeId)).pph21?.annual?.withheldThisEmployer).toBe("0.00");
+
+    // November: TER A 2% × 10.000.000 = 200.000
+    expect((await employeeDetail(f, november, employeeId)).pph21?.pph21).toBe("200000.00");
+    expect((await finalize(f, november)).status).toBe(200);
+
+    // Desember: bruto setahun 20 jt − biaya jabatan 1 jt = 19 jt < PTKP 54 jt → pajak setahun 0; 200.000 dikembalikan
+    const gita = await employeeDetail(f, december, employeeId);
+    expect(gita.pph21?.method).toBe("annual");
+    expect(gita.pph21?.annual).toMatchObject({ grossIncome: "20000000.00", withheldThisEmployer: "200000.00", annualTax: "0.00" });
+    expect(gita.pph21?.pph21).toBe("-200000.00");
+    expect((await finalize(f, december)).status).toBe(200);
   });
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { attendanceMonthSchema } from "./attendance.js";
-import { attendanceDeductionFactsSchema } from "./attendanceDeductions.js";
+import { attendanceDeductionFactsSchema, attendanceDeductionRulesSchema } from "./attendanceDeductions.js";
 import { PTKP_STATUSES } from "./employees.js";
 import { moneySchema, positiveMoneySchema } from "./money.js";
 import { PAYROLL_COMPONENT_KINDS, payrollCalculationResultSchema } from "./payrollCalculation.js";
@@ -10,7 +10,8 @@ import { BPJS_PROGRAMS } from "./regulations.js";
 
 // Run payroll — draf & review (feature 29): satu periode = satu bulan kalender per usaha (/payroll, /payroll/[id]).
 // Angka draf dihitung saat dibaca oleh payroll-engine dari gaji berlaku, absensi, aturan potongan, regulasi, dan
-// penyesuaian admin. Owner/admin saja. Uang = string desimal.
+// penyesuaian admin. Finalisasi (feature 30) menyimpan snapshot immutable — periode final dibaca dari snapshot, tidak
+// pernah dihitung ulang; koreksi lewat penyesuaian periode berikutnya. Owner/admin saja. Uang = string desimal.
 
 export const PAYROLL_RUN_STATUSES = ["draft", "final"] as const;
 export type PayrollRunStatus = (typeof PAYROLL_RUN_STATUSES)[number];
@@ -40,6 +41,12 @@ export const openPayrollRunSchema = z.object({
   month: attendanceMonthSchema,
 });
 export type OpenPayrollRunInput = z.infer<typeof openPayrollRunSchema>;
+
+// Finalisasi: `fingerprint` = sidik draf yang direview (dari detail) — draf berubah sejak dibuka → 409
+export const finalizePayrollRunSchema = z.object({
+  fingerprint: z.string("Muat ulang halaman lalu coba lagi").regex(/^[0-9a-f]{64}$/, "Muat ulang halaman lalu coba lagi"),
+});
+export type FinalizePayrollRunInput = z.infer<typeof finalizePayrollRunSchema>;
 
 const reasonSchema = z
   .string("Alasan wajib diisi")
@@ -78,6 +85,9 @@ export const payrollRunPeriodSchema = z.object({
   status: z.enum(PAYROLL_RUN_STATUSES),
   createdByName: z.string().nullable(),
   createdAt: z.string(),
+  // Terisi bila status final
+  finalizedAt: z.string().nullable(),
+  finalizedByName: z.string().nullable(),
 });
 export type PayrollRunPeriod = z.infer<typeof payrollRunPeriodSchema>;
 
@@ -128,15 +138,28 @@ export const payrollRunRowSchema = z.object({
 });
 export type PayrollRunRow = z.infer<typeof payrollRunRowSchema>;
 
+// Kesiapan finalisasi periode draf (keputusan user feature 30): periode sudah berakhir, semua karyawan terhitung atau
+// dikeluarkan, dan periode sebelumnya yang sudah dibuka sudah final.
+export const payrollRunFinalizationSchema = z.object({
+  // Kosong = siap difinalisasi
+  blockers: z.array(z.string()),
+  // Sidik draf yang ditampilkan — dikirim balik saat finalisasi
+  fingerprint: z.string(),
+});
+export type PayrollRunFinalization = z.infer<typeof payrollRunFinalizationSchema>;
+
 export const payrollRunDetailSchema = payrollRunPeriodSchema.extend({
   today: z.string(),
   // Periode belum berakhir → absensi baru dihitung s.d. kemarin
   periodEnded: z.boolean(),
-  // Peringatan tingkat periode (periode belum berakhir, aturan potongan berubah di tengah periode, regulasi belum ada)
+  // Peringatan tingkat periode (periode belum berakhir, aturan potongan berubah di tengah periode, regulasi belum ada);
+  // periode final: peringatan saat finalisasi
   warnings: z.array(z.string()),
   totals: payrollRunTotalsSchema,
   // Urut nama
   rows: z.array(payrollRunRowSchema),
+  // null untuk periode final
+  finalization: payrollRunFinalizationSchema.nullable(),
 });
 export type PayrollRunDetail = z.infer<typeof payrollRunDetailSchema>;
 
@@ -192,3 +215,33 @@ export const payrollEmployeeDetailSchema = z.object({
   warnings: z.array(z.string()),
 });
 export type PayrollEmployeeDetail = z.infer<typeof payrollEmployeeDetailSchema>;
+
+// ——— Snapshot final (feature 30) ———
+
+// Per karyawan (payroll_run_employees.snapshot): rincian seperti detail draf saat final, tanpa data periode
+export const payrollEmployeeSnapshotSchema = payrollEmployeeDetailSchema.omit({ run: true }).extend({
+  status: z.enum(["calculated", "excluded"]),
+});
+export type PayrollEmployeeSnapshot = z.infer<typeof payrollEmployeeSnapshotSchema>;
+
+// Per periode (payroll_runs.snapshot): total, peringatan, dan masukan bersama yang dipakai saat final (versi aturan)
+export const payrollRunSnapshotSchema = z.object({
+  version: z.literal(1),
+  // Hari ini (zona waktu usaha) saat final
+  finalizedOn: z.string(),
+  payDate: z.string().nullable(),
+  warnings: z.array(z.string()),
+  totals: payrollRunTotalsSchema,
+  inputs: z.object({
+    timeZone: z.string(),
+    regencyCode: z.string().nullable(),
+    minimumWage: z.string().nullable(),
+    jkkRiskLevel: z.number().int(),
+    // Aturan potongan absensi versi tanggal 1 + tanggal versi baru di tengah periode
+    attendanceRules: attendanceDeductionRulesSchema,
+    attendanceRulesChangedOn: z.string().nullable(),
+    // PayrollRegulations (tarif BPJS, TER, Pasal 17, PTKP, biaya jabatan + sumber & tanggal berlaku) apa adanya
+    regulations: z.unknown(),
+  }),
+});
+export type PayrollRunSnapshot = z.infer<typeof payrollRunSnapshotSchema>;

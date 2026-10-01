@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "db:seed": "node --env-file-if-exists=../../.env dist/scripts/seed-dev.js",
+    "db:seed-trial": "node --env-file-if-exists=../../.env dist/scripts/seed-trial.js",
     "admin:create-super-admin": "node --env-file-if-exists=../../.env dist/scripts/create-super-admin.js"
   },
   "dependencies": {

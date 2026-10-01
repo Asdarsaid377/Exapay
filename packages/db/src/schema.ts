@@ -1273,7 +1273,8 @@ export const payrollAdjustmentKind = pgEnum("payroll_adjustment_kind", PAYROLL_A
 
 // Satu periode payroll = satu bulan kalender per usaha (period_month = tanggal 1). Angka draf dihitung saat dibaca dari
 // gaji berlaku, absensi, aturan potongan, regulasi, dan penyesuaian (payroll_adjustments) — tidak disimpan. Finalisasi
-// (feature 30) menyimpan snapshot. app_user hanya SELECT/INSERT di feature 29.
+// (feature 30) menyimpan snapshot periode di `snapshot` + per karyawan di payroll_run_employees; baris final dikunci
+// trigger `payroll_runs_guard_final`. app_user SELECT/INSERT + UPDATE kolom finalisasi.
 export const payrollRuns = pgTable(
   "payroll_runs",
   {
@@ -1286,6 +1287,11 @@ export const payrollRuns = pgTable(
     createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
     // Snapshot nama pembuat — tetap terbaca bila akun dihapus
     createdByName: text("created_by_name"),
+    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    finalizedByUserId: uuid("finalized_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    finalizedByName: text("finalized_by_name"),
+    // PayrollRunSnapshot (@exapay/shared) — divalidasi zod saat dibaca
+    snapshot: jsonb("snapshot"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -1294,6 +1300,7 @@ export const payrollRuns = pgTable(
     // Satu periode per bulan per usaha; juga melayani filter tenant & urutan daftar
     unique("payroll_runs_tenant_month_key").on(t.tenantId, t.periodMonth),
     check("payroll_runs_period_month", sql`extract(day from ${t.periodMonth}) = 1`),
+    check("payroll_runs_final", sql`(${t.status} = 'final') = (${t.finalizedAt} IS NOT NULL AND ${t.snapshot} IS NOT NULL)`),
   ],
 );
 
@@ -1355,5 +1362,59 @@ export const payrollAdjustments = pgTable(
     ),
     check("payroll_adjustments_name", sql`${t.name} IS NULL OR length(btrim(${t.name})) BETWEEN 1 AND 80`),
     check("payroll_adjustments_reason", sql`${t.reason} IS NULL OR length(btrim(${t.reason})) BETWEEN 1 AND 500`),
+  ],
+);
+
+// Snapshot final per karyawan per periode (feature 30) — immutable: app_user SELECT/INSERT saja, trigger menolak
+// UPDATE/DELETE dan INSERT ke periode yang sudah final. Hanya karyawan dihitung & dikeluarkan (gaji belum diatur /
+// gagal hitung memblokir finalisasi). Kolom uang = ringkasan untuk slip, laporan, dan masa PPh 21 sebelumnya.
+export const payrollRunEmployees = pgTable(
+  "payroll_run_employees",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    runId: uuid("run_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    status: text("status", { enum: ["calculated", "excluded"] }).notNull(),
+    // Snapshot identitas saat final
+    fullName: text("full_name").notNull(),
+    employeeNumber: text("employee_number"),
+    grossPay: numeric("gross_pay", { precision: 18, scale: 2 }),
+    totalDeductions: numeric("total_deductions", { precision: 18, scale: 2 }),
+    bpjsEmployer: numeric("bpjs_employer", { precision: 18, scale: 2 }),
+    bpjsEmployee: numeric("bpjs_employee", { precision: 18, scale: 2 }),
+    // Bisa negatif (kelebihan potong dikembalikan di masa pajak terakhir)
+    pph21: numeric("pph21", { precision: 18, scale: 2 }),
+    takeHomePay: numeric("take_home_pay", { precision: 18, scale: 2 }),
+    // Pph21PeriodRecord untuk masa pajak terakhir tahun yang sama
+    pph21GrossIncome: numeric("pph21_gross_income", { precision: 18, scale: 2 }),
+    pensionContribution: numeric("pension_contribution", { precision: 18, scale: 2 }),
+    // PayrollEmployeeSnapshot (@exapay/shared) — divalidasi zod saat dibaca
+    snapshot: jsonb("snapshot").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("payroll_run_employees_tenant_id_id_key").on(t.tenantId, t.id),
+    // Juga melayani filter tenant & daftar per periode
+    unique("payroll_run_employees_run_employee_key").on(t.tenantId, t.runId, t.employeeId),
+    index("payroll_run_employees_tenant_employee_idx").on(t.tenantId, t.employeeId),
+    foreignKey({ name: "payroll_run_employees_run_fk", columns: [t.tenantId, t.runId], foreignColumns: [payrollRuns.tenantId, payrollRuns.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({
+      name: "payroll_run_employees_employee_fk",
+      columns: [t.tenantId, t.employeeId],
+      foreignColumns: [employees.tenantId, employees.id],
+    }).onDelete("restrict"),
+    check("payroll_run_employees_status", sql`${t.status} IN ('calculated', 'excluded')`),
+    check(
+      "payroll_run_employees_amounts",
+      sql`(${t.status} = 'calculated') = (${t.grossPay} IS NOT NULL AND ${t.totalDeductions} IS NOT NULL AND ${t.bpjsEmployer} IS NOT NULL
+        AND ${t.bpjsEmployee} IS NOT NULL AND ${t.pph21} IS NOT NULL AND ${t.takeHomePay} IS NOT NULL
+        AND ${t.pph21GrossIncome} IS NOT NULL AND ${t.pensionContribution} IS NOT NULL)`,
+    ),
   ],
 );

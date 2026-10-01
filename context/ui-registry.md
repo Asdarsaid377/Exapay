@@ -593,6 +593,13 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** `glass-data rounded-card`, thead `bg-table-head h-11` desktop kolom Karyawan · Pendapatan bruto · Potongan · PPh 21 · Gaji diterima (`font-display text-[15px]/[17px] font-bold tabular-nums` rata kanan) · chevron; mobile nama + gaji diterima; baris kedua Badge status (non-dihitung) + Badge warning "N catatan"
 - **Catatan:** server. Di halaman: Banner warning (peringatan periode, list) + Banner danger (karyawan belum bisa dihitung) + 4 StatTile `grid-cols-2 xl:grid-cols-4` (Pendapatan bruto, BPJS perusahaan, PPh 21, Gaji diterima — angka tanpa "Rp", satuan di label)
 
+### PayrollFinalizeAction
+- **Path:** apps/web/components/payroll/PayrollFinalizeAction.tsx
+- **Dipakai di:** /payroll/[id] (PageHeader actions, di samping Badge status — hanya periode draf)
+- **Referensi desain:** tanpa referensi — pola KpiReviewStatusActions (Button + Dialog konfirmasi) (feature 30, izin user)
+- **Pola kelas kunci:** Button primary "Finalisasi" (`disabled` bila ada syarat belum terpenuhi); Dialog judul "Finalisasi payroll?" + deskripsi judul periode, isi `text-body` (jumlah karyawan & total diterima `font-bold tabular-nums`) + `text-small text-text-secondary` (dampak), FormAlert danger untuk error
+- **Catatan:** client; kirim `fingerprint` draf ke Server Action `finalizePayrollRun` (409 bila draf berubah). Di halaman: Banner neutral ikon `Lock` "Belum bisa difinalisasi" (list syarat dari API) untuk draf, "Payroll final — angka dikunci" (waktu + nama) untuk final; footer tabel menyebut sumber angka (snapshot vs draf)
+
 ### PayrollBreakdown / PayrollStepList
 - **Path:** apps/web/components/payroll/PayrollBreakdown.tsx, PayrollStepList.tsx
 - **Dipakai di:** /payroll/[id]/employees/[employeeId]

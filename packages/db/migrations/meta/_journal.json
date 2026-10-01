@@ -176,6 +176,13 @@
       "when": 1790844384846,
       "tag": "0024_payroll_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790848544983,
+      "tag": "0025_payroll_finalization",
+      "breakpoints": true
     }
   ]
 }

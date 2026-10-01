@@ -1,37 +1,47 @@
+import { createHash } from "node:crypto";
+
 import {
   departments,
   employees,
   employeeSalaries,
   employeeSalaryItems,
   payrollAdjustments,
+  payrollRunEmployees,
   payrollRuns,
   positions,
   salaryComponents,
   tenants,
   users,
 } from "@exapay/db";
+import { pph21IncomeFromPayroll } from "@exapay/payroll-engine";
 import {
   BPJS_PROGRAMS,
   type BpjsProgram,
+  type FinalizePayrollRunInput,
   type OpenPayrollRunInput,
   PAYROLL_ADJUSTMENT_LINE_KINDS,
   type PayrollAdjustmentLineKind,
   type PayrollAdjustment,
   type PayrollAdjustmentInput,
   type PayrollEmployeeDetail,
+  type PayrollEmployeeSnapshot,
+  payrollEmployeeSnapshotSchema,
   type PayrollRegulations,
   type PayrollRunDetail,
   type PayrollRunList,
   type PayrollRunPeriod,
   type PayrollRunRow,
+  type PayrollRunSnapshot,
+  payrollRunSnapshotSchema,
   type PayrollRunStatus,
   type PayrollRunTotals,
   type PayrollComponentKind,
   type PayrollSalaryItem,
+  type Pph21PeriodRecord,
 } from "@exapay/shared";
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Decimal } from "decimal.js";
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, or, type SQL, sql } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
@@ -58,6 +68,7 @@ const RUN_NOT_FOUND = "Periode payroll tidak ditemukan";
 const EMPLOYEE_NOT_FOUND = "Karyawan tidak ada di periode payroll ini";
 const ADJUSTMENT_NOT_FOUND = "Penyesuaian tidak ditemukan";
 const CHANGED = "Penyesuaian ini baru saja diubah pengguna lain. Muat ulang halaman lalu coba lagi.";
+const FINAL_LOCKED = "Payroll periode ini sudah final dan tidak bisa diubah";
 // Bulan yang bisa dibuka: bulan berjalan + 12 bulan ke belakang
 const OPENABLE_MONTHS_BACK = 12;
 // Batas wajar baris tambahan per karyawan per periode
@@ -69,6 +80,8 @@ type RunRow = {
   status: PayrollRunStatus;
   createdByName: string | null;
   createdAt: Date;
+  finalizedAt: Date | null;
+  finalizedByName: string | null;
 };
 
 const runColumns = {
@@ -77,6 +90,8 @@ const runColumns = {
   status: payrollRuns.status,
   createdByName: payrollRuns.createdByName,
   createdAt: payrollRuns.createdAt,
+  finalizedAt: payrollRuns.finalizedAt,
+  finalizedByName: payrollRuns.finalizedByName,
 };
 
 type EmployeeRow = {
@@ -106,6 +121,11 @@ type Draft = {
   today: string;
   tenant: TenantRow;
   warnings: string[];
+  // Masukan bersama — disimpan di snapshot final
+  regulations: PayrollRegulations | null;
+  minimumWage: string | null;
+  attendanceRules: PayrollRunSnapshot["inputs"]["attendanceRules"];
+  attendanceRulesChangedOn: string | null;
   employees: { row: EmployeeRow; adjustments: AdjustmentRow[]; draft: DraftEmployeeResult; facts: PayrollEmployeeDetail["attendanceFacts"] }[];
 };
 
@@ -129,6 +149,13 @@ function previousMonth(month: string): string {
   return index === 1 ? `${year - 1}-12` : `${year}-${String(index - 1).padStart(2, "0")}`;
 }
 
+// "2026-12" → "2027-01"
+function nextMonth(month: string): string {
+  const year = Number(month.slice(0, 4));
+  const index = Number(month.slice(5, 7));
+  return index === 12 ? `${year + 1}-01` : `${year}-${String(index + 1).padStart(2, "0")}`;
+}
+
 // Tanggal gajian di bulan periode: hari `payday`, atau hari terakhir bulan bila bulan lebih pendek
 function payDateOf(month: string, payday: number | null): string | null {
   if (payday === null) return null;
@@ -149,6 +176,8 @@ function toPeriod(run: RunRow, payday: number | null): PayrollRunPeriod {
     status: run.status,
     createdByName: run.createdByName,
     createdAt: run.createdAt.toISOString(),
+    finalizedAt: run.finalizedAt?.toISOString() ?? null,
+    finalizedByName: run.finalizedByName,
   };
 }
 
@@ -193,10 +222,81 @@ function totalsOf(drafts: readonly DraftEmployeeResult[]): PayrollRunTotals {
   };
 }
 
+// Rincian satu karyawan (detail draf & snapshot final) — `warnings` = peringatan periode + karyawan
+function employeeView(entry: Draft["employees"][number], periodWarnings: readonly string[]): Omit<PayrollEmployeeDetail, "run"> {
+  const { row, adjustments, draft: result, facts } = entry;
+  return {
+    employee: {
+      id: row.id,
+      fullName: row.fullName,
+      employeeNumber: row.employeeNumber,
+      positionName: row.positionName,
+      departmentName: row.departmentName,
+      joinDate: row.joinDate,
+      endDate: row.endDate,
+      ptkpStatus: row.ptkpStatus,
+    },
+    status: result.status,
+    message: result.message,
+    salary: result.salary
+      ? { effectiveFrom: result.salary.effectiveFrom, effectiveTo: result.salary.effectiveTo, items: result.salary.items, bpjsPrograms: result.salary.bpjsPrograms }
+      : null,
+    adjustments: adjustments.map(toAdjustment),
+    attendanceFacts: result.status === "calculated" ? facts : null,
+    attendanceWaived: result.attendanceWaived,
+    result: result.result,
+    pph21: result.pph21,
+    takeHomePay: result.takeHomePay,
+    warnings: [...periodWarnings, ...result.warnings],
+  };
+}
+
+function draftRow(entry: Draft["employees"][number]): PayrollRunRow {
+  const { row, adjustments, draft: result } = entry;
+  return {
+    employee: { id: row.id, fullName: row.fullName, employeeNumber: row.employeeNumber, positionName: row.positionName, departmentName: row.departmentName },
+    status: result.status,
+    message: result.message,
+    grossPay: result.result?.grossPay ?? null,
+    totalDeductions: result.result?.totalDeductions ?? null,
+    pph21: result.pph21?.pph21 ?? null,
+    takeHomePay: result.takeHomePay,
+    warningCount: result.warnings.length,
+    adjustmentCount: adjustments.length,
+  };
+}
+
+function snapshotRow(snapshot: PayrollEmployeeSnapshot): PayrollRunRow {
+  const { employee } = snapshot;
+  return {
+    employee: { id: employee.id, fullName: employee.fullName, employeeNumber: employee.employeeNumber, positionName: employee.positionName, departmentName: employee.departmentName },
+    status: snapshot.status,
+    message: snapshot.message,
+    grossPay: snapshot.result?.grossPay ?? null,
+    totalDeductions: snapshot.result?.totalDeductions ?? null,
+    pph21: snapshot.pph21?.pph21 ?? null,
+    takeHomePay: snapshot.takeHomePay,
+    warningCount: snapshot.warnings.length,
+    adjustmentCount: snapshot.adjustments.length,
+  };
+}
+
+// Sidik draf yang direview: semua angka, status, penyesuaian, dan peringatan. Finalisasi menolak bila draf berubah sejak
+// halaman dibuka (koreksi absensi/gaji/penyesuaian oleh pengguna lain).
+function draftFingerprint(draft: Draft): string {
+  const content = {
+    warnings: draft.warnings,
+    employees: draft.employees.map((entry) => employeeView(entry, [])),
+  };
+  return createHash("sha256").update(JSON.stringify(content)).digest("hex");
+}
+
 // Run payroll — draf & review (feature 29). Owner/admin saja (peran dibaca ulang dari DB). Periode = bulan kalender,
 // satu per usaha. Angka draf dihitung saat dibaca (payroll-draft.ts → payroll-engine) dari gaji berlaku, absensi,
 // aturan potongan versi hari pertama periode, regulasi tanggal 1, dan penyesuaian admin — sehingga koreksi absensi/gaji
-// langsung terlihat. Finalisasi & snapshot = feature 30. Membuka periode & penyesuaian diaudit.
+// langsung terlihat. Finalisasi (feature 30) menyimpan snapshot immutable (payroll_runs.snapshot + payroll_run_employees);
+// periode final dibaca dari snapshot. Membuka periode, penyesuaian, dan finalisasi diaudit.
+// Urutan kunci: advisory `payroll-runs:<tenant>` (buka/final) → payroll_runs → payroll_adjustments.
 @Injectable()
 export class PayrollRunsService {
   constructor(
@@ -220,9 +320,12 @@ export class PayrollRunsService {
         .groupBy(payrollRuns.id)
         .orderBy(desc(payrollRuns.periodMonth));
       const opened = new Set(runs.map((run) => monthOf(run.periodMonth)));
+      // Terbaru dulu → periode final pertama = final terakhir; bulan sebelumnya tidak bisa dibuka lagi
+      const lastFinal = runs.find((run) => run.status === "final");
+      const openFrom = lastFinal ? nextMonth(monthOf(lastFinal.periodMonth)) : "";
       return {
         today,
-        openableMonths: this.candidateMonths(today).filter((month) => !opened.has(month)),
+        openableMonths: this.candidateMonths(today).filter((month) => !opened.has(month) && month >= openFrom),
         runs: runs.map((run) => ({ ...toPeriod(run, tenant.payday), adjustmentCount: run.adjustmentCount })),
       };
     });
@@ -239,8 +342,21 @@ export class PayrollRunsService {
           throw new BadRequestException("Periode yang bisa dibuka: bulan berjalan sampai 12 bulan ke belakang");
         }
         const periodMonth = `${input.month}-01`;
+        await this.lockRunSequence(tx, ctx);
         const [existing] = await tx.select({ id: payrollRuns.id }).from(payrollRuns).where(eq(payrollRuns.periodMonth, periodMonth));
         if (existing) throw new ConflictException(`Periode ${formatIdMonth(input.month)} sudah dibuka`);
+        // Final berurutan per bulan (feature 30): bulan sebelum periode final terakhir tidak bisa dibuka lagi
+        const [laterFinal] = await tx
+          .select({ periodMonth: payrollRuns.periodMonth })
+          .from(payrollRuns)
+          .where(and(eq(payrollRuns.status, "final"), gte(payrollRuns.periodMonth, periodMonth)))
+          .orderBy(desc(payrollRuns.periodMonth))
+          .limit(1);
+        if (laterFinal) {
+          throw new BadRequestException(
+            `Payroll ${formatIdMonth(monthOf(laterFinal.periodMonth))} sudah final — periode sebelumnya tidak bisa dibuka lagi. Koreksi lewat penyesuaian periode berikutnya.`,
+          );
+        }
 
         const [actor] = await tx.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.userId));
         const [created] = await tx
@@ -262,25 +378,30 @@ export class PayrollRunsService {
     return withTenant(this.db, ctx, async (tx) => {
       await requireSalaryManager(tx, ctx);
       const run = await this.findRun(tx, runId);
+      if (run.status === "final") {
+        const tenant = await this.loadTenant(tx, ctx);
+        const snapshot = await this.loadRunSnapshot(tx, run.id);
+        const employeeSnapshots = await this.loadEmployeeSnapshots(tx, run.id, null);
+        return {
+          ...toPeriod(run, tenant.payday),
+          payDate: snapshot.payDate,
+          today: localClock(new Date(), tenant.timeZone).date,
+          periodEnded: true,
+          warnings: snapshot.warnings,
+          totals: snapshot.totals,
+          rows: employeeSnapshots.map(snapshotRow),
+          finalization: null,
+        };
+      }
       const draft = await this.loadDraft(tx, ctx, run, null);
-      const rows: PayrollRunRow[] = draft.employees.map(({ row, adjustments, draft: result }) => ({
-        employee: { id: row.id, fullName: row.fullName, employeeNumber: row.employeeNumber, positionName: row.positionName, departmentName: row.departmentName },
-        status: result.status,
-        message: result.message,
-        grossPay: result.result?.grossPay ?? null,
-        totalDeductions: result.result?.totalDeductions ?? null,
-        pph21: result.pph21?.pph21 ?? null,
-        takeHomePay: result.takeHomePay,
-        warningCount: result.warnings.length,
-        adjustmentCount: adjustments.length,
-      }));
       return {
         ...toPeriod(run, draft.tenant.payday),
         today: draft.today,
         periodEnded: draft.today > draft.to,
         warnings: draft.warnings,
         totals: totalsOf(draft.employees.map((employee) => employee.draft)),
-        rows,
+        rows: draft.employees.map(draftRow),
+        finalization: { blockers: await this.finalizeBlockers(tx, draft), fingerprint: draftFingerprint(draft) },
       };
     });
   }
@@ -290,36 +411,132 @@ export class PayrollRunsService {
     return withTenant(this.db, ctx, async (tx) => {
       await requireSalaryManager(tx, ctx);
       const run = await this.findRun(tx, runId);
+      if (run.status === "final") {
+        const tenant = await this.loadTenant(tx, ctx);
+        const snapshot = await this.loadRunSnapshot(tx, run.id);
+        const [employeeSnapshot] = await this.loadEmployeeSnapshots(tx, run.id, employeeId);
+        if (!employeeSnapshot) throw new NotFoundException(EMPLOYEE_NOT_FOUND);
+        return { run: { ...toPeriod(run, tenant.payday), payDate: snapshot.payDate, periodEnded: true }, ...employeeSnapshot };
+      }
       const draft = await this.loadDraft(tx, ctx, run, employeeId);
       const entry = draft.employees[0];
       if (!entry) throw new NotFoundException(EMPLOYEE_NOT_FOUND);
-      const { row, adjustments, draft: result, facts } = entry;
-      return {
-        run: { ...toPeriod(run, draft.tenant.payday), periodEnded: draft.today > draft.to },
-        employee: {
-          id: row.id,
-          fullName: row.fullName,
-          employeeNumber: row.employeeNumber,
-          positionName: row.positionName,
-          departmentName: row.departmentName,
-          joinDate: row.joinDate,
-          endDate: row.endDate,
-          ptkpStatus: row.ptkpStatus,
-        },
-        status: result.status,
-        message: result.message,
-        salary: result.salary
-          ? { effectiveFrom: result.salary.effectiveFrom, effectiveTo: result.salary.effectiveTo, items: result.salary.items, bpjsPrograms: result.salary.bpjsPrograms }
-          : null,
-        adjustments: adjustments.map(toAdjustment),
-        attendanceFacts: result.status === "calculated" ? facts : null,
-        attendanceWaived: result.attendanceWaived,
-        result: result.result,
-        pph21: result.pph21,
-        takeHomePay: result.takeHomePay,
-        warnings: [...draft.warnings, ...result.warnings],
-      };
+      return { run: { ...toPeriod(run, draft.tenant.payday), periodEnded: draft.today > draft.to }, ...employeeView(entry, draft.warnings) };
     });
+  }
+
+  // ——— finalisasi (feature 30) ———
+
+  // Satu transaksi: hitung ulang draf di bawah kunci periode, cek syarat & sidik draf yang direview, simpan snapshot per
+  // karyawan + periode, tandai final, audit. Setelah ini angka periode tidak pernah dihitung ulang.
+  async finalize(user: AuthUser, runId: string, input: FinalizePayrollRunInput): Promise<void> {
+    const ctx = tenantContextOf(user);
+    await withTenant(this.db, ctx, async (tx) => {
+      await requireSalaryManager(tx, ctx);
+      await this.lockRunSequence(tx, ctx);
+      const run = await this.findRun(tx, runId, "update");
+      if (run.status === "final") throw new ConflictException("Payroll periode ini sudah final");
+
+      const draft = await this.loadDraft(tx, ctx, run, null);
+      const blockers = await this.finalizeBlockers(tx, draft);
+      if (blockers.length > 0) throw new BadRequestException(blockers.join(" "));
+      if (draftFingerprint(draft) !== input.fingerprint) {
+        throw new ConflictException("Angka draf berubah sejak halaman dibuka (absensi, gaji, atau penyesuaian). Muat ulang, periksa lagi, lalu finalisasi.");
+      }
+
+      for (const entry of draft.employees) {
+        const view = employeeView(entry, draft.warnings);
+        const status = view.status;
+        if (status !== "calculated" && status !== "excluded") throw new Error("[payroll-runs/finalize] status karyawan belum bisa difinalisasi");
+        const { result, pph21 } = entry.draft;
+        const amounts =
+          status === "calculated" && result && pph21 && view.takeHomePay !== null
+            ? {
+                grossPay: result.grossPay,
+                totalDeductions: result.totalDeductions,
+                bpjsEmployer: result.bpjsEmployerTotal,
+                bpjsEmployee: result.bpjsEmployeeTotal,
+                pph21: pph21.pph21,
+                takeHomePay: view.takeHomePay,
+                pph21GrossIncome: pph21.grossIncome,
+                pensionContribution: pph21IncomeFromPayroll(result).pensionContribution,
+              }
+            : {};
+        const snapshot: PayrollEmployeeSnapshot = { ...view, status };
+        await tx.insert(payrollRunEmployees).values({
+          tenantId: ctx.tenantId,
+          runId: run.id,
+          employeeId: entry.row.id,
+          status,
+          fullName: entry.row.fullName,
+          employeeNumber: entry.row.employeeNumber,
+          ...amounts,
+          snapshot,
+        });
+      }
+
+      const month = monthOf(run.periodMonth);
+      const totals = totalsOf(draft.employees.map((employee) => employee.draft));
+      const runSnapshot: PayrollRunSnapshot = {
+        version: 1,
+        finalizedOn: draft.today,
+        payDate: payDateOf(month, draft.tenant.payday),
+        warnings: draft.warnings,
+        totals,
+        inputs: {
+          timeZone: draft.tenant.timeZone,
+          regencyCode: draft.tenant.regencyCode,
+          minimumWage: draft.minimumWage,
+          jkkRiskLevel: draft.tenant.jkkRiskLevel,
+          attendanceRules: draft.attendanceRules,
+          attendanceRulesChangedOn: draft.attendanceRulesChangedOn,
+          regulations: draft.regulations,
+        },
+      };
+      const [actor] = await tx.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.userId));
+      await tx
+        .update(payrollRuns)
+        .set({ status: "final", finalizedAt: sql`now()`, finalizedByUserId: user.userId, finalizedByName: actor?.fullName ?? null, snapshot: runSnapshot })
+        .where(eq(payrollRuns.id, run.id));
+      await this.audit.record(tx, ctx, {
+        entity: "payroll_run",
+        entityId: run.id,
+        action: "finalize",
+        before: { status: "draft" },
+        after: {
+          status: "final",
+          month,
+          totals,
+          excluded: draft.employees.filter((employee) => employee.draft.status === "excluded").map((employee) => employee.row.id),
+        },
+      });
+    });
+  }
+
+  // Syarat finalisasi (keputusan user): periode berakhir, semua karyawan terhitung/dikeluarkan, ada yang dihitung,
+  // periode sebelumnya yang sudah dibuka sudah final
+  private async finalizeBlockers(tx: Transaction, draft: Draft): Promise<string[]> {
+    const blockers: string[] = [];
+    const month = monthOf(draft.run.periodMonth);
+    if (draft.today <= draft.to) {
+      blockers.push(`Periode baru bisa difinalisasi setelah berakhir (mulai ${formatIdDate(`${nextMonth(month)}-01`)}).`);
+    }
+    const [earlierDraft] = await tx
+      .select({ periodMonth: payrollRuns.periodMonth })
+      .from(payrollRuns)
+      .where(and(eq(payrollRuns.status, "draft"), lt(payrollRuns.periodMonth, draft.run.periodMonth)))
+      .orderBy(asc(payrollRuns.periodMonth))
+      .limit(1);
+    if (earlierDraft) {
+      blockers.push(`Payroll ${formatIdMonth(monthOf(earlierDraft.periodMonth))} masih draf — finalisasi periode sebelumnya lebih dulu.`);
+    }
+    const pending = draft.employees.filter((employee) => employee.draft.status === "no_salary" || employee.draft.status === "error").length;
+    if (pending > 0) {
+      blockers.push(`${pending} karyawan belum bisa dihitung — atur gajinya atau keluarkan dari periode ini.`);
+    } else if (!draft.employees.some((employee) => employee.draft.status === "calculated")) {
+      blockers.push("Belum ada karyawan yang dihitung di periode ini.");
+    }
+    return blockers;
   }
 
   // ——— penyesuaian ———
@@ -426,6 +643,7 @@ export class PayrollRunsService {
     const ids = employeeRows.map((row) => row.id);
     const versions = await this.selectSalaryVersions(tx, ids, from, to);
     const adjustments = await this.selectAdjustments(tx, run.id, ids);
+    const previousPeriods = await this.selectPreviousPeriods(tx, run.periodMonth, ids);
     const periodRules = await this.deductions.periodRules(tx, from, to);
     const facts = await this.deductions.periodFactsMany(tx, employeeRows, from, to, today);
 
@@ -461,6 +679,10 @@ export class PayrollRunsService {
       today,
       tenant,
       warnings,
+      regulations,
+      minimumWage,
+      attendanceRules: periodRules.rules,
+      attendanceRulesChangedOn: periodRules.changedOn,
       employees: employeeRows.map((row) => {
         const own = adjustments.filter((adjustment) => adjustment.employeeId === row.id);
         const employeeFacts = facts.get(row.id);
@@ -472,6 +694,7 @@ export class PayrollRunsService {
           employee: { joinDate: row.joinDate, endDate: row.endDate, ptkpStatus: row.ptkpStatus },
           salaryVersions: versions.get(row.id) ?? [],
           adjustments: own,
+          previousPeriods: previousPeriods.get(row.id) ?? [],
           rules: periodRules.rules,
           facts: employeeFacts,
           regulations,
@@ -505,17 +728,78 @@ export class PayrollRunsService {
     return { ...tenant, timeZone: await this.attendance.tenantTimeZone(tx, ctx.tenantId) };
   }
 
-  private async findRun(tx: Transaction, runId: string): Promise<RunRow> {
-    const [run] = await tx.select(runColumns).from(payrollRuns).where(eq(payrollRuns.id, runId));
+  private async findRun(tx: Transaction, runId: string, lock?: "update" | "share"): Promise<RunRow> {
+    const query = tx.select(runColumns).from(payrollRuns).where(eq(payrollRuns.id, runId));
+    const [run] = await (lock ? query.for(lock) : query);
     if (!run) throw new NotFoundException(RUN_NOT_FOUND);
     return run;
   }
 
-  // TODO feature 30: kunci baris periode (FOR SHARE) agar penyesuaian tidak bersamaan dengan finalisasi
+  // FOR SHARE: penyesuaian tidak bersamaan dengan finalisasi (yang mengunci FOR UPDATE)
   private async findDraftRun(tx: Transaction, runId: string): Promise<RunRow> {
-    const run = await this.findRun(tx, runId);
-    if (run.status !== "draft") throw new ConflictException("Payroll periode ini sudah final dan tidak bisa diubah");
+    const run = await this.findRun(tx, runId, "share");
+    if (run.status !== "draft") throw new ConflictException(FINAL_LOCKED);
     return run;
+  }
+
+  // Buka periode & finalisasi bergantian per usaha — urutan bulan final tetap terjaga
+  private async lockRunSequence(tx: Transaction, ctx: TenantContext): Promise<void> {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`payroll-runs:${ctx.tenantId}`}, 0))`);
+  }
+
+  private async loadRunSnapshot(tx: Transaction, runId: string): Promise<PayrollRunSnapshot> {
+    const [row] = await tx.select({ snapshot: payrollRuns.snapshot }).from(payrollRuns).where(eq(payrollRuns.id, runId));
+    return payrollRunSnapshotSchema.parse(row?.snapshot);
+  }
+
+  // Snapshot final per karyawan, urut nama (employeeId = satu karyawan saja)
+  private async loadEmployeeSnapshots(tx: Transaction, runId: string, employeeId: string | null): Promise<PayrollEmployeeSnapshot[]> {
+    const rows = await tx
+      .select({ snapshot: payrollRunEmployees.snapshot })
+      .from(payrollRunEmployees)
+      .where(and(eq(payrollRunEmployees.runId, runId), employeeId ? eq(payrollRunEmployees.employeeId, employeeId) : undefined))
+      .orderBy(asc(payrollRunEmployees.fullName), asc(payrollRunEmployees.employeeId));
+    return rows.map((row) => payrollEmployeeSnapshotSchema.parse(row.snapshot));
+  }
+
+  // Masa PPh 21 sebelumnya di tahun pajak yang sama dari payroll final (karyawan dihitung saja), per karyawan
+  private async selectPreviousPeriods(tx: Transaction, periodMonth: string, employeeIds: readonly string[]): Promise<Map<string, Pph21PeriodRecord[]>> {
+    const byEmployee = new Map<string, Pph21PeriodRecord[]>();
+    if (employeeIds.length === 0 || periodMonth.slice(5, 7) === "01") return byEmployee;
+    const rows = await tx
+      .select({
+        employeeId: payrollRunEmployees.employeeId,
+        periodMonth: payrollRuns.periodMonth,
+        grossIncome: payrollRunEmployees.pph21GrossIncome,
+        pensionContribution: payrollRunEmployees.pensionContribution,
+        pph21: payrollRunEmployees.pph21,
+      })
+      .from(payrollRunEmployees)
+      .innerJoin(payrollRuns, eq(payrollRuns.id, payrollRunEmployees.runId))
+      .where(
+        and(
+          inArray(payrollRunEmployees.employeeId, [...employeeIds]),
+          eq(payrollRunEmployees.status, "calculated"),
+          eq(payrollRuns.status, "final"),
+          gte(payrollRuns.periodMonth, `${periodMonth.slice(0, 4)}-01-01`),
+          lt(payrollRuns.periodMonth, periodMonth),
+        ),
+      )
+      .orderBy(asc(payrollRuns.periodMonth));
+    for (const row of rows) {
+      // CHECK payroll_run_employees_amounts: baris calculated selalu berisi angka
+      if (row.grossIncome === null || row.pensionContribution === null || row.pph21 === null) continue;
+      const list = byEmployee.get(row.employeeId) ?? [];
+      list.push({
+        month: Number(row.periodMonth.slice(5, 7)),
+        grossIncome: row.grossIncome,
+        pensionContribution: row.pensionContribution,
+        religiousContribution: "0",
+        pph21Withheld: row.pph21,
+      });
+      byEmployee.set(row.employeeId, list);
+    }
+    return byEmployee;
   }
 
   // Karyawan yang masa kerjanya beririsan dengan bulan periode

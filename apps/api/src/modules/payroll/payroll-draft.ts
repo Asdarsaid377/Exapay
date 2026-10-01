@@ -12,6 +12,7 @@ import {
   type PayrollEmployeeStatus,
   type PayrollRegulations,
   type PayrollSalaryItem,
+  type Pph21PeriodRecord,
   type Pph21Result,
   type PtkpStatus,
 } from "@exapay/shared";
@@ -23,6 +24,7 @@ import {
 // - Penyesuaian admin: tambah pendapatan tidak tetap/potongan, ganti nominal komponen (nominal sebulan, sebelum prorata),
 //   batalkan potongan absensi (prorata masa kerja tetap), keluarkan karyawan dari periode.
 // - PTKP = status karyawan saat draf dihitung (belum ada riwayat status PTKP); dikunci di snapshot final (feature 30).
+// - Masa PPh 21 sebelumnya di tahun yang sama = snapshot payroll final (feature 30), dipakai di masa pajak terakhir.
 
 export type DraftSalaryVersion = {
   id: string;
@@ -51,6 +53,8 @@ export type DraftEmployeeInput = {
   // Versi gaji karyawan yang beririsan dengan periode
   salaryVersions: readonly DraftSalaryVersion[];
   adjustments: readonly DraftAdjustment[];
+  // Masa sebelumnya di tahun pajak yang sama dari payroll final (bulan < month)
+  previousPeriods: readonly Pph21PeriodRecord[];
   rules: AttendanceDeductionRules;
   facts: AttendanceDeductionFacts;
   // null = data regulasi periode ini belum lengkap (regulationError berisi penjelasan)
@@ -149,13 +153,12 @@ export function buildEmployeeDraft(input: DraftEmployeeInput): DraftEmployeeResu
       attendance: { rules: attendanceWaived ? NO_ATTENDANCE_DEDUCTION_RULES : input.rules, facts: input.facts },
     });
     const endsEmployment = input.employee.endDate !== null && input.employee.endDate <= input.to;
-    // TODO feature 30: masa sebelumnya (Pph21PeriodRecord) dari snapshot payroll final tahun yang sama untuk masa pajak terakhir
     const pph21 = calculatePph21({
       ptkpStatus: input.employee.ptkpStatus,
       month: input.month,
       endsEmployment,
       current: { ...pph21IncomeFromPayroll(payroll), religiousContribution: "0" },
-      previousPeriods: [],
+      previousPeriods: input.previousPeriods,
       previousEmployer: null,
       regulations: input.regulations,
     });

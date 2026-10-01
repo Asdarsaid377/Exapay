@@ -1,6 +1,13 @@
 "use server";
 
-import { type OpenPayrollRunInput, openPayrollRunSchema, type PayrollAdjustmentInput, payrollAdjustmentInputSchema } from "@exapay/shared";
+import {
+  type FinalizePayrollRunInput,
+  finalizePayrollRunSchema,
+  type OpenPayrollRunInput,
+  openPayrollRunSchema,
+  type PayrollAdjustmentInput,
+  payrollAdjustmentInputSchema,
+} from "@exapay/shared";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -8,7 +15,8 @@ import { z } from "zod";
 import { apiRequest, sessionCookieHeader } from "@/lib/api/server";
 import type { OpenPayrollRunOutcome, PayrollActionOutcome } from "@/lib/payrollRunOutcomes";
 
-// Server Action tipis run payroll (feature 29): validasi ulang → API → revalidate. Peran & aturan draf dicek di API.
+// Server Action tipis run payroll (feature 29–30): validasi ulang → API → revalidate. Peran, aturan draf, & syarat
+// finalisasi dicek di API.
 
 const INVALID = { kind: "error", message: "Data tidak valid" } as const;
 const ignoreData = (): null => null;
@@ -63,4 +71,11 @@ export async function deletePayrollAdjustment(runId: string, adjustmentId: strin
   const parsedId = idSchema.safeParse(adjustmentId);
   if (!parsedRun.success || !parsedId.success) return INVALID;
   return send("DELETE", `/payroll/runs/${parsedRun.data}/adjustments/${parsedId.data}`);
+}
+
+export async function finalizePayrollRun(runId: string, input: FinalizePayrollRunInput): Promise<PayrollActionOutcome> {
+  const parsedRun = idSchema.safeParse(runId);
+  const parsed = finalizePayrollRunSchema.safeParse(input);
+  if (!parsedRun.success || !parsed.success) return INVALID;
+  return send("POST", `/payroll/runs/${parsedRun.data}/finalize`, parsed.data);
 }
