@@ -487,3 +487,9 @@ export {
   type PayrollComponentKind,
   type PayrollComponentLine,
 } from "./payrollCalculation.js";
+export type {
+  Pph21AnnualCalculation,
+  Pph21PeriodRecord,
+  Pph21PreviousEmployer,
+  Pph21Result,
+} from "./pph21.js";

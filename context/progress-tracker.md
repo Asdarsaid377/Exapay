@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 6 — Payroll
-**Terakhir selesai:** 24 Data Regulasi Berlaku-Tanggal (2026-10-01)
-**Berikutnya:** 25 Payroll Engine — Komponen & BPJS
+**Terakhir selesai:** 26 Payroll Engine — PPh 21 TER & True-up Desember (2026-10-01)
+**Berikutnya:** 27 Payroll Engine — Potongan Absensi
 
 ---
 
@@ -50,8 +50,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ### Phase 6 — Payroll
 - [x] 24 Data Regulasi Berlaku-Tanggal
-- [ ] 25 Payroll Engine — Komponen & BPJS
-- [ ] 26 Payroll Engine — PPh 21 TER & True-up Desember
+- [x] 25 Payroll Engine — Komponen & BPJS
+- [x] 26 Payroll Engine — PPh 21 TER & True-up Desember
 - [ ] 27 Payroll Engine — Potongan Absensi
 - [ ] 28 Komponen Gaji
 - [ ] 29 Run Payroll — Draf & Review
@@ -214,6 +214,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Titik uji coba klien tidak memblokir Phase 6 (keputusan user): uji coba absensi + KPI berjalan paralel dengan pembangunan payroll.
 - 2026-10-01 — **Regulasi payroll (feature 24):** migration `0021_regulations` (6 tabel referensi platform: `bpjs_rates`, `tax_rate_tables` + `tax_rate_brackets`, `ptkp_rates`, `pph21_parameters`, `minimum_wages`; berversi `effective_from`/`effective_to` inklusif + `source` + exclusion `*_no_overlap`; app_user SELECT saja) + seed `0022_seed_regulations`. Tarif disimpan **persen** `numeric(7,4)`; lapis tarif = penghasilan ≤ `income_up_to` (lapis terakhir null). `RegulationsService` (`modules/regulations/`, tanpa endpoint): `forDate` → `PayrollRegulations` (tipe di `@exapay/shared`) atau `RegulationDataMissingError`; `minimumWage` UMK → fallback UMP.
 - 2026-10-01 — Keputusan user: biaya jabatan (PMK 168/2023) ikut disimpan sebagai data di feature 24. Seed upah minimum = **UMP 2026 38 provinsi saja** (UMK menyusul lewat migration saat kota klien jelas). Cakupan data regulasi mulai **2024-01-01**. Angka diverifikasi 2026-10-01 dari sumber web (TER dicek silang 2 sumber; UMP 3 sumber, selisih diputuskan dari rilis pemprov/ANTARA).
+- 2026-10-01 — **Payroll engine komponen & BPJS (feature 25):** fungsi murni `calculatePayroll` (`packages/payroll-engine/src/payroll-calculation.ts`, tipe `PayrollCalculationResult`/`PayrollComponentLine` di `@exapay/shared`), tanpa endpoint/UI. Jenis komponen: `base_salary` (tepat satu), `fixed_allowance`, `variable_allowance`, `deduction`. Upah dasar BPJS = gaji pokok + tunjangan tetap (tunjangan tidak tetap/THR tidak ikut). Batas atas upah per program dari `wageCap` data regulasi (null = tanpa batas); batas bawah **BPJS Kesehatan = upah minimum (UMK/UMP)**, data tidak ada → hitung dengan upah aktual + peringatan. Kepesertaan program & kelompok risiko JKK = input. Tiap iuran dibulatkan rupiah penuh HALF_UP. Input tidak valid / tarif tidak tersedia → `PayrollInputError`. `netPay` = gaji bersih **sebelum** PPh 21 & potongan absensi.
+- 2026-10-01 — Keputusan user: feature 25 diterima apa adanya; penyesuaian (mis. aturan komponen/BPJS khusus) dikerjakan nanti bila ada permintaan klien.
+- 2026-10-01 — **PPh 21 (feature 26):** fungsi murni `calculatePph21` + `pph21IncomeFromPayroll` (`packages/payroll-engine/src/pph21.ts`, tipe `Pph21Result`/`Pph21PeriodRecord`/`Pph21PreviousEmployer` di `@exapay/shared`), tanpa endpoint/UI. Masa biasa = bruto × TER kategori PTKP; masa pajak terakhir = **Desember atau bulan berhenti bekerja** (`endsEmployment`): bruto setahun − biaya jabatan (5%, maks Rp500 rb × **bulan bekerja**, maks Rp6 jt) − iuran JHT/JP pegawai − zakat via pemberi kerja (+ neto pemberi kerja lama) − PTKP **setahun penuh (tidak disetahunkan)**, PKP dibulatkan ke bawah ribuan, tarif Pasal 17, dikurangi PPh yang sudah dipotong (+ pemberi kerja lama). Negatif = kelebihan potong dikembalikan ke pegawai (peringatan). Bruto = pendapatan + premi Kesehatan/JKK/JKM pemberi kerja; JHT/JP pemberi kerja tidak ikut. Masa sebelumnya diinput sebagai ringkasan (`Pph21PeriodRecord`, nanti dari snapshot payroll final feature 30).
+- 2026-10-01 — PPh 21 masa TER dibulatkan rupiah penuh HALF_UP (konsisten feature 17; contoh DJP tidak menegaskan). Status PTKP diisi pemanggil (status 1 Januari / saat mulai bekerja — ditentukan di feature 29). **Belum didukung:** penyetahunan WNA yang baru/berhenti menjadi subjek pajak dalam negeri, PPh ditanggung pemberi kerja (gross-up), pegawai tidak tetap.
 ---
 
 ## Catatan (Notes)
@@ -265,3 +269,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Proses `tsc --watch` dari `pnpm dev` yang berjalan lama bisa menulis `dist` basi (route feature 22 sempat hilang di dev) — jika route baru 404 di dev padahal test lulus, restart `pnpm dev` / `pnpm --filter @exapay/api build`.
 - Belum ada: UI super-admin untuk mengubah kuota AI per usaha (sementara lewat SQL `app_owner` + `set_config('app.tenant_id')` karena FORCE RLS); notifikasi saat narasi selesai; narasi di portal karyawan (feature 37). Sudah diuji dengan API key asli (Haiku 4.5) di data dev — narasi Rina 21–27 Sep dari Claude. Narasi Haiku kadang menambah tafsiran ringan di luar data (mis. "dalam kondisi sulit") — inilah alasan wajib ditinjau.
 - Total test API 211 per feature 24 (`regulations.test.ts`). Exclusion constraint regulasi tidak diuji otomatis (test berjalan sebagai app_user tanpa hak tulis). **UMP berlaku s.d. 2026-12-31 → tambahkan UMP 2027 lewat migration ±Desember 2026**; JP batas upah berganti tiap Maret (migration baru). Sumber lemah: UMP Papua Selatan (1 media lokal), angka bersen Jateng/Banten/Sultra (1 sumber), nomor surat BPJS batas JP 2023–2025 belum dicek.
+- Total unit test payroll-engine 52 per feature 25 (`payroll-calculation.test.ts` 27 skenario). Engine belum dipanggil API — dipakai mulai feature 28/29.
+- Total unit test payroll-engine 77 per feature 26 (`pph21.test.ts` 25 skenario). Test PPh 21 membaca tabel TER/Pasal 17/PTKP langsung dari seed `0022_seed_regulations.sql` dan mencocokkannya dengan contoh resmi lampiran PMK 168/2023 (Tuan A, B, D di PT W & PT AB, F, H) — mengubah format seed itu akan memecahkan parser test.

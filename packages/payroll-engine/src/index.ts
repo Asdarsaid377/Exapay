@@ -6,3 +6,4 @@ export {
   type PayrollBpjsSettings,
   type PayrollCalculationInput,
 } from "./payroll-calculation.js";
+export { calculatePph21, pph21IncomeFromPayroll, type Pph21CurrentPeriod, type Pph21Input } from "./pph21.js";
