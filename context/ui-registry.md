@@ -338,7 +338,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /employees/[id]
 - **Referensi desain:** context/designs/employees-detail.html
 - **Pola kelas kunci:** header avatar `lg` + nama `text-[22px] lg:text-h1` + meta + Badge; aksi Ubah (secondary) + ⋯ DropdownMenu (item bahaya `text-danger-text`); **tab bar** `border-b border-text-primary/10 gap-7`, tab `h-11.5 text-[15px]`, aktif `font-bold shadow-[inset_0_-2px_0_var(--color-accent)]`; field baca `dt text-[13px] text-text-tertiary` / `dd text-[15px] font-medium`, nilai tersamar `tracking-[0.04em]`
-- **Catatan:** client. Tab Gaji/KPI/Absensi = EmptyState "Segera hadir" (isi di feature 28/19–22/16). Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`
+- **Catatan:** client. Tab Gaji = EmployeeSalaryTab (feature 28, owner/admin — prop `salary` null = tab disembunyikan); KPI/Absensi = EmptyState "Segera hadir". Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`
 
 ### FileDropzone
 - **Path:** apps/web/components/common/FileDropzone.tsx
@@ -557,3 +557,24 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** card `glass-strong rounded-card p-5 lg:p-6`; header h2 "Ringkasan kinerja" + Badge status kanan (info Sedang dibuat / warning Menunggu ditinjau / success Sudah ditinjau / danger Gagal dibuat); narasi `text-body whitespace-pre-line` + caption asal & peninjau; saat AI menulis skeleton `animate-exa-pulse` 3 bar; action bar `border-t pt-5`: Ubah/Tulis sendiri (secondary), Buat (ulang) dengan AI (primary jika kosong), Tandai sudah ditinjau (primary) + caption kuota rata kanan
 - **Catatan:** client; polling `router.refresh()` tiap 3 dtk selama `generation.pending`; mode edit = TextAreaField 10 baris + hitungan karakter (maks. 4000), simpan = sekaligus ditinjau; buat ulang saat sudah ada narasi → Dialog konfirmasi (memakai satu kuota). Kuota habis → tombol AI nonaktif + caption tanggal reset. Panel Finalisasi menyesuaikan teks jika narasi belum ditinjau / sedang dibuat
 
+
+### SalaryComponentList / SalaryComponentActions / SalaryComponentFormDialog / AddSalaryComponentButton
+- **Path:** apps/web/components/payroll/SalaryComponentList.tsx, SalaryComponentActions.tsx, SalaryComponentFormDialog.tsx, AddSalaryComponentButton.tsx
+- **Dipakai di:** /settings/salary-components
+- **Referensi desain:** tanpa referensi — pola OrgListCard + OrgItemActions + OrgItemFormDialog (feature 28, izin user; tercatat di progress-tracker)
+- **Pola kelas kunci:** card `glass-strong rounded-card` (tanpa overflow-hidden); header `px-5 pt-5 pb-3 lg:px-6` judul `text-h2` + jumlah aktif `text-text-tertiary tabular-nums` + Button secondary "Tambah"; baris `min-h-15 border-t border-border-subtle px-5 py-2.5 lg:px-6` nama `text-[15px] font-bold` (+ Badge `outline` "Diarsipkan", nama `text-text-secondary`) + sub `text-small` "Jenis · Dipakai N karyawan / Hanya di riwayat gaji / Belum dipakai"; menu ⋯ Ubah / Arsipkan|Pulihkan / Hapus `text-danger-text`
+- **Catatan:** List server-safe (props `components`), daftar tidak pernah kosong (gaji pokok wajib). Dialog: TextField nama + SelectField jenis dengan `hint` penjelasan perlakuan jenis (`COMPONENT_KIND_DESCRIPTIONS`); jenis terkunci untuk gaji pokok & komponen terpakai; opsi gaji pokok tidak ditawarkan. Gaji pokok: hanya Ubah; Hapus disembunyikan jika `inUse`. Konfirmasi arsip/pulihkan/hapus = Dialog (Button `dark`, pulihkan `primary`). Label & helper di `lib/salaryLabels.ts`; Server Action `actions/salary.ts`
+
+### JkkRiskLevelForm
+- **Path:** apps/web/components/payroll/JkkRiskLevelForm.tsx
+- **Dipakai di:** /settings/salary-components (FormSection "BPJS Ketenagakerjaan")
+- **Referensi desain:** tanpa referensi — pola form pengaturan FormSection (feature 28)
+- **Pola kelas kunci:** SelectField + hint; footer `border-t pt-5` Button primary "Simpan" (nonaktif jika tidak berubah); FormAlert hasil
+- **Catatan:** client. Label kelompok di `JKK_RISK_LABELS` (tarif tidak ditulis di web — dari data regulasi). Server Action `saveJkkRiskLevel`
+
+### EmployeeSalaryTab / EmployeeSalaryForm / EmployeeSalaryVersionList
+- **Path:** apps/web/components/payroll/EmployeeSalaryTab.tsx, EmployeeSalaryForm.tsx, EmployeeSalaryVersionList.tsx
+- **Dipakai di:** /employees/[id] tab Gaji (owner/admin saja — tab disembunyikan untuk atasan)
+- **Referensi desain:** tanpa referensi — pola FormSection + EmployeeForm (action bar) + DeductionRuleVersionList (feature 28, izin user)
+- **Pola kelas kunci:** "Gaji saat ini" = FormSection + `aside` Button secondary "Ubah gaji"; baris komponen `border-t py-3` nama `text-[14.5px] font-bold` + jenis `text-caption` + nominal `font-display text-[17px] font-bold tabular-nums` (potongan diawali "−"); total `dl rounded-inner bg-fill-subtle sm:grid-cols-2` angka `font-display text-xl font-extrabold`; ringkasan BPJS/risiko JKK/catatan `dl sm:grid-cols-[120px_minmax(0,1fr)] text-small`. Form = 3 FormSection (Komponen gaji: MoneyField per komponen `grid sm:grid-cols-2` dengan hint jenis; Kepesertaan BPJS: daftar Checkbox ala KpiPositionPicker; Tanggal berlaku: TextField date + FormAlert warning versi tergantikan + TextAreaField catatan) + action bar `glass-data sticky … lg:static` (Batal / Simpan gaji). Belum ada gaji = EmptyState ikon Wallet + CTA "Atur gaji"
+- **Catatan:** Tab client (state `editing`), data dari page (`fetchEmployeeSalary` paralel dengan opsi form). Form diisi dari versi saat ini (`currentSalaryVersion`: berlaku hari ini, selain itu terjadwal terdekat); gaji pertama default semua program BPJS + tanggal awal bulan berjalan (atau tanggal masuk). Komponen kosong = tidak ikut; komponen diarsipkan di versi lama → FormAlert. Total dari API (web tidak menjumlah uang). VersionList server-safe, status memakai `VERSION_STATUS_LABELS/TONES` aturan potongan

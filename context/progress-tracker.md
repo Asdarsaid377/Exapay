@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 6 — Payroll
-**Terakhir selesai:** 27 Payroll Engine — Potongan Absensi (2026-10-01)
-**Berikutnya:** 28 Komponen Gaji
+**Terakhir selesai:** 28 Komponen Gaji (2026-10-01)
+**Berikutnya:** 29 Run Payroll — Draf & Review
 
 ---
 
@@ -53,7 +53,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 25 Payroll Engine — Komponen & BPJS
 - [x] 26 Payroll Engine — PPh 21 TER & True-up Desember
 - [x] 27 Payroll Engine — Potongan Absensi
-- [ ] 28 Komponen Gaji
+- [x] 28 Komponen Gaji
 - [ ] 29 Run Payroll — Draf & Review
 - [ ] 30 Finalisasi Payroll
 - [ ] 31 Slip Gaji PDF
@@ -221,6 +221,8 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — **Potongan absensi di payroll (feature 27):** `calculatePayroll` menerima `attendance: { rules, facts } | null` (null = tanpa prorata & potongan), tanpa endpoint/UI. Keputusan user: potongan absensi (alpa, izin/sakit, telat) **mengurangi pendapatan bruto → bruto PPh 21 ikut turun**; `grossPay` = gaji pokok + tunjangan tetap + tunjangan tidak tetap + tunjangan kehadiran dibayar − potongan absensi. **Dasar upah BPJS tetap gaji pokok + tunjangan tetap sebulan penuh** (tidak dikurangi potongan maupun prorata). Jenis komponen baru `attendance_allowance` (tunjangan kehadiran, maks. satu, tidak tetap → tidak ikut BPJS); komponen tampil sebesar nominal, pengurangannya di `attendance.lines`.
 - 2026-10-01 — Keputusan user: **prorata masa kerja masuk feature 27** — gaji pokok & tunjangan tetap × hari kerja masa kerja ÷ hari kerja periode, dibulatkan rupiah HALF_UP per komponen (`proration` + langkah di hasil). Tunjangan tidak tetap & tunjangan kehadiran **tidak diprorata** (dikonfirmasi user). `AttendanceDeductionFacts.employedWorkingDays` baru (dari status rekap `deductionFacts`). Potongan alpa/izin/sakit tetap dinilai dari gaji sebulan penuh, total dibatasi dasar prorata × masa kerja ÷ hari kerja periode. Periode tanpa hari kerja → tidak diprorata + peringatan.
 - 2026-10-01 — Keputusan user: **versi aturan potongan = versi yang berlaku di hari pertama periode** untuk seluruh periode (tidak berlaku mundur). Fungsi murni `rulesForPeriod` (`attendance-deduction-rules.ts`) mengembalikan `changedOn` bila versi baru mulai di tengah periode (untuk peringatan draf feature 29). `AttendanceDeductionRulesService.periodRules/periodFacts` (dalam transaksi pemanggil) diekspor `AttendanceModule` untuk feature 29; pratinjau feature 17 memakai `periodFacts`.
+- 2026-10-01 — **Komponen gaji (feature 28):** katalog `salary_components` per usaha (8 bawaan: Gaji Pokok, Tunjangan Jabatan, Uang Makan, Uang Transport, Tunjangan Kehadiran, Insentif, THR, Cicilan Pinjaman — jenis = 5 jenis payroll-engine) + gaji karyawan berlaku-tanggal `employee_salaries` (versi + kepesertaan BPJS per program) → `employee_salary_items` (migration `0023`, usaha lama diisi di migration). Keputusan user: **kepesertaan BPJS masuk feature 28** (per karyawan di versi gaji; **kelompok risiko JKK per usaha** `tenants.jkk_risk_level`, default 1, diubah di `/settings/salary-components`); **tanggal berlaku gaji bebas ≥ tanggal masuk** (boleh mundur, ≤ tanggal keluar) — versi berjalan ditutup sehari sebelumnya, versi yang mulai pada/sesudahnya dihapus (diaudit); feature 30 menambah batas periode payroll final; **tab Gaji hanya owner/admin** (atasan tidak melihat). Komponen terpakai tidak bisa dihapus/diganti jenis → arsipkan; gaji pokok tidak bisa diarsipkan; gaji pokok & tunjangan kehadiran maks. satu aktif per usaha; tepat satu gaji pokok per versi. Endpoint `GET|POST /salary-components`, `PUT /salary-components/:id`, `POST …/:id/archive|restore`, `DELETE …/:id`, `PUT /salary-components/jkk-risk-level`, `GET|POST /employees/:id/salary`. Total (pendapatan/potongan) dihitung API, bukan web.
+- 2026-10-01 — `/settings/salary-components` & tab Gaji `/employees/[id]` dibangun **tanpa referensi visual** (opsi turunkan dari pola, izin user) — pola OrgListCard/OrgItemFormDialog, FormSection + action bar EmployeeForm, DeductionRuleVersionList. Komponen di `components/payroll/`.
 ---
 
 ## Catatan (Notes)
@@ -275,3 +277,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total unit test payroll-engine 52 per feature 25 (`payroll-calculation.test.ts` 27 skenario). Engine belum dipanggil API — dipakai mulai feature 28/29.
 - Total unit test payroll-engine 77 per feature 26 (`pph21.test.ts` 25 skenario). Test PPh 21 membaca tabel TER/Pasal 17/PTKP langsung dari seed `0022_seed_regulations.sql` dan mencocokkannya dengan contoh resmi lampiran PMK 168/2023 (Tuan A, B, D di PT W & PT AB, F, H) — mengubah format seed itu akan memecahkan parser test.
 - Total unit test payroll-engine 159 per feature 27 (`payroll-attendance.test.ts`: 63 kombinasi aturan alpa × telat × izin/sakit × tunjangan kehadiran + prorata); total test API 219 (`attendance-deduction-period.test.ts`). Pemanggil `calculatePayroll` wajib mengisi `attendance` (feature 29: `periodRules` + `periodFacts`, peringatan bila `changedOn`).
+- Total test API 226 per feature 28 (`salary.e2e.test.ts`). Data dev: Dewi Lestari (Kopi Nusantara) punya gaji contoh berlaku 1 Okt 2026 (Gaji Pokok 4,5 jt, Tunj. Jabatan 500 rb, Uang Makan 400 rb, Cicilan 250 rb; BPJS tanpa JP) + perubahan dari verifikasi user. Feature 29 memilih versi gaji per periode (belum ada helper `salaryForPeriod`) dan membangun `PayrollBpjsSettings` dari `bpjsPrograms` + `tenants.jkk_risk_level`.

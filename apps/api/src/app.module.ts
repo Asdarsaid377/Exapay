@@ -14,6 +14,7 @@ import { HealthModule } from "./modules/health/health.module.js";
 import { InvitationsModule } from "./modules/invitations/invitations.module.js";
 import { KpiModule } from "./modules/kpi/kpi.module.js";
 import { OrganizationModule } from "./modules/organization/organization.module.js";
+import { PayrollModule } from "./modules/payroll/payroll.module.js";
 import { RegionsModule } from "./modules/regions/regions.module.js";
 import { RegulationsModule } from "./modules/regulations/regulations.module.js";
 import { StorageModule } from "./modules/storage/storage.module.js";
@@ -43,6 +44,7 @@ import { RedisModule } from "./redis/redis.module.js";
     AttendanceModule,
     KpiModule,
     TasksModule,
+    PayrollModule,
     RedisModule,
     HealthModule,
   ],

@@ -21,6 +21,7 @@ import {
   LEAVE_TYPES,
   MEMBERSHIP_ROLES,
   NATIONAL_HOLIDAY_KINDS,
+  PAYROLL_COMPONENT_KINDS,
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
@@ -104,6 +105,9 @@ export const tenants = pgTable(
     kpiReviewCycle: kpiReviewCycle("kpi_review_cycle").notNull().default("monthly"),
     // Kuota generate ringkasan AI per bulan (feature 23). Hanya super-admin/app_owner yang boleh mengubah (trigger)
     aiSummaryMonthlyQuota: integer("ai_summary_monthly_quota").notNull().default(DEFAULT_AI_SUMMARY_MONTHLY_QUOTA),
+    // Kelompok risiko JKK usaha 1–5 (PP 44/2015; feature 28, /settings/salary-components). Default 1 = sangat rendah
+    // (kantor, toko — mayoritas UMKM); tarifnya dari bpjs_rates.
+    jkkRiskLevel: smallint("jkk_risk_level").notNull().default(1),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -111,6 +115,7 @@ export const tenants = pgTable(
     check("tenants_npwp_format", sql`${t.npwp} ~ '^[0-9]{15,16}$'`),
     check("tenants_payday_range", sql`${t.payday} between 1 and 31`),
     check("tenants_ai_summary_monthly_quota", sql`${t.aiSummaryMonthlyQuota} >= 0`),
+    check("tenants_jkk_risk_level", sql`${t.jkkRiskLevel} BETWEEN 1 AND 5`),
   ],
 );
 
@@ -1150,5 +1155,111 @@ export const minimumWages = pgTable(
     check("minimum_wages_area", sql`num_nonnulls(${t.provinceCode}, ${t.regencyCode}) = 1`),
     check("minimum_wages_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
     check("minimum_wages_amount", sql`${t.monthlyAmount} > 0`),
+  ],
+);
+
+// ——— Komponen gaji (feature 28) ———
+
+export const payrollComponentKind = pgEnum("payroll_component_kind", PAYROLL_COMPONENT_KINDS);
+
+// Katalog komponen gaji per usaha (/settings/salary-components). Jenis menentukan perlakuan di payroll-engine
+// (BPJS, prorata, potongan absensi). Gaji pokok & tunjangan kehadiran masing-masing paling banyak satu yang aktif.
+// Gaji pokok tidak bisa diarsipkan. Komponen yang sudah dipakai di gaji karyawan tidak bisa dihapus (FK RESTRICT) dan
+// jenisnya tidak bisa diubah (dicek service) — cukup diarsipkan (tidak bisa dipilih untuk gaji baru).
+export const salaryComponents = pgTable(
+  "salary_components",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    kind: payrollComponentKind("kind").notNull(),
+    sortOrder: smallint("sort_order").notNull(),
+    // Kunci komponen bawaan (salary-builtin-components.ts) — null untuk komponen buatan usaha
+    builtinKey: text("builtin_key"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("salary_components_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    uniqueIndex("salary_components_tenant_builtin_key").on(t.tenantId, t.builtinKey).where(sql`${t.builtinKey} IS NOT NULL`),
+    uniqueIndex("salary_components_tenant_single_kind_key")
+      .on(t.tenantId, t.kind)
+      .where(sql`${t.kind} IN ('base_salary', 'attendance_allowance') AND ${t.archivedAt} IS NULL`),
+    unique("salary_components_tenant_id_id_key").on(t.tenantId, t.id),
+    check("salary_components_base_not_archived", sql`${t.kind} <> 'base_salary' OR ${t.archivedAt} IS NULL`),
+    check("salary_components_name", sql`length(btrim(${t.name})) BETWEEN 1 AND 80`),
+  ],
+);
+
+// Gaji karyawan berlaku-tanggal: satu baris = satu versi (effective_from/effective_to inklusif; null = sampai diganti)
+// berisi kepesertaan program BPJS; nilai komponen di employee_salary_items. Versi satu karyawan tidak beririsan
+// (exclusion constraint di migration). Isi versi tidak bisa diubah — app_user hanya UPDATE effective_to (menutup versi)
+// dan DELETE versi yang tergantikan versi baru (dicek service). effective_from ≥ tanggal masuk dicek service.
+export const employeeSalaries = pgTable(
+  "employee_salaries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    // Kepesertaan program BPJS (kelompok risiko JKK di tenants.jkk_risk_level)
+    bpjsKesehatan: boolean("bpjs_kesehatan").notNull(),
+    bpjsJht: boolean("bpjs_jht").notNull(),
+    bpjsJp: boolean("bpjs_jp").notNull(),
+    bpjsJkk: boolean("bpjs_jkk").notNull(),
+    bpjsJkm: boolean("bpjs_jkm").notNull(),
+    note: text("note"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Snapshot nama pembuat — tetap terbaca bila akun dihapus
+    createdByName: text("created_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("employee_salaries_tenant_employee_from_idx").on(t.tenantId, t.employeeId, t.effectiveFrom),
+    unique("employee_salaries_tenant_id_id_key").on(t.tenantId, t.id),
+    foreignKey({ name: "employee_salaries_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    check("employee_salaries_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check("employee_salaries_note", sql`${t.note} IS NULL OR length(${t.note}) <= 500`),
+  ],
+);
+
+// Nilai satu komponen dalam satu versi gaji. Tepat satu gaji pokok per versi & tunjangan kehadiran paling banyak satu
+// dicek service (jenis ada di salary_components).
+export const employeeSalaryItems = pgTable(
+  "employee_salary_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    salaryId: uuid("salary_id").notNull(),
+    componentId: uuid("component_id").notNull(),
+    amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("employee_salary_items_salary_component_key").on(t.tenantId, t.salaryId, t.componentId),
+    index("employee_salary_items_tenant_component_idx").on(t.tenantId, t.componentId),
+    foreignKey({
+      name: "employee_salary_items_salary_fk",
+      columns: [t.tenantId, t.salaryId],
+      foreignColumns: [employeeSalaries.tenantId, employeeSalaries.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "employee_salary_items_component_fk",
+      columns: [t.tenantId, t.componentId],
+      foreignColumns: [salaryComponents.tenantId, salaryComponents.id],
+    }).onDelete("restrict"),
+    check("employee_salary_items_amount", sql`${t.amount} > 0`),
   ],
 );

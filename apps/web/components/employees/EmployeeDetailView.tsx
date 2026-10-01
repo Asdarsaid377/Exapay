@@ -1,6 +1,6 @@
 "use client";
 
-import type { EmployeeDetail, EmployeeFormOptions } from "@exapay/shared";
+import type { EmployeeDetail, EmployeeFormOptions, EmployeeSalaryOverview } from "@exapay/shared";
 import { ArrowLeft, Clock, Ellipsis, Pencil, UserX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import { DeactivateEmployeeDialog } from "@/components/employees/DeactivateEmplo
 import { EmployeeAvatar } from "@/components/employees/EmployeeAvatar";
 import { EmployeeDataSections } from "@/components/employees/EmployeeDataSections";
 import { EmployeeForm } from "@/components/employees/EmployeeForm";
+import { EmployeeSalaryTab } from "@/components/payroll/EmployeeSalaryTab";
 import { firstNameOf, formatIsoDate } from "@/lib/datetime";
 import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES } from "@/lib/employeeLabels";
 
@@ -24,6 +25,8 @@ type Props = {
   employee: EmployeeDetail;
   // Hanya untuk owner/admin (mode ubah)
   options: EmployeeFormOptions | null;
+  // Tab Gaji — hanya owner/admin (atasan tidak melihat tab ini)
+  salary: { overview: EmployeeSalaryOverview | null; error: string | null } | null;
 };
 
 const TABS = ["data", "salary", "kpi", "attendance"] as const;
@@ -32,8 +35,8 @@ const TAB_LABELS: Record<Tab, string> = { data: "Data", salary: "Gaji", kpi: "KP
 const FORM_ID = "employee-edit";
 
 // Detail karyawan (design employees-detail): header + tab Data/Gaji/KPI/Absensi. Owner/admin: Ubah (form di tempat)
-// dan Nonaktifkan / Aktifkan kembali. Atasan: hanya baca, tanpa data pajak & rekening.
-export function EmployeeDetailView({ employee, options }: Props) {
+// dan Nonaktifkan / Aktifkan kembali. Atasan: hanya baca, tanpa data pajak & rekening, tanpa tab Gaji (feature 28).
+export function EmployeeDetailView({ employee, options, salary }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("data");
   const [editing, setEditing] = useState(false);
@@ -45,6 +48,7 @@ export function EmployeeDetailView({ employee, options }: Props) {
   const inactive = !!employee.endDate;
   const canEdit = employee.canManage && options !== null;
   const firstName = firstNameOf(employee.fullName);
+  const tabs = TABS.filter((key) => key !== "salary" || salary !== null);
 
   async function handleReactivate() {
     setError(null);
@@ -164,7 +168,7 @@ export function EmployeeDetailView({ employee, options }: Props) {
       ) : (
         <>
           <div role="tablist" aria-label="Data karyawan" className="flex gap-5.5 overflow-x-auto border-b border-text-primary/10 px-1.5 lg:gap-7 lg:px-2">
-            {TABS.map((key) => {
+            {tabs.map((key) => {
               const selected = key === tab;
               return (
                 <button
@@ -187,17 +191,13 @@ export function EmployeeDetailView({ employee, options }: Props) {
           <div id="employee-tabpanel" role="tabpanel" aria-labelledby={`employee-tab-${tab}`}>
             {tab === "data" ? (
               <EmployeeDataSections employee={employee} />
+            ) : tab === "salary" && salary ? (
+              <EmployeeSalaryTab employeeId={employee.id} firstName={firstName} overview={salary.overview} error={salary.error} />
             ) : (
               <EmptyState
                 icon={Clock}
                 title="Segera hadir"
-                description={
-                  tab === "salary"
-                    ? `Riwayat gaji dan slip ${firstName} akan tampil di sini.`
-                    : tab === "kpi"
-                      ? `Skor dan penilaian KPI ${firstName} akan tampil di sini.`
-                      : `Rekap kehadiran ${firstName} akan tampil di sini.`
-                }
+                description={tab === "kpi" ? `Skor dan penilaian KPI ${firstName} akan tampil di sini.` : `Rekap kehadiran ${firstName} akan tampil di sini.`}
               />
             )}
           </div>
