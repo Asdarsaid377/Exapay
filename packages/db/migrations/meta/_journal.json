@@ -204,6 +204,13 @@
       "when": 1790861346652,
       "tag": "0028_compliance_calendar",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790894800065,
+      "tag": "0029_minimum_wage_alerts",
+      "breakpoints": true
     }
   ]
 }

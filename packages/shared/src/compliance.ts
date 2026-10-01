@@ -229,7 +229,8 @@ export const complianceCalendarSchema = z.object({
     doneThisMonth: z.number().int(),
   }),
   // Peringatan upah minimum (feature 34) — keadaan hari ini, tidak bergantung bulan yang ditampilkan
-  minimumWage: minimumWageSummarySchema,
+  // null = usaha mematikan peringatan upah minimum (tenants.minimum_wage_alerts)
+  minimumWage: minimumWageSummarySchema.nullable(),
 });
 export type ComplianceCalendar = z.infer<typeof complianceCalendarSchema>;
 

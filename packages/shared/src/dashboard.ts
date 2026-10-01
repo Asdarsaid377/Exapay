@@ -86,7 +86,8 @@ export const ownerDashboardSchema = z.object({
     // Belum selesai: terlewat dulu, lalu tenggat terdekat (maks. DASHBOARD_REMINDER_LIMIT)
     reminders: z.array(complianceReminderSchema),
   }),
-  minimumWage: minimumWageSummarySchema,
+  // null = usaha mematikan peringatan upah minimum (tenants.minimum_wage_alerts)
+  minimumWage: minimumWageSummarySchema.nullable(),
 });
 export type OwnerDashboard = z.infer<typeof ownerDashboardSchema>;
 

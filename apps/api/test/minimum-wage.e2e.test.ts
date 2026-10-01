@@ -2,11 +2,12 @@ import "reflect-metadata";
 import { randomUUID } from "node:crypto";
 
 import * as schema from "@exapay/db";
-import { departments, employees, memberships, positions, tenants, users } from "@exapay/db";
-import type { ComplianceCalendar, EmployeeList, MembershipRole, SalaryComponentSettings } from "@exapay/shared";
+import { auditLogs, departments, employees, memberships, positions, tenants, users } from "@exapay/db";
+import type { CompanyProfile, ComplianceCalendar, EmployeeList, MembershipRole, OwnerDashboard, SalaryComponentSettings } from "@exapay/shared";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { hash } from "@node-rs/argon2";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import request from "supertest";
@@ -29,7 +30,7 @@ let server: Parameters<typeof request>[0];
 let pool: pg.Pool;
 let db: Database;
 
-type Fixture = { emails: Record<Exclude<MembershipRole, "karyawan">, string>; ids: Record<"eka" | "fajar" | "gita" | "hana", string> };
+type Fixture = { tenantId: string; emails: Record<Exclude<MembershipRole, "karyawan">, string>; ids: Record<"eka" | "fajar" | "gita" | "hana", string> };
 
 async function tokenOf(email: string): Promise<string> {
   const res = await request(server).post("/auth/login").send({ email, password: PASSWORD, client: "mobile" });
@@ -37,7 +38,7 @@ async function tokenOf(email: string): Promise<string> {
   return res.body.data.tokens.accessToken;
 }
 
-function send(method: "get" | "post", token: string, path: string, body?: object): request.Test {
+function send(method: "get" | "post" | "put", token: string, path: string, body?: object): request.Test {
   const req = request(server)[method](path).set("Authorization", `Bearer ${token}`);
   return body ? req.send(body) : req;
 }
@@ -52,7 +53,8 @@ async function getJson<T>(token: string, path: string): Promise<T> {
 // Eka: pokok 3,5 jt + tunjangan jabatan 0,5 jt = 4 jt (patuh, padahal pokoknya saja di bawah)
 // Fajar: pokok 3,5 jt + uang makan 0,6 jt (tunjangan tidak tetap — tidak dihitung) → di bawah
 // Gita: gaji belum diatur · Hana: nonaktif sejak 30 Sep 2026, pokok 3 jt
-async function createFixture(name: string, regencyCode: string | null): Promise<Fixture> {
+// alerts: sakelar peringatan upah minimum usaha (bawaan DB mati) — fixture menyalakannya kecuali diminta lain
+async function createFixture(name: string, regencyCode: string | null, alerts = true): Promise<Fixture> {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-05T03:00:00Z"));
   const tenantId = randomUUID();
@@ -66,7 +68,7 @@ async function createFixture(name: string, regencyCode: string | null): Promise<
     await withUser(db, id, (tx) => tx.insert(users).values({ id, email: emails[role], fullName: `${role} ${name}`, passwordHash, emailVerifiedAt: new Date() }));
     await withTenant(db, { tenantId, userId: id }, async (tx) => {
       if (role === "owner") {
-        await tx.insert(tenants).values({ id: tenantId, name, regencyCode });
+        await tx.insert(tenants).values({ id: tenantId, name, regencyCode, minimumWageAlerts: alerts });
         await seedTenantDefaults(tx, { tenantId, userId: id });
       }
       await tx.insert(memberships).values({ tenantId, userId: id, role });
@@ -108,7 +110,7 @@ async function createFixture(name: string, regencyCode: string | null): Promise<
     });
     expect(res.status, JSON.stringify(res.body)).toBe(201);
   }
-  return { emails, ids };
+  return { tenantId, emails, ids };
 }
 
 beforeAll(async () => {
@@ -146,9 +148,9 @@ describe("peringatan upah minimum", () => {
     expect(list.minimumWage?.flags).toEqual({ [f.ids.fajar]: { status: "below", wage: "3500000.00", minimumWage: "3921088.00", checkedOn: "2026-10-05" } });
 
     const calendar = await getJson<ComplianceCalendar>(admin, "/compliance");
-    expect(calendar.minimumWage.locationSet).toBe(true);
-    expect(calendar.minimumWage.current?.monthlyAmount).toBe("3921088.00");
-    expect(calendar.minimumWage.employees).toEqual([{ employee: { id: f.ids.fajar, fullName: "Fajar" }, flag: list.minimumWage?.flags[f.ids.fajar] }]);
+    expect(calendar.minimumWage?.locationSet).toBe(true);
+    expect(calendar.minimumWage?.current?.monthlyAmount).toBe("3921088.00");
+    expect(calendar.minimumWage?.employees).toEqual([{ employee: { id: f.ids.fajar, fullName: "Fajar" }, flag: list.minimumWage?.flags[f.ids.fajar] }]);
     // Bulan lain yang ditampilkan tidak mengubah peringatan (keadaan hari ini)
     expect((await getJson<ComplianceCalendar>(admin, "/compliance?month=2026-12")).minimumWage).toEqual(calendar.minimumWage);
 
@@ -163,7 +165,7 @@ describe("peringatan upah minimum", () => {
     });
     expect(raise.status, JSON.stringify(raise.body)).toBe(201);
     expect((await getJson<EmployeeList>(admin, "/employees")).minimumWage?.flags).toEqual({});
-    expect((await getJson<ComplianceCalendar>(admin, "/compliance")).minimumWage.employees).toEqual([]);
+    expect((await getJson<ComplianceCalendar>(admin, "/compliance")).minimumWage?.employees).toEqual([]);
 
     // Atasan: daftar bawahan tanpa data gaji
     const atasan = await tokenOf(f.emails.atasan);
@@ -177,5 +179,34 @@ describe("peringatan upah minimum", () => {
     const owner = await tokenOf(f.emails.owner);
     expect((await getJson<EmployeeList>(owner, "/employees")).minimumWage).toEqual({ current: null, upcoming: null, flags: {} });
     expect((await getJson<ComplianceCalendar>(owner, "/compliance")).minimumWage).toEqual({ locationSet: false, current: null, upcoming: null, employees: [] });
+  });
+
+  it("bawaan mati: tidak ada peringatan di mana pun; hanya owner yang menyalakan/mematikan (tercatat audit)", async () => {
+    const f = await createFixture("Kopi UMK Mati", "73.71", false);
+    const owner = await tokenOf(f.emails.owner);
+    const admin = await tokenOf(f.emails.admin);
+
+    expect((await getJson<CompanyProfile>(admin, "/company")).minimumWageAlerts).toBe(false);
+    expect((await getJson<EmployeeList>(admin, "/employees")).minimumWage).toBeNull();
+    expect((await getJson<ComplianceCalendar>(admin, "/compliance")).minimumWage).toBeNull();
+    expect((await getJson<OwnerDashboard>(admin, "/dashboard")).minimumWage).toBeNull();
+
+    // Admin & atasan tidak boleh mengubah; isian tidak valid → 400
+    expect((await send("put", admin, "/company/minimum-wage-alerts", { enabled: true })).status).toBe(403);
+    expect((await send("put", await tokenOf(f.emails.atasan), "/company/minimum-wage-alerts", { enabled: true })).status).toBe(403);
+    expect((await send("put", owner, "/company/minimum-wage-alerts", { enabled: "ya" })).status).toBe(400);
+
+    const on = await send("put", owner, "/company/minimum-wage-alerts", { enabled: true });
+    expect(on.status, JSON.stringify(on.body)).toBe(200);
+    expect(on.body.data.minimumWageAlerts).toBe(true);
+    expect(Object.keys((await getJson<EmployeeList>(admin, "/employees")).minimumWage?.flags ?? {})).toEqual([f.ids.fajar]);
+    expect((await getJson<OwnerDashboard>(admin, "/dashboard")).minimumWage?.employees.map((item) => item.employee.fullName)).toEqual(["Fajar"]);
+
+    expect((await send("put", owner, "/company/minimum-wage-alerts", { enabled: false })).body.data.minimumWageAlerts).toBe(false);
+    expect((await getJson<ComplianceCalendar>(admin, "/compliance")).minimumWage).toBeNull();
+    const audits = await withTenant(db, { tenantId: f.tenantId, userId: null }, (tx) =>
+      tx.select({ action: auditLogs.action, after: auditLogs.after }).from(auditLogs).where(eq(auditLogs.action, "update_minimum_wage_alerts")),
+    );
+    expect(audits.map((row) => row.after)).toEqual([{ minimumWageAlerts: true }, { minimumWageAlerts: false }]);
   });
 });

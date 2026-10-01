@@ -1,4 +1,11 @@
-import { type ApiResponse, type CompanyProfile, type UpdateCompanyProfile, updateCompanyProfileSchema } from "@exapay/shared";
+import {
+  type ApiResponse,
+  type CompanyProfile,
+  type MinimumWageAlertsInput,
+  minimumWageAlertsSchema,
+  type UpdateCompanyProfile,
+  updateCompanyProfileSchema,
+} from "@exapay/shared";
 import { Body, Controller, Get, Put } from "@nestjs/common";
 
 import type { AuthUser } from "../../common/auth/auth-user.js";
@@ -24,5 +31,15 @@ export class CompanyController {
     @Body(new ZodValidationPipe(updateCompanyProfileSchema)) body: UpdateCompanyProfile,
   ): Promise<ApiResponse<CompanyProfile>> {
     return { success: true, data: await this.companyService.update(user, body) };
+  }
+
+  // Peringatan upah minimum (bawaan mati) — hanya owner; @Roles di method menimpa @Roles kelas
+  @Put("minimum-wage-alerts")
+  @Roles("owner")
+  async setMinimumWageAlerts(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(minimumWageAlertsSchema)) body: MinimumWageAlertsInput,
+  ): Promise<ApiResponse<CompanyProfile>> {
+    return { success: true, data: await this.companyService.setMinimumWageAlerts(user, body.enabled) };
   }
 }

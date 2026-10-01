@@ -1,7 +1,7 @@
-import { provinces, regencies, tenants } from "@exapay/db";
+import { memberships, provinces, regencies, tenants } from "@exapay/db";
 import type { CompanyProfile, UpdateCompanyProfile } from "@exapay/shared";
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { and, eq } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
@@ -76,6 +76,38 @@ export class CompanyService {
     });
   }
 
+  // Sakelar peringatan upah minimum — KHUSUS OWNER (keputusan user 2026-10-02). Peran dibaca ulang dari memberships
+  // (klaim JWT bisa basi ≤ 15 menit). Audit hanya bila berubah.
+  async setMinimumWageAlerts(user: AuthUser, enabled: boolean): Promise<CompanyProfile> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      // Filter tenant wajib: policy own_memberships_select juga memperlihatkan membership user di usaha lain
+      const [membership] = await tx
+        .select({ role: memberships.role })
+        .from(memberships)
+        .where(and(eq(memberships.tenantId, ctx.tenantId), eq(memberships.userId, user.userId)));
+      if (membership?.role !== "owner") throw new ForbiddenException("Hanya pemilik usaha yang bisa mengubah pengaturan ini");
+
+      const [current] = await tx
+        .select({ alerts: tenants.minimumWageAlerts })
+        .from(tenants)
+        .where(eq(tenants.id, ctx.tenantId))
+        .for("update");
+      if (!current) throw new NotFoundException("Usaha tidak ditemukan");
+      if (current.alerts !== enabled) {
+        await tx.update(tenants).set({ minimumWageAlerts: enabled }).where(eq(tenants.id, ctx.tenantId));
+        await this.audit.record(tx, ctx, {
+          entity: "tenant",
+          entityId: ctx.tenantId,
+          action: "update_minimum_wage_alerts",
+          before: { minimumWageAlerts: current.alerts },
+          after: { minimumWageAlerts: enabled },
+        });
+      }
+      return this.load(tx, ctx);
+    });
+  }
+
   private async load(tx: Transaction, ctx: TenantContext): Promise<CompanyProfile> {
     const [row] = await tx
       .select({
@@ -84,6 +116,7 @@ export class CompanyService {
         npwp: tenants.npwp,
         payday: tenants.payday,
         attendanceCutoffDay: tenants.attendanceCutoffDay,
+        minimumWageAlerts: tenants.minimumWageAlerts,
         updatedAt: tenants.updatedAt,
         regencyCode: regencies.code,
         regencyName: regencies.name,

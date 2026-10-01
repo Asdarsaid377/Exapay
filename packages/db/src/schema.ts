@@ -116,6 +116,9 @@ export const tenants = pgTable(
     jkkRiskLevel: smallint("jkk_risk_level").notNull().default(1),
     // Tanggal tutup buku absensi payroll (feature 30b): 1–28; null = akhir bulan
     attendanceCutoffDay: smallint("attendance_cutoff_day"),
+    // Tampilkan peringatan gaji di bawah upah minimum (UMK/UMP, feature 34) di dashboard, kepatuhan, daftar karyawan.
+    // Bawaan mati — hanya owner yang menyalakan (/settings/company). Usaha mikro & kecil dikecualikan dari upah minimum.
+    minimumWageAlerts: boolean("minimum_wage_alerts").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

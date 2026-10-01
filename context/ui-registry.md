@@ -696,3 +696,11 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola /me/performance + baris /kpi/reviews (KPI) dan halaman Koreksi absensi (Absensi), feature 37b, izin user
 - **Pola kelas kunci:** KPI: grid `xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start gap-4`; kiri AttendanceMonthNav (`basePath="/employees/<id>?tab=kpi"`) + card `glass-data rounded-card px-4.5 pt-4.5 pb-2.5 lg:px-6` (label `text-[13px]`, angka `font-display text-[44px] font-extrabold` + Badge predikat, caption template `text-[12.5px] text-text-tertiary`, KpiIndicatorBreakdown); kanan card `glass-data` "Penilaian periodik" — baris Link `min-h-16 px-4.5 py-3 hover:bg-row-hover lg:px-6` (periode `text-[14.5px] font-bold` + siklus · rentang `text-small`, kanan skor `font-display text-[17px] font-extrabold` + Badge predikat untuk final / Badge status untuk draf-direview, ChevronRight) ke /kpi/reviews/[id]. Absensi: AttendancePeriodNav (`keep={{ tab: "attendance" }}`) + AttendanceDayList `showEmployee={false}` (judul "Rincian harian")
 - **Catatan:** server component, data `ApiResult` dari page (EmptyState CloudOff bila gagal; KPI tanpa template = EmptyState Target; tanpa penilaian = EmptyState `surface="none"`)
+
+### MinimumWageAlertsForm
+- **Path:** apps/web/components/company/MinimumWageAlertsForm.tsx
+- **Dipakai di:** /settings/company (FormSection "Peringatan upah minimum" di bawah CompanyProfileForm)
+- **Referensi desain:** tanpa referensi — pola JkkRiskLevelForm di FormSection (revisi 2026-10-02)
+- **Pola kelas kunci:** label `flex min-h-11 items-start gap-3` = Checkbox + judul `text-[15px] font-bold` + penjelasan `text-small text-text-secondary`; FormAlert info "Hanya pemilik usaha…" bila bukan owner (checkbox disabled, tanpa tombol); tombol Simpan kanan `border-t pt-5` (nonaktif bila tidak berubah); FormAlert success/danger setelah simpan
+- **Catatan:** client, Server Action `saveMinimumWageAlerts` (PUT /company/minimum-wage-alerts, khusus owner). MinimumWageBanner kini menerima `summary: null` (peringatan dimatikan) → tidak merender apa pun
+

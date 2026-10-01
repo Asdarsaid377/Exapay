@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "minimum_wage_alerts" boolean DEFAULT false NOT NULL;

@@ -69,8 +69,14 @@ export type CompanyProfile = {
   regency: CompanyRegency | null;
   payday: number | null;
   attendanceCutoffDay: number | null;
+  // Peringatan gaji di bawah upah minimum (UMK/UMP) — bawaan mati, hanya owner yang mengubah
+  minimumWageAlerts: boolean;
   updatedAt: string;
 };
+
+// Sakelar peringatan upah minimum (/settings/company, khusus owner)
+export const minimumWageAlertsSchema = z.object({ enabled: z.boolean("Pilihan tidak valid") });
+export type MinimumWageAlertsInput = z.infer<typeof minimumWageAlertsSchema>;
 
 export type RegionProvince = {
   code: string;
@@ -86,6 +92,7 @@ export const companyProfileSchema: z.ZodType<CompanyProfile> = z.object({
   regency: z.object({ code: z.string(), name: z.string(), provinceCode: z.string(), provinceName: z.string() }).nullable(),
   payday: z.number().nullable(),
   attendanceCutoffDay: z.number().nullable(),
+  minimumWageAlerts: z.boolean(),
   updatedAt: z.string(),
 });
 

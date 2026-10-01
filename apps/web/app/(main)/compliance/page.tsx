@@ -78,7 +78,7 @@ export default async function CompliancePage({ searchParams }: Props) {
       <p className="px-1.5 text-small text-pretty text-text-secondary">
         Tenggat dari aturan resmi: BPJS Kesehatan tanggal 10 bulan berjalan, BPJS Ketenagakerjaan tanggal 15 bulan berikutnya, setor PPh 21 tanggal 15 dan
         lapor SPT Masa tanggal 20 bulan berikutnya (PMK 81/2024). Jika jatuh pada hari libur, batasnya bergeser ke hari kerja berikutnya.
-        {minimumWage.current ? (
+        {minimumWage?.current ? (
           <>
             {" "}
             Upah minimum yang berlaku: {minimumWageLabel(minimumWage.current)} {formatRupiah(minimumWage.current.monthlyAmount)}/bulan, dibandingkan dengan gaji

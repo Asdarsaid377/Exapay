@@ -8,7 +8,8 @@ import { formatIsoDate } from "@/lib/datetime";
 import { minimumWageReferenceOf } from "@/lib/employeeLabels";
 
 type Props = {
-  summary: MinimumWageSummary;
+  // null = usaha mematikan peringatan upah minimum (bawaan) → tidak merender apa pun
+  summary: MinimumWageSummary | null;
 };
 
 const LINK = "font-bold text-accent-strong hover:text-accent-hover";
@@ -36,6 +37,7 @@ function referenceText(reference: MinimumWageReference | null): string {
 // lewat Banner (design-tokens "banner"). Upah = gaji pokok + tunjangan tetap. Bukan pengingat bertanggal: hilang sendiri
 // setelah gaji disesuaikan. Tidak tampil apa-apa bila semua karyawan aktif sesuai.
 export function MinimumWageBanner({ summary }: Props) {
+  if (!summary) return null;
   if (!summary.locationSet) {
     return (
       <Banner

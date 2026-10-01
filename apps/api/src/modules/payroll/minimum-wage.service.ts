@@ -10,7 +10,8 @@ import { RegulationsService } from "../regulations/regulations.service.js";
 import { minimumWageFlagOf, type MinimumWageSalaryVersion } from "./minimum-wage-check.js";
 
 // Peringatan upah minimum (feature 34): badge di daftar karyawan & kartu di kalender kepatuhan. Dipanggil di dalam
-// transaksi tenant pemanggil SETELAH pemanggil memastikan peran owner/admin (data gaji).
+// transaksi tenant pemanggil SETELAH pemanggil memastikan peran owner/admin (data gaji). Hanya aktif bila usaha
+// menyalakannya (tenants.minimum_wage_alerts, bawaan mati — keputusan user 2026-10-02); mati → null, tidak dihitung.
 @Injectable()
 export class MinimumWageService {
   constructor(
@@ -20,9 +21,13 @@ export class MinimumWageService {
 
   // employeeIds null = semua karyawan aktif per hari ini (zona waktu usaha); diisi = hanya karyawan itu (mis. satu halaman
   // daftar karyawan). Karyawan yang tidak ditandai tidak ikut di hasil.
-  async summary(tx: Transaction, tenantId: string, employeeIds: readonly string[] | null = null): Promise<MinimumWageSummary> {
+  async summary(tx: Transaction, tenantId: string, employeeIds: readonly string[] | null = null): Promise<MinimumWageSummary | null> {
     // RLS juga memperlihatkan usaha lain milik user — filter eksplisit ke usaha aktif
-    const [tenant] = await tx.select({ regencyCode: tenants.regencyCode }).from(tenants).where(eq(tenants.id, tenantId));
+    const [tenant] = await tx
+      .select({ regencyCode: tenants.regencyCode, alerts: tenants.minimumWageAlerts })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId));
+    if (!tenant?.alerts) return null;
     const regencyCode = tenant?.regencyCode ?? null;
     if (regencyCode === null) return { locationSet: false, current: null, upcoming: null, employees: [] };
 
