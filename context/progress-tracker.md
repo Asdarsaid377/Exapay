@@ -8,7 +8,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 **Phase:** 6 — Payroll
 **Terakhir selesai:** 30 Finalisasi Payroll (2026-10-01)
-**Berikutnya:** 31 Slip Gaji PDF
+**Berikutnya:** 30b Tanggal Tutup Buku Absensi
 
 ---
 
@@ -56,6 +56,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 28 Komponen Gaji
 - [x] 29 Run Payroll — Draf & Review
 - [x] 30 Finalisasi Payroll
+- [ ] 30b Tanggal Tutup Buku Absensi (sisipan, keputusan user 2026-10-01)
 - [ ] 31 Slip Gaji PDF
 - [ ] 32 Laporan & Ekspor Payroll
 
@@ -230,6 +231,7 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Keputusan user (feature 30): **syarat finalisasi** = periode sudah berakhir (zona waktu usaha) + semua karyawan terhitung atau dikeluarkan (gaji belum diatur/gagal hitung memblokir) + minimal satu karyawan dihitung + **periode sebelumnya yang sudah dibuka sudah final** (final berurutan per bulan; bulan sebelum periode final terakhir tidak bisa dibuka lagi). **Setelah final hanya gaji berlaku-mundur yang diblokir** (tanggal berlaku harus > akhir periode final terakhir); koreksi absensi/izin tetap boleh tapi tidak mengubah snapshot. Tidak ada buka-final; koreksi lewat penyesuaian periode berikutnya. UI finalisasi dibangun **tanpa referensi visual** (turunkan dari pola KpiReviewStatusActions, izin user).
 - 2026-10-01 — Migration `0025_payroll_finalization`: `payroll_runs` + `finalized_at/finalized_by_user_id/finalized_by_name/snapshot` (CHECK `payroll_runs_final` status ↔ isian; app_user UPDATE hanya kolom finalisasi; **trigger `payroll_runs_guard_final`** menolak UPDATE/DELETE baris final kecuali FK akun dikosongkan ON DELETE SET NULL), tabel baru `payroll_run_employees` (snapshot per karyawan calculated/excluded: identitas + ringkasan uang `numeric(18,2)` + `pph21_gross_income`/`pension_contribution` untuk masa PPh 21 sebelumnya + snapshot jsonb `PayrollEmployeeSnapshot`; app_user SELECT/INSERT; **trigger `payroll_run_employees_guard`** menolak UPDATE/DELETE dan INSERT ke periode final), **trigger `payroll_adjustments_guard_final`** (penyesuaian periode final terkunci di DB). Snapshot periode `PayrollRunSnapshot` (versi 1: total, peringatan, tanggal gajian, masukan bersama — zona waktu, UMK/UMP, JKK, aturan potongan versi tgl 1, `PayrollRegulations` utuh).
 - 2026-10-01 — **Finalisasi (feature 30):** `POST /payroll/runs/:id/finalize` `{ fingerprint }` — satu transaksi: advisory lock `payroll-runs:<tenant>` (juga dipakai buka periode) → periode `FOR UPDATE` → draf dihitung ulang → syarat → **sidik draf** (sha256 dari rincian semua karyawan + peringatan, dikirim di `GET /payroll/runs/:id` → `finalization`) berbeda → 409 → insert snapshot per karyawan → status final → audit `payroll_run`/`finalize` (total + karyawan dikeluarkan). Penyesuaian mengunci periode `FOR SHARE`; simpan gaji mengunci periode bulan berlaku & sesudahnya `FOR SHARE`. Periode final dibaca dari snapshot (tidak pernah dihitung ulang). **PPh 21 masa sebelumnya** (`previousPeriods`) kini dari `payroll_run_employees` final tahun yang sama.
+- 2026-10-01 — Keputusan user (temuan data uji coba): **tanggal tutup buku absensi per usaha** (pilihan A) — absensi, potongan, dan **prorata masuk/keluar mengikuti rentang tutup buku** (agar gajian serentak); dikerjakan sebagai **feature sisipan 30b sebelum Slip Gaji (31)**. **Label Masuk/Keluar** ditambahkan di daftar payroll (30b). **Telat dalam toleransi tetap dicatat telat di rekap** (fakta kehadiran), tidak dipotong — toleransi per usaha sudah diatur di aturan potongan (feature 17), tidak ada perubahan.
 ---
 
 ## Catatan (Notes)
@@ -288,4 +290,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 240 per feature 29 (`payroll-runs.e2e.test.ts` — 3 karyawan contoh cocok hitungan manual: Andi 6.943.414, Budi 2.061.818, Citra 3.260.789; `payroll-draft.test.ts` pemilihan versi gaji) + 161 unit test payroll-engine. Data dev: periode Oktober 2026 Kopi Nusantara sudah dibuka (verifikasi visual); hanya Dewi yang punya gaji, karyawan lain "Gaji belum diatur". Verifikasi visual memakai Playwright cache npx + Google Chrome sistem (`executablePath`) karena browser Playwright di cache beda versi.
 - Total test API 243 per feature 30 (`payroll-runs.e2e.test.ts` + 3 skenario finalisasi: syarat, snapshot = draf & kunci API/DB, true-up Desember memakai PPh November final) + 161 unit test payroll-engine.
 - **Data uji coba "production 1 bulan"** (diminta user 2026-10-01): skrip `apps/api/src/scripts/seed-trial.ts` (`pnpm --filter @exapay/api db:seed-trial`, idempotent) → usaha **"Roti Sinar Pagi (Uji Coba)"** (Kota Makassar, gajian tgl 28) — 15 karyawan, absensi + izin/sakit/cuti + log tugas terverifikasi September 2026, gaji berlaku-tanggal, aturan potongan, payroll September draf. Akun `rahmat@sinarpagi.local` (owner), `nur@` (admin), `hendra@`/`fitri@` (atasan), karyawan `<nama depan>@sinarpagi.local`, password `password123`. Kasus tepi: Kurnia masuk 14 Sep, Eko resign 18 Sep (tanpa akun), Cahyo di bawah UMP, Maman tanpa gaji (memblokir final), pengajuan ditolak/menunggu.
-- **Temuan dari data uji coba (belum diputuskan):** (1) tanggal gajian sebelum akhir bulan (mis. 28) bentrok dengan syarat "periode sudah berakhir" — perlu keputusan cut-off/finalisasi lebih awal sebelum uji coba klien; (2) karyawan resign di daftar payroll tidak berlabel "Keluar"; (3) telat di bawah toleransi tetap tercatat telat di rekap (tidak dipotong).
+- **Temuan dari data uji coba** — sudah diputuskan user 2026-10-01 (lihat Decisions): (1) → feature 30b; (2) → label Masuk/Keluar di 30b; (3) → tetap.

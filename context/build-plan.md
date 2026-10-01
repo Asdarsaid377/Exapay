@@ -194,6 +194,11 @@ Aturan yang berlaku di semua feature: tabel bisnis wajib `tenant_id` + RLS (FORC
 **Logic:** finalisasi dalam satu transaksi → snapshot immutable (input, hasil, versi aturan) + audit log; koreksi lewat adjustment periode berikutnya
 - **Verifikasi:** payroll final tidak bisa diubah; audit log lengkap
 
+### 30b Tanggal Tutup Buku Absensi
+**Logic:** tanggal tutup buku (cut-off) absensi per usaha (1–28 atau akhir bulan, bawaan akhir bulan). Periode payroll bulan M = hari setelah tutup buku bulan M−1 s.d. tanggal tutup buku bulan M — absensi, potongan, dan prorata masuk/keluar mengikuti rentang ini; gaji tetap sebulan, PPh 21 masa & iuran BPJS tetap bulan M. Finalisasi bisa mulai sehari setelah tutup buku. Label "Masuk"/"Keluar" di daftar payroll.
+**UI:** isian tanggal tutup buku di Profil usaha (dekat tanggal gajian), rentang periode di `/payroll` & `/payroll/[id]`, rekap absensi mengikuti periode tutup buku
+- **Verifikasi:** usaha dengan tutup buku 25 & gajian 28 bisa finalisasi tanggal 26; alpa 26–30 dihitung di periode berikutnya; karyawan masuk/keluar diprorata sesuai rentang
+
 ### 31 Slip Gaji PDF
 **Logic:** job BullMQ di worker → PDF → storage S3-compatible → email ke karyawan
 **UI:** `/payroll/[id]/slips`, `/me/payslips`
