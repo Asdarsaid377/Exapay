@@ -10,7 +10,7 @@ import type {
   SaveAttendanceDeductionRulesInput,
 } from "@exapay/shared";
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, between, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, between, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
@@ -81,7 +81,7 @@ function toVersion(row: VersionRow, today: string): AttendanceDeductionRuleVersi
 
 // Aturan potongan absensi (feature 17): versi aturan per usaha + pratinjau untuk satu karyawan.
 // Owner/admin saja (peran dibaca ulang dari DB). Perhitungan di payroll-engine, bukan di sini.
-// periodRules/periodFacts menyiapkan input absensi calculatePayroll untuk payroll (feature 27, dipakai feature 29).
+// periodRules/periodFacts/periodFactsMany menyiapkan input absensi calculatePayroll untuk payroll (feature 27, dipakai feature 29).
 @Injectable()
 export class AttendanceDeductionRulesService {
   constructor(
@@ -214,18 +214,45 @@ export class AttendanceDeductionRulesService {
     to: string,
     today: string,
   ): Promise<AttendanceDeductionFacts> {
-    const calendar = await this.workCalendar.loadCalendar(tx, from, to);
-    const records = (
-      await tx
-        .select({ workDate: attendanceRecords.workDate, lateMinutes: attendanceRecords.lateMinutes, checkOutAt: attendanceRecords.checkOutAt })
-        .from(attendanceRecords)
-        .where(and(eq(attendanceRecords.employeeId, employee.id), between(attendanceRecords.workDate, from, to)))
-    ).map((row) => ({ workDate: row.workDate, lateMinutes: row.lateMinutes, hasCheckOut: row.checkOutAt !== null }));
-    const leaves = await this.selectApprovedLeaves(tx, employee.id, from, to);
+    const facts = (await this.periodFactsMany(tx, [employee], from, to, today)).get(employee.id);
+    if (!facts) throw new Error("[attendance-deduction/periodFacts] fakta karyawan tidak terbentuk");
+    return facts;
+  }
 
-    const employment = { joinDate: employee.joinDate, endDate: employee.endDate };
-    const recap = recapEmployee({ calendar, from, to, today, employment, records, leaves });
-    return deductionFacts({ days: recap.days, records, leaves, periodWorkingDays: countWorkingDays(calendar, from, to) });
+  // Fakta absensi banyak karyawan sekaligus (draf payroll feature 29): kalender dimuat sekali, absensi & izin satu query
+  async periodFactsMany(
+    tx: Transaction,
+    employeeList: readonly (RecapEmployment & { id: string })[],
+    from: string,
+    to: string,
+    today: string,
+  ): Promise<Map<string, AttendanceDeductionFacts>> {
+    const result = new Map<string, AttendanceDeductionFacts>();
+    if (employeeList.length === 0) return result;
+    const ids = employeeList.map((employee) => employee.id);
+    const calendar = await this.workCalendar.loadCalendar(tx, from, to);
+    const periodWorkingDays = countWorkingDays(calendar, from, to);
+    const recordRows = await tx
+      .select({
+        employeeId: attendanceRecords.employeeId,
+        workDate: attendanceRecords.workDate,
+        lateMinutes: attendanceRecords.lateMinutes,
+        checkOutAt: attendanceRecords.checkOutAt,
+      })
+      .from(attendanceRecords)
+      .where(and(inArray(attendanceRecords.employeeId, ids), between(attendanceRecords.workDate, from, to)));
+    const leaveRows = await this.selectApprovedLeaves(tx, ids, from, to);
+
+    for (const employee of employeeList) {
+      const records = recordRows
+        .filter((row) => row.employeeId === employee.id)
+        .map((row) => ({ workDate: row.workDate, lateMinutes: row.lateMinutes, hasCheckOut: row.checkOutAt !== null }));
+      const leaves = leaveRows.filter((row) => row.employeeId === employee.id);
+      const employment = { joinDate: employee.joinDate, endDate: employee.endDate };
+      const recap = recapEmployee({ calendar, from, to, today, employment, records, leaves });
+      result.set(employee.id, deductionFacts({ days: recap.days, records, leaves, periodWorkingDays }));
+    }
+    return result;
   }
 
   // ——— helper ———
@@ -245,19 +272,36 @@ export class AttendanceDeductionRulesService {
     return lock ? query.for("update") : query;
   }
 
-  private async selectApprovedLeaves(tx: Transaction, employeeId: string, from: string, to: string): Promise<DeductionLeave[]> {
-    const rows: { type: LeaveType; startDate: string; endDate: string; attachmentKey: string | null }[] = await tx
-      .select({ type: leaveRequests.type, startDate: leaveRequests.startDate, endDate: leaveRequests.endDate, attachmentKey: leaveRequests.attachmentKey })
+  private async selectApprovedLeaves(
+    tx: Transaction,
+    employeeIds: readonly string[],
+    from: string,
+    to: string,
+  ): Promise<(DeductionLeave & { employeeId: string })[]> {
+    const rows: { employeeId: string; type: LeaveType; startDate: string; endDate: string; attachmentKey: string | null }[] = await tx
+      .select({
+        employeeId: leaveRequests.employeeId,
+        type: leaveRequests.type,
+        startDate: leaveRequests.startDate,
+        endDate: leaveRequests.endDate,
+        attachmentKey: leaveRequests.attachmentKey,
+      })
       .from(leaveRequests)
       .where(
         and(
-          eq(leaveRequests.employeeId, employeeId),
+          inArray(leaveRequests.employeeId, [...employeeIds]),
           eq(leaveRequests.status, "approved"),
           lte(leaveRequests.startDate, to),
           gte(leaveRequests.endDate, from),
         ),
       )
       .orderBy(asc(leaveRequests.startDate));
-    return rows.map((row) => ({ type: row.type, startDate: row.startDate, endDate: row.endDate, hasDocument: row.attachmentKey !== null }));
+    return rows.map((row) => ({
+      employeeId: row.employeeId,
+      type: row.type,
+      startDate: row.startDate,
+      endDate: row.endDate,
+      hasDocument: row.attachmentKey !== null,
+    }));
   }
 }

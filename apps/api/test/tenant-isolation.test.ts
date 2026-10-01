@@ -121,6 +121,8 @@ describe("role runtime app_user", () => {
       "national_holiday_exclusions",
       "national_holidays",
       "password_reset_tokens",
+      "payroll_adjustments",
+      "payroll_runs",
       "positions",
       "pph21_parameters",
       "provinces",

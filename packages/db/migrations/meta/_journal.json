@@ -169,6 +169,13 @@
       "when": 1790836822965,
       "tag": "0023_salary_components",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790844384846,
+      "tag": "0024_payroll_runs",
+      "breakpoints": true
     }
   ]
 }

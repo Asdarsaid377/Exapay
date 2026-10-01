@@ -74,7 +74,7 @@
 │   │           ├── storage/          → abstraksi FileStorage (put/get/remove) + S3FileStorage (SeaweedFS), StorageModule global; key `tenants/<tenant_id>/…`, bucket dibuat saat start (feature 15)
 │   │           ├── tasks/            → log tugas harian /tasks/me + foto /tasks/logs/:id/photo (task-logs.service, my-task-logs.controller, task-logs.controller, task-log-rules.ts murni — feature 19)
 │   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22); ringkasan AI /kpi/reviews/:id/summary (kpi-review-summary.ts, kpi-review-summaries.service/controller — feature 23)
-│   │           ├── payroll/          → komponen gaji (feature 28): katalog /salary-components + kelompok risiko JKK (salary-components.service/controller, salary-builtin-components.ts data bawaan + seed), gaji karyawan berlaku-tanggal /employees/:id/salary (employee-salaries.service/controller), salary-access.ts (owner/admin)
+│   │           ├── payroll/          → komponen gaji (feature 28): katalog /salary-components + kelompok risiko JKK (salary-components.service/controller, salary-builtin-components.ts data bawaan + seed), gaji karyawan berlaku-tanggal /employees/:id/salary (employee-salaries.service/controller), salary-access.ts (owner/admin); run payroll draf /payroll/runs (payroll-draft.ts murni → payroll-engine, payroll-runs.service/controller — feature 29)
 │   │           ├── compliance/
 │   │           └── audit/
 │   ├── worker/                       → Proses BullMQ (NestJS standalone app)
@@ -111,6 +111,7 @@
 │       │   ├── (main)/kpi/reviews/ → penilaian periodik per periode + detail [id] (feature 22)
 │       │   ├── (main)/settings/kpi/ → siklus penilaian KPI (feature 22)
 │       │   ├── (main)/settings/salary-components/ → katalog komponen gaji & kelompok risiko JKK (feature 28); gaji per karyawan = tab Gaji di employees/[id]
+│       │   ├── (main)/payroll/ → periode gaji (page.tsx), draf [id], rincian & penyesuaian [id]/employees/[employeeId] (feature 29)
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja
@@ -118,9 +119,9 @@
 │       │   ├── layout/               → AppShell, SidebarNav, PortalShell, header (TenantSwitcher, UserMenu), PageHeader
 │       │   └── <fitur>/              → Component per fitur
 │       ├── public/images/            → aset gambar statis (mis. foto halaman auth)
-│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceCorrections.ts, attendanceDeductions.ts, kpiTemplates.ts, taskLogs.ts, taskVerification.ts, kpiReviews.ts, salary.ts
+│       ├── actions/                  → Server Action tipis (validasi ulang → API → teruskan cookie): auth.ts, adminTenants.ts, invitations.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceCorrections.ts, attendanceDeductions.ts, kpiTemplates.ts, taskLogs.ts, taskVerification.ts, kpiReviews.ts, salary.ts, payrollRuns.ts
 │       ├── lib/
-│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceRecap.ts, kpiTemplates.ts, taskLogs.ts, kpiScores.ts, kpiReviews.ts, salary.ts)
+│       │   ├── api/                  → Client pemanggil API NestJS (server.ts) + fetcher per fitur (adminTenants.ts, users.ts, company.ts, organization.ts, employees.ts, workCalendar.ts, attendance.ts, leaveRequests.ts, attendanceRecap.ts, kpiTemplates.ts, taskLogs.ts, kpiScores.ts, kpiReviews.ts, salary.ts, payrollRuns.ts)
 │       │   ├── auth/                 → klaim sesi untuk routing, parser Set-Cookie, getSession
 │       │   ├── geolocation.ts        → lokasi browser saat absen (tidak memblokir)
 │       │   └── navigation.ts         → definisi menu per peran (sidebar, bottom nav, guard proxy)

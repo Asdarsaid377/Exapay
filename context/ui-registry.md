@@ -578,3 +578,32 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — pola FormSection + EmployeeForm (action bar) + DeductionRuleVersionList (feature 28, izin user)
 - **Pola kelas kunci:** "Gaji saat ini" = FormSection + `aside` Button secondary "Ubah gaji"; baris komponen `border-t py-3` nama `text-[14.5px] font-bold` + jenis `text-caption` + nominal `font-display text-[17px] font-bold tabular-nums` (potongan diawali "−"); total `dl rounded-inner bg-fill-subtle sm:grid-cols-2` angka `font-display text-xl font-extrabold`; ringkasan BPJS/risiko JKK/catatan `dl sm:grid-cols-[120px_minmax(0,1fr)] text-small`. Form = 3 FormSection (Komponen gaji: MoneyField per komponen `grid sm:grid-cols-2` dengan hint jenis; Kepesertaan BPJS: daftar Checkbox ala KpiPositionPicker; Tanggal berlaku: TextField date + FormAlert warning versi tergantikan + TextAreaField catatan) + action bar `glass-data sticky … lg:static` (Batal / Simpan gaji). Belum ada gaji = EmptyState ikon Wallet + CTA "Atur gaji"
 - **Catatan:** Tab client (state `editing`), data dari page (`fetchEmployeeSalary` paralel dengan opsi form). Form diisi dari versi saat ini (`currentSalaryVersion`: berlaku hari ini, selain itu terjadwal terdekat); gaji pertama default semua program BPJS + tanggal awal bulan berjalan (atau tanggal masuk). Komponen kosong = tidak ikut; komponen diarsipkan di versi lama → FormAlert. Total dari API (web tidak menjumlah uang). VersionList server-safe, status memakai `VERSION_STATUS_LABELS/TONES` aturan potongan
+
+### OpenPayrollRunButton / PayrollRunList / PayrollBackLink
+- **Path:** apps/web/components/payroll/OpenPayrollRunButton.tsx, PayrollRunList.tsx, PayrollBackLink.tsx
+- **Dipakai di:** /payroll (BackLink juga /payroll/[id] & rincian karyawan)
+- **Referensi desain:** tanpa referensi — pola CreateKpiReviewsButton + KpiReviewList + KpiReviewsBackLink (feature 29, izin user)
+- **Pola kelas kunci:** Open = Button primary + Plus → Dialog SelectField bulan (dari `openableMonths` API); List = `glass-data rounded-card`, baris `<Link>` grid judul "Gaji Oktober 2026" `text-[15px] font-bold` + caption rentang · gajian · N penyesuaian, Badge status (Draf neutral, Final info), ChevronRight
+- **Catatan:** Open client, sisanya server. Label & href di `lib/payrollRunLabels.ts` (`runTitle`, `runPeriodSummary`, `runHref`, `employeeHref`, `rupiahNumber` untuk StatTile berlabel "(Rp)", `minusRupiah`)
+
+### PayrollRunEmployeeTable
+- **Path:** apps/web/components/payroll/PayrollRunEmployeeTable.tsx
+- **Dipakai di:** /payroll/[id]
+- **Referensi desain:** tanpa referensi — pola AttendanceRecapTable/KpiReviewList (feature 29, izin user)
+- **Pola kelas kunci:** `glass-data rounded-card`, thead `bg-table-head h-11` desktop kolom Karyawan · Pendapatan bruto · Potongan · PPh 21 · Gaji diterima (`font-display text-[15px]/[17px] font-bold tabular-nums` rata kanan) · chevron; mobile nama + gaji diterima; baris kedua Badge status (non-dihitung) + Badge warning "N catatan"
+- **Catatan:** server. Di halaman: Banner warning (peringatan periode, list) + Banner danger (karyawan belum bisa dihitung) + 4 StatTile `grid-cols-2 xl:grid-cols-4` (Pendapatan bruto, BPJS perusahaan, PPh 21, Gaji diterima — angka tanpa "Rp", satuan di label)
+
+### PayrollBreakdown / PayrollStepList
+- **Path:** apps/web/components/payroll/PayrollBreakdown.tsx, PayrollStepList.tsx
+- **Dipakai di:** /payroll/[id]/employees/[employeeId]
+- **Referensi desain:** tanpa referensi — pola DeductionPreviewResult + EmployeeSalaryTab (feature 29, izin user)
+- **Pola kelas kunci:** card `glass-strong rounded-card p-5 lg:p-6`; grup berpemisah `border-t pt-5` (Pendapatan · Potongan absensi · Iuran BPJS · Potongan · PPh 21) judul `text-[15px] font-bold` + catatan `text-small`; baris label bold + caption + nominal `font-display text-[16px] font-bold` (potongan "−"); subtotal `rounded-inner bg-fill-subtle` angka `text-lg font-extrabold`; akhir "Gaji diterima" `bg-accent-soft` `text-2xl font-extrabold`. StepList = `<details>` "Lihat perhitungan" `text-small font-bold text-accent-strong`, isi `rounded-inner bg-fill-subtle`
+- **Catatan:** server-safe; semua angka & langkah dari API (payroll-engine). Caption komponen: "diubah dari Rp X" (override), "tambahan periode ini" (add_line). Baris tunjangan kehadiran disembunyikan bila karyawan tidak punya tunjangan itu
+
+### PayrollAdjustmentPanel / PayrollLineDialog / PayrollOverrideDialog / PayrollReasonDialog
+- **Path:** apps/web/components/payroll/PayrollAdjustmentPanel.tsx, PayrollLineDialog.tsx, PayrollOverrideDialog.tsx, PayrollReasonDialog.tsx
+- **Dipakai di:** /payroll/[id]/employees/[employeeId] (kolom kiri di bawah StatTile "Gaji diterima")
+- **Referensi desain:** tanpa referensi — card glass-strong + daftar berpemisah + Dialog (pola SalaryComponentFormDialog) (feature 29, izin user)
+- **Pola kelas kunci:** daftar penyesuaian (judul bold + nilai + alasan `text-small` + pembuat·waktu caption + tautan teks "Ubah" accent / "Hapus|Terapkan lagi|Ikutkan kembali" `text-danger-text`); tombol secondary `flex-col sm:flex-row sm:flex-wrap`: Pendapatan / potongan, Ubah nominal, Batalkan potongan absensi, Keluarkan
+- **Catatan:** client. Dialog: Line (SelectField jenis + TextField keterangan + MoneyField), Override (SelectField komponen versi gaji — terkunci saat ubah, MoneyField boleh 0, TextAreaField alasan), Reason (waive/exclude, tombol `dark`). Server Action `actions/payrollRuns.ts`; `editable=false` saat periode final (feature 30)
+

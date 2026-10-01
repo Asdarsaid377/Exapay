@@ -1,5 +1,7 @@
-import type { PtkpStatus } from "./employees.js";
-import type { TerKind } from "./regulations.js";
+import { z } from "zod";
+
+import { PTKP_STATUSES } from "./employees.js";
+import { TER_KINDS } from "./regulations.js";
 
 // PPh 21 pegawai tetap (feature 26) — PP 58/2023 & PMK 168/2023. Uang = string desimal.
 // - Masa biasa: penghasilan bruto sebulan × TER bulanan kategori PTKP.
@@ -26,34 +28,36 @@ export type Pph21PreviousEmployer = {
 };
 
 // Rincian penghitungan setahun pada masa pajak terakhir
-export type Pph21AnnualCalculation = {
-  monthsWorked: number;
-  grossIncome: string;
-  occupationalCost: string;
-  pensionContribution: string;
-  religiousContribution: string;
+export const pph21AnnualCalculationSchema = z.object({
+  monthsWorked: z.number().int(),
+  grossIncome: z.string(),
+  occupationalCost: z.string(),
+  pensionContribution: z.string(),
+  religiousContribution: z.string(),
   // Penghasilan neto di pemberi kerja ini
-  netIncome: string;
-  previousEmployerNetIncome: string;
-  ptkp: string;
+  netIncome: z.string(),
+  previousEmployerNetIncome: z.string(),
+  ptkp: z.string(),
   // Dibulatkan ke bawah ribuan penuh; tidak negatif
-  taxableIncome: string;
-  annualTax: string;
+  taxableIncome: z.string(),
+  annualTax: z.string(),
   // PPh 21 yang sudah dipotong masa sebelumnya di pemberi kerja ini
-  withheldThisEmployer: string;
-  withheldPreviousEmployer: string;
-};
+  withheldThisEmployer: z.string(),
+  withheldPreviousEmployer: z.string(),
+});
+export type Pph21AnnualCalculation = z.infer<typeof pph21AnnualCalculationSchema>;
 
-export type Pph21Result = {
-  method: "ter" | "annual";
-  ptkpStatus: PtkpStatus;
-  terKind: TerKind;
-  grossIncome: string;
+export const pph21ResultSchema = z.object({
+  method: z.enum(["ter", "annual"]),
+  ptkpStatus: z.enum(PTKP_STATUSES),
+  terKind: z.enum(TER_KINDS),
+  grossIncome: z.string(),
   // Hanya untuk method "ter"
-  terRatePercent: string | null;
-  annual: Pph21AnnualCalculation | null;
+  terRatePercent: z.string().nullable(),
+  annual: pph21AnnualCalculationSchema.nullable(),
   // PPh 21 masa ini; negatif = kelebihan potong yang dikembalikan ke pegawai
-  pph21: string;
-  steps: string[];
-  warnings: string[];
-};
+  pph21: z.string(),
+  steps: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+export type Pph21Result = z.infer<typeof pph21ResultSchema>;

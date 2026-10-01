@@ -64,6 +64,12 @@ export function pph21IncomeFromPayroll(result: PayrollCalculationResult): Omit<P
   return { grossIncome: toMoneyString(grossIncome), pensionContribution: toMoneyString(pensionContribution) };
 }
 
+// Gaji diterima pegawai = gaji bersih sebelum PPh 21 (calculatePayroll) − PPh 21 masa ini. PPh negatif (kelebihan potong
+// di masa pajak terakhir) dikembalikan → menambah gaji diterima.
+export function takeHomePay(result: PayrollCalculationResult, tax: Pph21Result): string {
+  return toMoneyString(money(result.netPay).minus(money(tax.pph21)));
+}
+
 function nonNegative(value: string, label: string): Money {
   let amount: Money;
   try {

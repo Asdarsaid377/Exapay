@@ -4,7 +4,7 @@ import type { PayrollRegulations, Pph21PeriodRecord, PtkpRate, PtkpStatus, TaxBr
 import { describe, expect, it } from "vitest";
 
 import { calculatePayroll, PayrollInputError } from "../src/payroll-calculation.js";
-import { calculatePph21, type Pph21Input, pph21IncomeFromPayroll } from "../src/pph21.js";
+import { calculatePph21, type Pph21Input, pph21IncomeFromPayroll, takeHomePay } from "../src/pph21.js";
 
 // Tarif pajak & PTKP dibaca dari seed migration feature 24 — contoh DJP di bawah sekaligus memverifikasi data seed.
 const SEED = readFileSync(new URL("../../db/migrations/0022_seed_regulations.sql", import.meta.url), "utf8");
@@ -298,6 +298,27 @@ describe("pph21IncomeFromPayroll", () => {
     });
     // 20.000.000 + Kesehatan 400.000 + JKK 24.000 + JKM 30.000 (JHT 370.000 & JP 200.000 pemberi kerja tidak ikut)
     expect(pph21IncomeFromPayroll(payroll)).toEqual({ grossIncome: "20454000.00", pensionContribution: "300000.00" });
+  });
+});
+
+describe("takeHomePay", () => {
+  const payroll = calculatePayroll({
+    components: [{ code: "GAPOK", name: "Gaji pokok", kind: "base_salary", amount: "17500000" }],
+    bpjs: { programs: [], jkkRiskLevel: null, minimumWage: null },
+    bpjsRates: [],
+    attendance: null,
+  });
+
+  it("gaji bersih − PPh 21 masa ini", () => {
+    // TER A 17.500.000 → 8% = 1.400.000
+    expect(takeHomePay(payroll, pph({ month: 3, gross: "17500000" }))).toBe("16100000.00");
+  });
+
+  it("kelebihan potong (PPh negatif) menambah gaji diterima", () => {
+    // Setahun 22,5 jt < PTKP TK/0 → PPh setahun 0; sudah dipotong 500.000 → dikembalikan
+    const refund = pph({ month: 12, gross: "17500000", previousPeriods: [record(1, "5000000", "500000")] });
+    expect(refund.pph21).toBe("-500000.00");
+    expect(takeHomePay(payroll, refund)).toBe("18000000.00");
   });
 });
 

@@ -21,7 +21,9 @@ import {
   LEAVE_TYPES,
   MEMBERSHIP_ROLES,
   NATIONAL_HOLIDAY_KINDS,
+  PAYROLL_ADJUSTMENT_KINDS,
   PAYROLL_COMPONENT_KINDS,
+  PAYROLL_RUN_STATUSES,
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
@@ -1261,5 +1263,97 @@ export const employeeSalaryItems = pgTable(
       foreignColumns: [salaryComponents.tenantId, salaryComponents.id],
     }).onDelete("restrict"),
     check("employee_salary_items_amount", sql`${t.amount} > 0`),
+  ],
+);
+
+// ——— Run payroll (feature 29) ———
+
+export const payrollRunStatus = pgEnum("payroll_run_status", PAYROLL_RUN_STATUSES);
+export const payrollAdjustmentKind = pgEnum("payroll_adjustment_kind", PAYROLL_ADJUSTMENT_KINDS);
+
+// Satu periode payroll = satu bulan kalender per usaha (period_month = tanggal 1). Angka draf dihitung saat dibaca dari
+// gaji berlaku, absensi, aturan potongan, regulasi, dan penyesuaian (payroll_adjustments) — tidak disimpan. Finalisasi
+// (feature 30) menyimpan snapshot. app_user hanya SELECT/INSERT di feature 29.
+export const payrollRuns = pgTable(
+  "payroll_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    periodMonth: date("period_month", { mode: "string" }).notNull(),
+    status: payrollRunStatus("status").notNull().default("draft"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // Snapshot nama pembuat — tetap terbaca bila akun dihapus
+    createdByName: text("created_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("payroll_runs_tenant_id_id_key").on(t.tenantId, t.id),
+    // Satu periode per bulan per usaha; juga melayani filter tenant & urutan daftar
+    unique("payroll_runs_tenant_month_key").on(t.tenantId, t.periodMonth),
+    check("payroll_runs_period_month", sql`extract(day from ${t.periodMonth}) = 1`),
+  ],
+);
+
+// Penyesuaian admin per karyawan di draf payroll (feature 29). Isian per jenis dijaga CHECK:
+// add_line (line_kind + name + amount > 0) · override_component (component_id + amount ≥ 0 + reason) ·
+// waive_attendance / exclude (reason). Satu override per komponen, satu waive/exclude per karyawan per periode.
+export const payrollAdjustments = pgTable(
+  "payroll_adjustments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    runId: uuid("run_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    kind: payrollAdjustmentKind("kind").notNull(),
+    // add_line: variable_allowance | deduction
+    lineKind: payrollComponentKind("line_kind"),
+    name: text("name"),
+    componentId: uuid("component_id"),
+    amount: numeric("amount", { precision: 18, scale: 2 }),
+    reason: text("reason"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdByName: text("created_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Juga melayani filter tenant & daftar per periode/karyawan
+    index("payroll_adjustments_tenant_run_employee_idx").on(t.tenantId, t.runId, t.employeeId),
+    index("payroll_adjustments_tenant_employee_idx").on(t.tenantId, t.employeeId),
+    index("payroll_adjustments_tenant_component_idx").on(t.tenantId, t.componentId),
+    uniqueIndex("payroll_adjustments_single_key")
+      .on(t.tenantId, t.runId, t.employeeId, t.kind)
+      .where(sql`${t.kind} IN ('waive_attendance', 'exclude')`),
+    uniqueIndex("payroll_adjustments_override_key")
+      .on(t.tenantId, t.runId, t.employeeId, t.componentId)
+      .where(sql`${t.kind} = 'override_component'`),
+    foreignKey({ name: "payroll_adjustments_run_fk", columns: [t.tenantId, t.runId], foreignColumns: [payrollRuns.tenantId, payrollRuns.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({ name: "payroll_adjustments_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({
+      name: "payroll_adjustments_component_fk",
+      columns: [t.tenantId, t.componentId],
+      foreignColumns: [salaryComponents.tenantId, salaryComponents.id],
+    }).onDelete("restrict"),
+    check(
+      "payroll_adjustments_fields",
+      sql`CASE ${t.kind}
+        WHEN 'add_line' THEN ${t.lineKind} IN ('variable_allowance', 'deduction') AND ${t.name} IS NOT NULL AND ${t.amount} > 0
+          AND ${t.componentId} IS NULL AND ${t.reason} IS NULL
+        WHEN 'override_component' THEN ${t.componentId} IS NOT NULL AND ${t.amount} >= 0 AND ${t.reason} IS NOT NULL
+          AND ${t.lineKind} IS NULL AND ${t.name} IS NULL
+        ELSE ${t.reason} IS NOT NULL AND ${t.lineKind} IS NULL AND ${t.name} IS NULL AND ${t.componentId} IS NULL AND ${t.amount} IS NULL
+      END`,
+    ),
+    check("payroll_adjustments_name", sql`${t.name} IS NULL OR length(btrim(${t.name})) BETWEEN 1 AND 80`),
+    check("payroll_adjustments_reason", sql`${t.reason} IS NULL OR length(btrim(${t.reason})) BETWEEN 1 AND 500`),
   ],
 );
