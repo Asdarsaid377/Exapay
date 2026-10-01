@@ -1,6 +1,7 @@
 import { attendanceDeductionRules, attendanceRecords, employees, leaveRequests, positions, users } from "@exapay/db";
 import { calculateAttendanceDeduction } from "@exapay/payroll-engine";
 import type {
+  AttendanceDeductionFacts,
   AttendanceDeductionPreview,
   AttendanceDeductionPreviewInput,
   AttendanceDeductionRuleVersion,
@@ -18,8 +19,16 @@ import { type Database, type TenantContext, type Transaction, withTenant } from 
 import { AuditService } from "../audit/audit.service.js";
 import { localClock, monthRange } from "./attendance-clock.js";
 import { type DeductionLeave, deductionFacts } from "./attendance-deduction-facts.js";
-import { columnsToRules, previousDate, type RuleColumns, rulesToColumns, versionStatus } from "./attendance-deduction-rules.js";
-import { recapEmployee } from "./attendance-recap.js";
+import {
+  columnsToRules,
+  type PeriodRules,
+  previousDate,
+  type RuleColumns,
+  rulesForPeriod,
+  rulesToColumns,
+  versionStatus,
+} from "./attendance-deduction-rules.js";
+import { type RecapEmployment, recapEmployee } from "./attendance-recap.js";
 import { loadAttendanceViewer } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
 import { countWorkingDays } from "./work-calendar.js";
@@ -72,6 +81,7 @@ function toVersion(row: VersionRow, today: string): AttendanceDeductionRuleVersi
 
 // Aturan potongan absensi (feature 17): versi aturan per usaha + pratinjau untuk satu karyawan.
 // Owner/admin saja (peran dibaca ulang dari DB). Perhitungan di payroll-engine, bukan di sini.
+// periodRules/periodFacts menyiapkan input absensi calculatePayroll untuk payroll (feature 27, dipakai feature 29).
 @Injectable()
 export class AttendanceDeductionRulesService {
   constructor(
@@ -174,17 +184,7 @@ export class AttendanceDeductionRulesService {
 
       const today = await this.today(tx, ctx);
       const period = monthRange(input.month);
-      const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
-      const records = (
-        await tx
-          .select({ workDate: attendanceRecords.workDate, lateMinutes: attendanceRecords.lateMinutes, checkOutAt: attendanceRecords.checkOutAt })
-          .from(attendanceRecords)
-          .where(and(eq(attendanceRecords.employeeId, employee.id), between(attendanceRecords.workDate, period.from, period.to)))
-      ).map((row) => ({ workDate: row.workDate, lateMinutes: row.lateMinutes, hasCheckOut: row.checkOutAt !== null }));
-      const leaves = await this.selectApprovedLeaves(tx, employee.id, period.from, period.to);
-
-      const recap = recapEmployee({ calendar, ...period, today, employment: employee, records, leaves });
-      const facts = deductionFacts({ days: recap.days, records, leaves, periodWorkingDays: countWorkingDays(calendar, period.from, period.to) });
+      const facts = await this.periodFacts(tx, employee, period.from, period.to, today);
       const result = calculateAttendanceDeduction({
         rules: input.rules,
         salary: { baseSalary: input.baseSalary, fixedAllowances: input.fixedAllowances, attendanceAllowance: input.attendanceAllowance },
@@ -192,6 +192,40 @@ export class AttendanceDeductionRulesService {
       });
       return { employee: { id: employee.id, fullName: employee.fullName, positionName: employee.positionName }, ...period, today, facts, result };
     });
+  }
+
+  // ——— input payroll (dipanggil di dalam transaksi tenant pemanggil) ———
+
+  // Versi aturan yang berlaku di hari pertama periode + tanggal versi baru yang mulai di tengah periode (untuk peringatan)
+  async periodRules(tx: Transaction, from: string, to: string): Promise<PeriodRules> {
+    const rows = await this.selectVersions(tx);
+    return rulesForPeriod(
+      rows.map((row) => ({ effectiveFrom: row.effectiveFrom, effectiveTo: row.effectiveTo, rules: columnsToRules(row) })),
+      from,
+      to,
+    );
+  }
+
+  // Fakta absensi satu karyawan dalam periode dari rekap; `today` (zona waktu usaha) = batas hari alpa
+  async periodFacts(
+    tx: Transaction,
+    employee: RecapEmployment & { id: string },
+    from: string,
+    to: string,
+    today: string,
+  ): Promise<AttendanceDeductionFacts> {
+    const calendar = await this.workCalendar.loadCalendar(tx, from, to);
+    const records = (
+      await tx
+        .select({ workDate: attendanceRecords.workDate, lateMinutes: attendanceRecords.lateMinutes, checkOutAt: attendanceRecords.checkOutAt })
+        .from(attendanceRecords)
+        .where(and(eq(attendanceRecords.employeeId, employee.id), between(attendanceRecords.workDate, from, to)))
+    ).map((row) => ({ workDate: row.workDate, lateMinutes: row.lateMinutes, hasCheckOut: row.checkOutAt !== null }));
+    const leaves = await this.selectApprovedLeaves(tx, employee.id, from, to);
+
+    const employment = { joinDate: employee.joinDate, endDate: employee.endDate };
+    const recap = recapEmployee({ calendar, from, to, today, employment, records, leaves });
+    return deductionFacts({ days: recap.days, records, leaves, periodWorkingDays: countWorkingDays(calendar, from, to) });
   }
 
   // ——— helper ———

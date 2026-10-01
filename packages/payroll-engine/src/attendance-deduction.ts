@@ -13,7 +13,8 @@ import { money, type Money, roundRupiah, rupiah, toMoneyString, ZERO } from "./m
 // - Nilai per hari (alpa & izin/sakit yang dipotong):
 //   · prorate: dasar (gaji pokok [+ tunjangan tetap]) × hari ÷ pembagi — dihitung dalam satu langkah lalu dibulatkan,
 //     tanpa membulatkan tarif per hari lebih dulu. Pembagi aktual = hari kerja kalender periode.
-//     Total alpa + izin/sakit tidak melebihi dasar prorata.
+//     Total alpa + izin/sakit tidak melebihi dasar prorata — untuk karyawan yang masuk/keluar di tengah periode,
+//     dasar prorata × hari kerja masa kerja ÷ hari kerja periode (gaji yang memang dibayar, feature 27).
 //   · fixed_per_day: nominal × hari
 // - Izin/sakit yang dipotong dinilai sama dengan hari alpa; cuti tidak pernah dipotong.
 // - Telat: kejadian dengan menit telat ≤ toleransi diabaikan; lewat toleransi → seluruh menit telat dihitung.
@@ -70,6 +71,12 @@ function dailyRate(rules: AttendanceDeductionRules, salary: AttendanceDeductionS
       : `Dasar prorata: gaji pokok ${rupiah(base)}`,
     absence.divisor.mode === "actual" ? `Pembagi: ${divisor} hari kerja di periode ini` : `Pembagi: ${divisor} hari (angka tetap)`,
   ];
+  // Batas = dasar prorata masa kerja (tidak dibulatkan; hasil baris tetap dibulatkan ke rupiah)
+  let cap = prorateBase;
+  if (facts.periodWorkingDays > 0 && facts.employedWorkingDays < facts.periodWorkingDays) {
+    cap = prorateBase.times(facts.employedWorkingDays).div(facts.periodWorkingDays);
+    steps.push(`Masa kerja ${facts.employedWorkingDays} dari ${facts.periodWorkingDays} hari kerja → batas potongan ${rupiah(roundRupiah(cap))}`);
+  }
   return {
     valueOf: (days) => {
       // Tidak ada hari kerja di periode (pembagi aktual 0) → tidak ada yang bisa dipotong
@@ -77,7 +84,7 @@ function dailyRate(rules: AttendanceDeductionRules, salary: AttendanceDeductionS
       const amount = prorateBase.times(days).div(divisor);
       return { amount, step: `${rupiah(prorateBase)} × ${days} hari ÷ ${divisor} = ${rupiah(roundRupiah(amount))}` };
     },
-    cap: prorateBase,
+    cap,
     steps,
   };
 }

@@ -486,6 +486,7 @@ export {
   type PayrollCalculationResult,
   type PayrollComponentKind,
   type PayrollComponentLine,
+  type PayrollProration,
 } from "./payrollCalculation.js";
 export type {
   Pph21AnnualCalculation,

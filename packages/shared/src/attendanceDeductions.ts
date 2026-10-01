@@ -167,6 +167,9 @@ export type AttendanceDeductionResult = z.infer<typeof attendanceDeductionResult
 export const attendanceDeductionFactsSchema = z.object({
   // Hari kerja kalender dalam periode (pembagi aktual) — tanpa memperhitungkan masa kerja karyawan
   periodWorkingDays: z.number().int(),
+  // Hari kerja kalender selama masa kerja karyawan di periode (= periodWorkingDays bila bekerja sepanjang periode).
+  // Dasar prorata gaji karyawan yang masuk/keluar di tengah periode (feature 27)
+  employedWorkingDays: z.number().int(),
   absentDays: z.number().int(),
   // Menit telat per kejadian (hari kerja dengan absen telat)
   lateMinutes: z.array(z.number().int()),

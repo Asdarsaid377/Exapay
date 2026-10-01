@@ -3,6 +3,7 @@ export { calculateAttendanceDeduction, type AttendanceDeductionInput, type Atten
 export {
   calculatePayroll,
   PayrollInputError,
+  type PayrollAttendanceInput,
   type PayrollBpjsSettings,
   type PayrollCalculationInput,
 } from "./payroll-calculation.js";

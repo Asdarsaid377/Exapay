@@ -45,7 +45,7 @@ function deduction(amount: string, code = "KASBON"): PayrollComponentLine {
 }
 
 function calc(components: PayrollComponentLine[], bpjs: Partial<PayrollBpjsSettings> = {}, rates: BpjsRate[] = RATES_2026) {
-  return calculatePayroll({ components, bpjs: { ...ALL, ...bpjs }, bpjsRates: rates });
+  return calculatePayroll({ components, bpjs: { ...ALL, ...bpjs }, bpjsRates: rates, attendance: null });
 }
 
 function lineOf(result: ReturnType<typeof calculatePayroll>, program: BpjsProgram) {

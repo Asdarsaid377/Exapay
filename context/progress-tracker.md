@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 6 — Payroll
-**Terakhir selesai:** 26 Payroll Engine — PPh 21 TER & True-up Desember (2026-10-01)
-**Berikutnya:** 27 Payroll Engine — Potongan Absensi
+**Terakhir selesai:** 27 Payroll Engine — Potongan Absensi (2026-10-01)
+**Berikutnya:** 28 Komponen Gaji
 
 ---
 
@@ -52,7 +52,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 24 Data Regulasi Berlaku-Tanggal
 - [x] 25 Payroll Engine — Komponen & BPJS
 - [x] 26 Payroll Engine — PPh 21 TER & True-up Desember
-- [ ] 27 Payroll Engine — Potongan Absensi
+- [x] 27 Payroll Engine — Potongan Absensi
 - [ ] 28 Komponen Gaji
 - [ ] 29 Run Payroll — Draf & Review
 - [ ] 30 Finalisasi Payroll
@@ -218,6 +218,9 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Keputusan user: feature 25 diterima apa adanya; penyesuaian (mis. aturan komponen/BPJS khusus) dikerjakan nanti bila ada permintaan klien.
 - 2026-10-01 — **PPh 21 (feature 26):** fungsi murni `calculatePph21` + `pph21IncomeFromPayroll` (`packages/payroll-engine/src/pph21.ts`, tipe `Pph21Result`/`Pph21PeriodRecord`/`Pph21PreviousEmployer` di `@exapay/shared`), tanpa endpoint/UI. Masa biasa = bruto × TER kategori PTKP; masa pajak terakhir = **Desember atau bulan berhenti bekerja** (`endsEmployment`): bruto setahun − biaya jabatan (5%, maks Rp500 rb × **bulan bekerja**, maks Rp6 jt) − iuran JHT/JP pegawai − zakat via pemberi kerja (+ neto pemberi kerja lama) − PTKP **setahun penuh (tidak disetahunkan)**, PKP dibulatkan ke bawah ribuan, tarif Pasal 17, dikurangi PPh yang sudah dipotong (+ pemberi kerja lama). Negatif = kelebihan potong dikembalikan ke pegawai (peringatan). Bruto = pendapatan + premi Kesehatan/JKK/JKM pemberi kerja; JHT/JP pemberi kerja tidak ikut. Masa sebelumnya diinput sebagai ringkasan (`Pph21PeriodRecord`, nanti dari snapshot payroll final feature 30).
 - 2026-10-01 — PPh 21 masa TER dibulatkan rupiah penuh HALF_UP (konsisten feature 17; contoh DJP tidak menegaskan). Status PTKP diisi pemanggil (status 1 Januari / saat mulai bekerja — ditentukan di feature 29). **Belum didukung:** penyetahunan WNA yang baru/berhenti menjadi subjek pajak dalam negeri, PPh ditanggung pemberi kerja (gross-up), pegawai tidak tetap.
+- 2026-10-01 — **Potongan absensi di payroll (feature 27):** `calculatePayroll` menerima `attendance: { rules, facts } | null` (null = tanpa prorata & potongan), tanpa endpoint/UI. Keputusan user: potongan absensi (alpa, izin/sakit, telat) **mengurangi pendapatan bruto → bruto PPh 21 ikut turun**; `grossPay` = gaji pokok + tunjangan tetap + tunjangan tidak tetap + tunjangan kehadiran dibayar − potongan absensi. **Dasar upah BPJS tetap gaji pokok + tunjangan tetap sebulan penuh** (tidak dikurangi potongan maupun prorata). Jenis komponen baru `attendance_allowance` (tunjangan kehadiran, maks. satu, tidak tetap → tidak ikut BPJS); komponen tampil sebesar nominal, pengurangannya di `attendance.lines`.
+- 2026-10-01 — Keputusan user: **prorata masa kerja masuk feature 27** — gaji pokok & tunjangan tetap × hari kerja masa kerja ÷ hari kerja periode, dibulatkan rupiah HALF_UP per komponen (`proration` + langkah di hasil). Tunjangan tidak tetap & tunjangan kehadiran **tidak diprorata** (dikonfirmasi user). `AttendanceDeductionFacts.employedWorkingDays` baru (dari status rekap `deductionFacts`). Potongan alpa/izin/sakit tetap dinilai dari gaji sebulan penuh, total dibatasi dasar prorata × masa kerja ÷ hari kerja periode. Periode tanpa hari kerja → tidak diprorata + peringatan.
+- 2026-10-01 — Keputusan user: **versi aturan potongan = versi yang berlaku di hari pertama periode** untuk seluruh periode (tidak berlaku mundur). Fungsi murni `rulesForPeriod` (`attendance-deduction-rules.ts`) mengembalikan `changedOn` bila versi baru mulai di tengah periode (untuk peringatan draf feature 29). `AttendanceDeductionRulesService.periodRules/periodFacts` (dalam transaksi pemanggil) diekspor `AttendanceModule` untuk feature 29; pratinjau feature 17 memakai `periodFacts`.
 ---
 
 ## Catatan (Notes)
@@ -256,7 +259,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Karyawan nonaktif masih bisa membuka portal, tapi absen ditolak (feature 14). `karyawan@exapay.local` (dev) belum tertaut data karyawan.
 - Test API butuh container **storage** (SeaweedFS) selain postgres/redis/mailpit — `docker compose up -d postgres redis mailpit storage`. Total test API 143 per feature 15.
 - Data dev: `karyawan@exapay.local` kini tertaut ke karyawan **Dewi Lestari** (bawahan Rudi) + satu pengajuan Sakit 28–29 Sep 2026 disetujui Andi Atasan (verifikasi feature 15).
-- Belum ada: hitungan pengajuan tertunda di sidebar; potongan absensi di payroll (feature 27); alpa di portal `/me/attendance` (ringkasan portal belum memakai `recapEmployee`).
+- Belum ada: hitungan pengajuan tertunda di sidebar; alpa di portal `/me/attendance` (ringkasan portal belum memakai `recapEmployee`).
 - Total test API 154 per feature 16. Data dev: Dewi Lestari punya satu koreksi uji 25 Sep 2026 (08:10–17:05, oleh Budi Pemilik); di data dev Siti Rahmawati kini ber-atasan Rudi.
 - Total test API 158 + 25 unit test payroll-engine (`pnpm --filter @exapay/payroll-engine test`) per feature 17. Sekali terlihat flake 401 dengan body `{"_tag":"UnauthorizedError"}` (bukan format API kita — kemungkinan koneksi nyasar ke proses lain di localhost); tidak terulang di 3 run berikutnya.
 - Data dev: belum ada versi aturan potongan tersimpan kecuali yang dibuat user saat verifikasi feature 17. Pratinjau di `/settings/attendance` memakai karyawan dari rekap bulan berjalan.
@@ -271,3 +274,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 211 per feature 24 (`regulations.test.ts`). Exclusion constraint regulasi tidak diuji otomatis (test berjalan sebagai app_user tanpa hak tulis). **UMP berlaku s.d. 2026-12-31 → tambahkan UMP 2027 lewat migration ±Desember 2026**; JP batas upah berganti tiap Maret (migration baru). Sumber lemah: UMP Papua Selatan (1 media lokal), angka bersen Jateng/Banten/Sultra (1 sumber), nomor surat BPJS batas JP 2023–2025 belum dicek.
 - Total unit test payroll-engine 52 per feature 25 (`payroll-calculation.test.ts` 27 skenario). Engine belum dipanggil API — dipakai mulai feature 28/29.
 - Total unit test payroll-engine 77 per feature 26 (`pph21.test.ts` 25 skenario). Test PPh 21 membaca tabel TER/Pasal 17/PTKP langsung dari seed `0022_seed_regulations.sql` dan mencocokkannya dengan contoh resmi lampiran PMK 168/2023 (Tuan A, B, D di PT W & PT AB, F, H) — mengubah format seed itu akan memecahkan parser test.
+- Total unit test payroll-engine 159 per feature 27 (`payroll-attendance.test.ts`: 63 kombinasi aturan alpa × telat × izin/sakit × tunjangan kehadiran + prorata); total test API 219 (`attendance-deduction-period.test.ts`). Pemanggil `calculatePayroll` wajib mengisi `attendance` (feature 29: `periodRules` + `periodFacts`, peringatan bila `changedOn`).

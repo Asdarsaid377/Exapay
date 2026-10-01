@@ -294,6 +294,7 @@ describe("pph21IncomeFromPayroll", () => {
         { program: "jkk", jkkRiskLevel: 1, employerRatePercent: "0.2400", employeeRatePercent: "0.0000", wageCap: null, ...version },
         { program: "jkm", jkkRiskLevel: null, employerRatePercent: "0.3000", employeeRatePercent: "0.0000", wageCap: null, ...version },
       ],
+      attendance: null,
     });
     // 20.000.000 + Kesehatan 400.000 + JKK 24.000 + JKM 30.000 (JHT 370.000 & JP 200.000 pemberi kerja tidak ikut)
     expect(pph21IncomeFromPayroll(payroll)).toEqual({ grossIncome: "20454000.00", pensionContribution: "300000.00" });

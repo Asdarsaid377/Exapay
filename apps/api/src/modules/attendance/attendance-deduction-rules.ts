@@ -1,5 +1,5 @@
 import type { attendanceDeductionRules } from "@exapay/db";
-import type { AttendanceDeductionRules, DeductionRuleVersionStatus } from "@exapay/shared";
+import { type AttendanceDeductionRules, type DeductionRuleVersionStatus, NO_ATTENDANCE_DEDUCTION_RULES } from "@exapay/shared";
 
 // Pemetaan aturan terstruktur ↔ kolom attendance_deduction_rules (feature 17). Kolom yang tidak dipakai mode-nya = null
 // (dijaga CHECK di database). Uang tetap string (numeric → "50000.00").
@@ -109,4 +109,28 @@ export function versionStatus(effectiveFrom: string, effectiveTo: string | null,
 export function previousDate(date: string): string {
   const ms = Date.parse(`${date}T00:00:00Z`) - 86_400_000;
   return new Date(ms).toISOString().slice(0, 10);
+}
+
+export type RuleVersionPeriod = {
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  rules: AttendanceDeductionRules;
+};
+
+export type PeriodRules = {
+  // Aturan versi yang berlaku di hari pertama periode; tanpa versi = tanpa potongan
+  rules: AttendanceDeductionRules;
+  // Versi lain mulai berlaku di dalam periode (setelah hari pertama) → dipakai mulai periode berikutnya
+  changedOn: string | null;
+};
+
+// Aturan potongan untuk satu periode payroll (keputusan feature 27): versi yang berlaku di hari pertama periode dipakai
+// untuk seluruh periode — aturan baru tidak berlaku mundur ke hari sebelum ia dibuat.
+export function rulesForPeriod(versions: readonly RuleVersionPeriod[], from: string, to: string): PeriodRules {
+  const current = versions.find((version) => version.effectiveFrom <= from && (version.effectiveTo === null || version.effectiveTo >= from));
+  const starts = versions.map((version) => version.effectiveFrom).filter((date) => date > from && date <= to);
+  return {
+    rules: current?.rules ?? NO_ATTENDANCE_DEDUCTION_RULES,
+    changedOn: starts.length === 0 ? null : starts.reduce((min, date) => (date < min ? date : min)),
+  };
 }

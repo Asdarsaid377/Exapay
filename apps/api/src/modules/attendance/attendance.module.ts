@@ -14,7 +14,7 @@ import { MyLeaveRequestsController } from "./my-leave-requests.controller.js";
 import { MyAttendanceController } from "./my-attendance.controller.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
-// Absensi (phase 3): jadwal & libur, absen masuk/pulang, pengajuan izin/sakit/cuti (feature 15), rekap & koreksi (feature 16), aturan potongan (feature 17). WorkCalendarService diekspor untuk hitung hari kerja di KPI & payroll; AttendanceService untuk log tugas (feature 19); AttendanceRecapService untuk skor KPI (feature 21).
+// Absensi (phase 3): jadwal & libur, absen masuk/pulang, pengajuan izin/sakit/cuti (feature 15), rekap & koreksi (feature 16), aturan potongan (feature 17). WorkCalendarService diekspor untuk hitung hari kerja di KPI & payroll; AttendanceService untuk log tugas (feature 19); AttendanceRecapService untuk skor KPI (feature 21); AttendanceDeductionRulesService untuk input absensi payroll (feature 27/29).
 @Module({
   controllers: [
     AttendanceSettingsController,
@@ -26,6 +26,6 @@ import { WorkCalendarService } from "./work-calendar.service.js";
     AttendanceDeductionRulesController,
   ],
   providers: [WorkCalendarService, AttendanceService, LeaveRequestsService, AttendanceRecapService, AttendanceCorrectionsService, AttendanceDeductionRulesService],
-  exports: [WorkCalendarService, AttendanceService, AttendanceRecapService],
+  exports: [WorkCalendarService, AttendanceService, AttendanceRecapService, AttendanceDeductionRulesService],
 })
 export class AttendanceModule {}

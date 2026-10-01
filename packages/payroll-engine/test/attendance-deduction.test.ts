@@ -12,7 +12,7 @@ import { type AttendanceDeductionSalary, calculateAttendanceDeduction } from "..
 const SALARY: AttendanceDeductionSalary = { baseSalary: "5000000", fixedAllowances: "1000000", attendanceAllowance: "300000" };
 
 function facts(overrides: Partial<AttendanceDeductionFacts> = {}): AttendanceDeductionFacts {
-  return { periodWorkingDays: 22, absentDays: 0, lateMinutes: [], permitDays: 0, sickDays: 0, undocumentedPermitSickDays: 0, ...overrides };
+  return { periodWorkingDays: 22, employedWorkingDays: 22, absentDays: 0, lateMinutes: [], permitDays: 0, sickDays: 0, undocumentedPermitSickDays: 0, ...overrides };
 }
 
 function rules(overrides: Partial<AttendanceDeductionRules>): AttendanceDeductionRules {
@@ -52,7 +52,7 @@ describe("alpa — prorata", () => {
     const result = calculateAttendanceDeduction({
       rules: prorate("base_and_fixed_allowances", { mode: "fixed", days: 25 }),
       salary: SALARY,
-      facts: facts({ absentDays: 2, periodWorkingDays: 21 }),
+      facts: facts({ absentDays: 2, periodWorkingDays: 21, employedWorkingDays: 21 }),
     });
     // 6.000.000 × 2 ÷ 25
     expect(lineOf(result, "absence").amount).toBe("480000.00");
@@ -88,7 +88,7 @@ describe("alpa — prorata", () => {
     const result = calculateAttendanceDeduction({
       rules: prorate("base_salary", { mode: "fixed", days: 20 }),
       salary: SALARY,
-      facts: facts({ absentDays: 23, periodWorkingDays: 23 }),
+      facts: facts({ absentDays: 23, periodWorkingDays: 23, employedWorkingDays: 23 }),
     });
     expect(lineOf(result, "absence").amount).toBe("5000000.00");
     expect(lineOf(result, "absence").steps).toContain("Dibatasi sebesar dasar prorata Rp 5.000.000");
@@ -268,6 +268,42 @@ describe("tunjangan kehadiran", () => {
   });
 });
 
+describe("masa kerja sebagian periode", () => {
+  const prorate = (divisor: { mode: "actual" } | { mode: "fixed"; days: number }) =>
+    rules({ absence: { mode: "prorate", base: "base_salary", divisor }, permitSick: { mode: "without_document" } });
+
+  it("alpa + izin/sakit dibatasi dasar prorata × masa kerja ÷ hari kerja periode", () => {
+    // Pembagi tetap 20 < 22 hari kerja periode; masa kerja 10 hari, alpa 8 + sakit tanpa surat 2 = seluruh masa kerja
+    const result = calculateAttendanceDeduction({
+      rules: prorate({ mode: "fixed", days: 20 }),
+      salary: SALARY,
+      facts: facts({ employedWorkingDays: 10, absentDays: 8, sickDays: 2, undocumentedPermitSickDays: 2 }),
+    });
+    // Batas 5.000.000 × 10 ÷ 22 = 2.272.727,27; alpa 5.000.000 × 8 ÷ 20 = 2.000.000; izin/sakit 500.000 → sisa 272.727,27
+    expect(lineOf(result, "absence").amount).toBe("2000000.00");
+    expect(lineOf(result, "absence").steps).toContain("Masa kerja 10 dari 22 hari kerja → batas potongan Rp 2.272.727");
+    expect(lineOf(result, "permit_sick").amount).toBe("272727.00");
+    expect(lineOf(result, "permit_sick").steps).toContain("Dibatasi sisa dasar prorata Rp 272.727,27");
+    expect(result.totalDeduction).toBe("2272727.00");
+  });
+
+  it("pembagi aktual: alpa sepanjang masa kerja = gaji prorata, tidak kena batas", () => {
+    const result = calculateAttendanceDeduction({ rules: prorate({ mode: "actual" }), salary: SALARY, facts: facts({ employedWorkingDays: 10, absentDays: 10 }) });
+    // 5.000.000 × 10 ÷ 22 = 2.272.727,27
+    expect(lineOf(result, "absence").amount).toBe("2272727.00");
+    expect(lineOf(result, "absence").steps.some((step) => step.startsWith("Dibatasi"))).toBe(false);
+  });
+
+  it("nominal tetap per hari tidak dibatasi", () => {
+    const result = calculateAttendanceDeduction({
+      rules: rules({ absence: { mode: "fixed_per_day", amountPerDay: "300000" } }),
+      salary: SALARY,
+      facts: facts({ employedWorkingDays: 5, absentDays: 5 }),
+    });
+    expect(lineOf(result, "absence").amount).toBe("1500000.00");
+  });
+});
+
 describe("gabungan", () => {
   it("urutan baris tetap dan total = alpa + izin/sakit + telat", () => {
     const result = calculateAttendanceDeduction({
@@ -278,7 +314,7 @@ describe("gabungan", () => {
         attendanceAllowance: { mode: "reduce_per_day", amountPerDay: "25000" },
       },
       salary: SALARY,
-      facts: facts({ periodWorkingDays: 20, absentDays: 1, undocumentedPermitSickDays: 1, sickDays: 1, lateMinutes: [10, 20] }),
+      facts: facts({ periodWorkingDays: 20, employedWorkingDays: 20, absentDays: 1, undocumentedPermitSickDays: 1, sickDays: 1, lateMinutes: [10, 20] }),
     });
     expect(result.lines.map((line) => line.kind)).toEqual(["absence", "permit_sick", "late", "attendance_allowance"]);
     // 250.000 + 250.000 + 40.000

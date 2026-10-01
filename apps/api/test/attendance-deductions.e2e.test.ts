@@ -359,6 +359,7 @@ describe("pratinjau potongan", () => {
     expect(data).toMatchObject({ from: "2026-10-01", to: "2026-10-31", today: "2026-10-09" });
     expect(data.facts).toEqual({
       periodWorkingDays: 22,
+      employedWorkingDays: 22,
       absentDays: 3,
       lateMinutes: [30],
       permitDays: 0,
