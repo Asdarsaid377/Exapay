@@ -2,6 +2,7 @@ import {
   ABSENCE_DEDUCTION_MODES,
   AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
+  BPJS_PROGRAMS,
   DEFAULT_AI_SUMMARY_MONTHLY_QUOTA,
   EMPLOYMENT_STATUSES,
   GENDERS,
@@ -24,6 +25,7 @@ import {
   PRORATE_BASES,
   PTKP_STATUSES,
   TASK_LOG_STATUSES,
+  TAX_RATE_KINDS,
   TASK_PHOTO_TYPES,
   WORKING_DAY_DIVISOR_MODES,
 } from "@exapay/shared";
@@ -1019,5 +1021,134 @@ export const kpiReviewSummaries = pgTable(
       sql`(${t.body} IS NULL) = (${t.source} IS NULL) AND (${t.body} IS NULL OR char_length(${t.body}) BETWEEN 1 AND ${sql.raw(String(KPI_SUMMARY_MAX_LENGTH))})
         AND (${t.reviewedAt} IS NULL OR ${t.body} IS NOT NULL)`,
     ),
+  ],
+);
+
+// ---- Data regulasi berlaku-tanggal (feature 24) — data referensi platform: tanpa tenant_id, baca-saja untuk app_user,
+// diisi/diubah HANYA lewat migration (sumber resmi dicatat di kolom source). Versi: effective_from/effective_to inklusif
+// (null = tanpa batas atas); exclusion constraint *_no_overlap (GiST, ditulis di migration) menolak versi beririsan.
+// Tarif dalam persen numeric(7,4) ("3.7000" = 3,7%), uang numeric(18,2).
+
+export const bpjsProgram = pgEnum("bpjs_program", BPJS_PROGRAMS);
+export const taxRateKind = pgEnum("tax_rate_kind", TAX_RATE_KINDS);
+
+// Tarif & batas upah BPJS. Satu baris = satu versi per program (JKK: per kelompok risiko 1–5).
+export const bpjsRates = pgTable(
+  "bpjs_rates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    program: bpjsProgram("program").notNull(),
+    jkkRiskLevel: smallint("jkk_risk_level"),
+    employerRatePercent: numeric("employer_rate_percent", { precision: 7, scale: 4 }).notNull(),
+    employeeRatePercent: numeric("employee_rate_percent", { precision: 7, scale: 4 }).notNull(),
+    // Batas atas upah dasar iuran per bulan; null = tanpa batas
+    wageCap: numeric("wage_cap", { precision: 18, scale: 2 }),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    check("bpjs_rates_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check("bpjs_rates_jkk_risk", sql`(${t.program} = 'jkk') = (${t.jkkRiskLevel} IS NOT NULL) AND coalesce(${t.jkkRiskLevel} BETWEEN 1 AND 5, true)`),
+    check(
+      "bpjs_rates_values",
+      sql`${t.employerRatePercent} BETWEEN 0 AND 100 AND ${t.employeeRatePercent} BETWEEN 0 AND 100 AND coalesce(${t.wageCap} > 0, true)`,
+    ),
+  ],
+);
+
+// Versi tabel tarif pajak berlapis (TER A/B/C bulanan, Pasal 17 tahunan). Lapisnya di tax_rate_brackets.
+export const taxRateTables = pgTable(
+  "tax_rate_tables",
+  {
+    kind: taxRateKind("kind").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    primaryKey({ name: "tax_rate_tables_pkey", columns: [t.kind, t.effectiveFrom] }),
+    check("tax_rate_tables_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+  ],
+);
+
+// Lapis tarif: berlaku untuk penghasilan ≤ income_up_to (lapis sebelumnya < penghasilan). Lapis terakhir income_up_to null.
+// seq = urutan lapis (1 = terendah); urutan income_up_to naik diperiksa test seed.
+export const taxRateBrackets = pgTable(
+  "tax_rate_brackets",
+  {
+    kind: taxRateKind("kind").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    seq: smallint("seq").notNull(),
+    incomeUpTo: numeric("income_up_to", { precision: 18, scale: 2 }),
+    ratePercent: numeric("rate_percent", { precision: 7, scale: 4 }).notNull(),
+  },
+  (t) => [
+    primaryKey({ name: "tax_rate_brackets_pkey", columns: [t.kind, t.effectiveFrom, t.seq] }),
+    foreignKey({
+      name: "tax_rate_brackets_table_fk",
+      columns: [t.kind, t.effectiveFrom],
+      foreignColumns: [taxRateTables.kind, taxRateTables.effectiveFrom],
+    }).onDelete("restrict"),
+    check("tax_rate_brackets_values", sql`${t.seq} >= 1 AND coalesce(${t.incomeUpTo} > 0, true) AND ${t.ratePercent} BETWEEN 0 AND 100`),
+  ],
+);
+
+// PTKP setahun per status + kategori TER-nya. Satu baris = satu versi per status.
+export const ptkpRates = pgTable(
+  "ptkp_rates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    status: ptkpStatus("status").notNull(),
+    annualAmount: numeric("annual_amount", { precision: 18, scale: 2 }).notNull(),
+    terKind: taxRateKind("ter_kind").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    check("ptkp_rates_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check("ptkp_rates_values", sql`${t.annualAmount} > 0 AND ${t.terKind} <> 'pasal_17'`),
+  ],
+);
+
+// Parameter PPh 21 lain (biaya jabatan). Satu baris = satu versi.
+export const pph21Parameters = pgTable(
+  "pph21_parameters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    occupationalCostRatePercent: numeric("occupational_cost_rate_percent", { precision: 7, scale: 4 }).notNull(),
+    occupationalCostMonthlyMax: numeric("occupational_cost_monthly_max", { precision: 18, scale: 2 }).notNull(),
+    occupationalCostAnnualMax: numeric("occupational_cost_annual_max", { precision: 18, scale: 2 }).notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    check("pph21_parameters_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check(
+      "pph21_parameters_values",
+      sql`${t.occupationalCostRatePercent} BETWEEN 0 AND 100 AND ${t.occupationalCostMonthlyMax} > 0 AND ${t.occupationalCostAnnualMax} > 0`,
+    ),
+  ],
+);
+
+// Upah minimum per bulan: UMK (regency_code) atau UMP (province_code) — tepat satu terisi.
+// Lookup: UMK kota jika ada, selain itu UMP provinsinya.
+export const minimumWages = pgTable(
+  "minimum_wages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provinceCode: text("province_code").references(() => provinces.code, { onDelete: "restrict" }),
+    regencyCode: text("regency_code").references(() => regencies.code, { onDelete: "restrict" }),
+    monthlyAmount: numeric("monthly_amount", { precision: 18, scale: 2 }).notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    check("minimum_wages_area", sql`num_nonnulls(${t.provinceCode}, ${t.regencyCode}) = 1`),
+    check("minimum_wages_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check("minimum_wages_amount", sql`${t.monthlyAmount} > 0`),
   ],
 );

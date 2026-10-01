@@ -67,6 +67,7 @@
 │           ├── users/            → pengguna & undangan usaha aktif (/users — owner/admin, feature 08)
 │           ├── company/          → profil usaha aktif (/company — owner/admin, feature 09)
 │           ├── regions/          → referensi provinsi & kabupaten/kota Kemendagri (/regions, data platform)
+│           ├── regulations/      → data regulasi berlaku-tanggal (BPJS, TER, Pasal 17, PTKP, biaya jabatan, UMP/UMK) — RegulationsService.forDate/minimumWage, tanpa endpoint (feature 24)
 │           ├── organization/     → departemen & jabatan (/organization, feature 10)
 │   │           ├── employees/        → data karyawan (/employees, feature 11) + impor Excel (employee-import.*: parser, template, service, controller — feature 12)
 │   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14); pengajuan izin/sakit/cuti /attendance/me/leave-requests + persetujuan /attendance/leave-requests (leave-requests.service, my-leave-requests.controller, leave-requests.controller, leave-attachment.ts murni — feature 15; rekap /attendance/recap + koreksi /attendance/corrections (attendance-recap.ts murni, attendance-recap.service/controller, attendance-corrections.service/controller, attendance-viewer.ts cakupan penglihat — feature 16))

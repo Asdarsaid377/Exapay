@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 5 — Penilaian Periodik & AI
-**Terakhir selesai:** 23 Ringkasan AI (2026-10-01)
-**Berikutnya:** ⏸ Titik uji coba dengan 1–2 klien, lalu 24 Data Regulasi Berlaku-Tanggal
+**Phase:** 6 — Payroll
+**Terakhir selesai:** 24 Data Regulasi Berlaku-Tanggal (2026-10-01)
+**Berikutnya:** 25 Payroll Engine — Komponen & BPJS
 
 ---
 
@@ -46,10 +46,10 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 5 — Penilaian Periodik & AI
 - [x] 22 Siklus & Penilaian Periodik
 - [x] 23 Ringkasan AI
-- [ ] ⏸ Titik uji coba dengan 1–2 klien
+- [~] ⏸ Titik uji coba dengan 1–2 klien — berjalan paralel dengan Phase 6 (keputusan user 2026-10-01)
 
 ### Phase 6 — Payroll
-- [ ] 24 Data Regulasi Berlaku-Tanggal
+- [x] 24 Data Regulasi Berlaku-Tanggal
 - [ ] 25 Payroll Engine — Komponen & BPJS
 - [ ] 26 Payroll Engine — PPh 21 TER & True-up Desember
 - [ ] 27 Payroll Engine — Potongan Absensi
@@ -211,6 +211,9 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Arsitektur antrean (BullMQ pertama di project): API (`RedisModule` → `AI_QUEUE`, koneksi Redis sendiri gagal-cepat) enqueue **setelah commit** dengan `jobId` = id generasi, attempts 3 + backoff eksponensial 15 dtk; enqueue gagal → generasi failed + 503. Worker (`apps/worker`, Worker BullMQ concurrency 2) klaim queued→running, panggil provider di luar transaksi, lalu di bawah kunci `kpi_reviews` (urutan kunci sama dengan finalisasi) simpan output dan pasang ke narasi hanya jika masih generasi terakhir & belum final. Gagal permanen/percobaan terakhir → `UnrecoverableError` + pesan aman di `ai_generations.error`. `withTenant` dipindah ke `packages/db` (`tenant-transaction.ts`, api re-export) agar dipakai worker. Prompt berversi `kpi-review-summary/v1`.
 - 2026-10-01 — **Model diganti ke Claude Haiku 4.5** (keputusan user: Opus terlalu boros) — default `AI_MODEL=claude-haiku-4-5`. Haiku menolak `output_config.effort` dan tidak memakai fallback server-side → `AnthropicAiProvider` hanya mengirim keduanya untuk model non-Haiku. Uji API key asli: ±1.700 token masuk + ±390 keluar, ±5 dtk per narasi (≈ US$0,004). Haiku sempat menambah judul markdown → prompt **v2** dipertegas + `cleanKpiReviewSummary()` membuang judul/`**`/heading/bullet sebelum disimpan. ID model wajib persis (`claude-haiku-4.5` dengan titik → 404 → generasi gagal "Layanan AI belum dikonfigurasi").
 - 2026-10-01 — Migration `0020_kpi_review_summaries`: `ai_generations` (input jsonb, output, error, provider, model, prompt_version, token, attempts, requested_by; CHECK status ↔ output/error; app_user tanpa DELETE), `kpi_review_summaries` (PK tenant+review, body ≤ 4000, source enum, generation_id terakhir, reviewed_*; **trigger `kpi_review_summaries_guard_final`** menolak perubahan narasi penilaian final), kolom `tenants.ai_summary_monthly_quota` default 200 + trigger `tenants_guard_ai_quota`. Endpoint: `POST /kpi/reviews/:id/summary/generate` (202), `PUT /kpi/reviews/:id/summary`, `POST /kpi/reviews/:id/summary/review`; status & kuota di `GET /kpi/reviews/:id` (`summary`, `permissions.summary`). Audit `kpi_review_summary` generate/edit/review.
+- 2026-10-01 — Titik uji coba klien tidak memblokir Phase 6 (keputusan user): uji coba absensi + KPI berjalan paralel dengan pembangunan payroll.
+- 2026-10-01 — **Regulasi payroll (feature 24):** migration `0021_regulations` (6 tabel referensi platform: `bpjs_rates`, `tax_rate_tables` + `tax_rate_brackets`, `ptkp_rates`, `pph21_parameters`, `minimum_wages`; berversi `effective_from`/`effective_to` inklusif + `source` + exclusion `*_no_overlap`; app_user SELECT saja) + seed `0022_seed_regulations`. Tarif disimpan **persen** `numeric(7,4)`; lapis tarif = penghasilan ≤ `income_up_to` (lapis terakhir null). `RegulationsService` (`modules/regulations/`, tanpa endpoint): `forDate` → `PayrollRegulations` (tipe di `@exapay/shared`) atau `RegulationDataMissingError`; `minimumWage` UMK → fallback UMP.
+- 2026-10-01 — Keputusan user: biaya jabatan (PMK 168/2023) ikut disimpan sebagai data di feature 24. Seed upah minimum = **UMP 2026 38 provinsi saja** (UMK menyusul lewat migration saat kota klien jelas). Cakupan data regulasi mulai **2024-01-01**. Angka diverifikasi 2026-10-01 dari sumber web (TER dicek silang 2 sumber; UMP 3 sumber, selisih diputuskan dari rilis pemprov/ANTARA).
 ---
 
 ## Catatan (Notes)
@@ -261,3 +264,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 199 per feature 23 (`kpi-review-summaries.e2e.test.ts`; hasil worker ditiru langsung di DB — processor diverifikasi manual ujung-ke-ujung di dev). Test API memakai **Redis DB 15** (`setup-env.ts`) agar job test tidak diambil worker dev. `pnpm-workspace.yaml`: `allowBuilds.msgpackr-extract: false` (akselerator native opsional bullmq). Dev tanpa `ANTHROPIC_API_KEY` → narasi contoh berakhiran "(Narasi contoh dari mode pengembangan …)". Data dev: Siti & Rina (periode 21–27 Sep) punya narasi contoh belum ditinjau; kuota Kopi Nusantara terpakai 2/200 Oktober.
 - Proses `tsc --watch` dari `pnpm dev` yang berjalan lama bisa menulis `dist` basi (route feature 22 sempat hilang di dev) — jika route baru 404 di dev padahal test lulus, restart `pnpm dev` / `pnpm --filter @exapay/api build`.
 - Belum ada: UI super-admin untuk mengubah kuota AI per usaha (sementara lewat SQL `app_owner` + `set_config('app.tenant_id')` karena FORCE RLS); notifikasi saat narasi selesai; narasi di portal karyawan (feature 37). Sudah diuji dengan API key asli (Haiku 4.5) di data dev — narasi Rina 21–27 Sep dari Claude. Narasi Haiku kadang menambah tafsiran ringan di luar data (mis. "dalam kondisi sulit") — inilah alasan wajib ditinjau.
+- Total test API 211 per feature 24 (`regulations.test.ts`). Exclusion constraint regulasi tidak diuji otomatis (test berjalan sebagai app_user tanpa hak tulis). **UMP berlaku s.d. 2026-12-31 → tambahkan UMP 2027 lewat migration ±Desember 2026**; JP batas upah berganti tiap Maret (migration baru). Sumber lemah: UMP Papua Selatan (1 media lokal), angka bersen Jateng/Banten/Sultra (1 sumber), nomor surat BPJS batas JP 2023–2025 belum dicek.

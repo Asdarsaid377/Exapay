@@ -148,6 +148,20 @@
       "when": 1790807148047,
       "tag": "0020_kpi_review_summaries",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790826068085,
+      "tag": "0021_regulations",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790826086975,
+      "tag": "0022_seed_regulations",
+      "breakpoints": true
     }
   ]
 }
