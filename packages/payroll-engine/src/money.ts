@@ -1,4 +1,4 @@
-import { formatRupiah } from "@exapay/shared";
+import { formatRupiah, trimDecimal } from "@exapay/shared";
 import { Decimal } from "decimal.js";
 
 // Konstruktor Decimal khusus payroll: presisi lebar untuk hasil antara, pembulatan eksplisit HALF_UP
@@ -25,4 +25,9 @@ export function toMoneyString(value: Money): string {
 // Tampilan di langkah perhitungan; nilai antara (mis. tarif per hari) ditampilkan 2 desimal
 export function rupiah(value: Money): string {
   return formatRupiah(value.toFixed(2));
+}
+
+// Tarif persen numeric(7,4) → tampilan "3,7%" / "0,24%"
+export function percent(value: string): string {
+  return `${trimDecimal(value).replace(".", ",")}%`;
 }

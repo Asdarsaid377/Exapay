@@ -480,3 +480,10 @@ export {
   type TaxRateTable,
   type TerKind,
 } from "./regulations.js";
+export {
+  PAYROLL_COMPONENT_KINDS,
+  type BpjsContributionLine,
+  type PayrollCalculationResult,
+  type PayrollComponentKind,
+  type PayrollComponentLine,
+} from "./payrollCalculation.js";
