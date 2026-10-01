@@ -9,6 +9,7 @@ import { Redis } from "ioredis";
 import { AiProvider, AiProviderError } from "../ai/ai-provider.js";
 import {
   buildKpiReviewSummaryPrompt,
+  cleanKpiReviewSummary,
   KPI_REVIEW_SUMMARY_MAX_TOKENS,
   KPI_REVIEW_SUMMARY_PROMPT_VERSION,
   KPI_REVIEW_SUMMARY_SYSTEM,
@@ -82,11 +83,13 @@ export class KpiReviewSummaryProcessor implements OnApplicationBootstrap, OnAppl
 
     let result;
     try {
-      result = await this.ai.generateText({
+      const raw = await this.ai.generateText({
         system: KPI_REVIEW_SUMMARY_SYSTEM,
         prompt: buildKpiReviewSummaryPrompt(input.data),
         maxTokens: KPI_REVIEW_SUMMARY_MAX_TOKENS,
       });
+      result = { ...raw, text: cleanKpiReviewSummary(raw.text) };
+      if (!result.text) throw new AiProviderError("[ai/kpi-review-summary] output kosong setelah dibersihkan", "AI tidak mengembalikan ringkasan. Silakan coba buat ulang.", false);
       if (result.text.length > KPI_SUMMARY_MAX_LENGTH) {
         throw new AiProviderError(`[ai/kpi-review-summary] output ${result.text.length} karakter`, "Ringkasan AI terlalu panjang. Silakan coba buat ulang.", false);
       }

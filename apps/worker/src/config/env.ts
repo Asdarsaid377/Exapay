@@ -10,7 +10,7 @@ export const envSchema = z
     // Kosong → provider AI palsu (dev/test tanpa biaya). Wajib di production.
     ANTHROPIC_API_KEY: z.string().optional().transform((value) => value?.trim() || undefined),
     // Model Claude untuk ringkasan kinerja (feature 23) — bisa diganti tanpa ubah kode
-    AI_MODEL: z.string().min(1).default("claude-opus-5"),
+    AI_MODEL: z.string().min(1).default("claude-haiku-4-5"),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.ANTHROPIC_API_KEY !== undefined, {
     path: ["ANTHROPIC_API_KEY"],

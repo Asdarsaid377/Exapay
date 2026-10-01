@@ -5,8 +5,13 @@ import { AiProvider, AiProviderError, type AiTextRequest, type AiTextResult } fr
 const UNAVAILABLE = "Layanan AI sedang sibuk atau tidak terjangkau. Silakan coba buat ulang beberapa saat lagi.";
 const MISCONFIGURED = "Layanan AI belum dikonfigurasi dengan benar. Hubungi admin platform.";
 
-// Claude lewat SDK resmi. Fallback server-side "default" aktif: jika model utama menolak (stop_reason refusal) permintaan
-// dijalankan ulang di model cadangan dalam panggilan yang sama.
+// Claude lewat SDK resmi. Untuk model generasi 5 (Opus/Sonnet/Fable): effort "medium" + fallback server-side "default" (jika
+// model utama menolak, permintaan dijalankan ulang di model cadangan dalam panggilan yang sama). Haiku 4.5 menolak `effort`
+// dan tidak memakai fallback server-side → dikirim tanpa keduanya.
+function supportsEffortAndFallbacks(model: string): boolean {
+  return !model.startsWith("claude-haiku-");
+}
+
 export class AnthropicAiProvider extends AiProvider {
   readonly name = "anthropic";
   private readonly client: Anthropic;
@@ -25,10 +30,14 @@ export class AnthropicAiProvider extends AiProvider {
       response = await this.client.beta.messages.create({
         model: this.model,
         max_tokens: request.maxTokens,
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-        // Narasi pendek dari data yang sudah dihitung — tidak butuh penalaran berat
-        output_config: { effort: "medium" },
+        ...(supportsEffortAndFallbacks(this.model)
+          ? {
+              betas: ["server-side-fallback-2026-07-01"],
+              fallbacks: "default" as const,
+              // Narasi pendek dari data yang sudah dihitung — tidak butuh penalaran berat
+              output_config: { effort: "medium" as const },
+            }
+          : {}),
         system: request.system,
         messages: [{ role: "user", content: request.prompt }],
       });
