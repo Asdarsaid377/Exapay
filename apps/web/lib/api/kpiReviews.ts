@@ -1,4 +1,6 @@
 import {
+  type EmployeeKpiReview,
+  employeeKpiReviewListSchema,
   type KpiReviewDetail,
   kpiReviewDetailSchema,
   type KpiReviewList,
@@ -35,4 +37,9 @@ export async function fetchKpiReview(id: string): Promise<ApiResult<KpiReviewDet
 // Penilaian final milik sendiri (portal /me/performance, feature 37)
 export async function fetchMyKpiReviews(): Promise<ApiResult<MyKpiReviewList>> {
   return apiRequest("/kpi/me/reviews", (data) => myKpiReviewListSchema.parse(data), { cookieHeader: await cookieHeader() });
+}
+
+// Riwayat penilaian satu karyawan — tab KPI detail karyawan (feature 37b)
+export async function fetchEmployeeKpiReviews(employeeId: string): Promise<ApiResult<EmployeeKpiReview[]>> {
+  return apiRequest(`/kpi/employees/${employeeId}/reviews`, (data) => employeeKpiReviewListSchema.parse(data), { cookieHeader: await cookieHeader() });
 }

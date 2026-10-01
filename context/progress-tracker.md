@@ -7,7 +7,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 8 — Siap Produksi
-**Terakhir selesai:** 37 Portal Karyawan Lengkap & PWA (2026-10-02)
+**Terakhir selesai:** 37b Tab KPI & Absensi Detail Karyawan (2026-10-02)
 **Berikutnya:** 38 Backup & Deploy VPS
 
 ---
@@ -66,6 +66,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 35 Dashboard Owner/Admin
 - [x] 36 Dashboard Atasan
 - [x] 37 Portal Karyawan Lengkap & PWA
+- [x] 37b Tab KPI & Absensi Detail Karyawan (sisipan, keputusan user 2026-10-02)
 
 ### Phase 8 — Siap Produksi
 - [ ] 38 Backup & Deploy VPS
@@ -254,6 +255,7 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Portal karyawan (feature 37):** tanpa migration. API baru: `GET /employees/me` (`MyEmployeeController`, didaftarkan sebelum `EmployeesController` agar tidak tertangkap `/:id`; data sensitif tersamar tanpa reveal, tanpa `endReason`/`userAccount`; `EmployeesModule` kini mengimpor `AttendanceModule`), `GET /kpi/me/reviews` (`MyKpiReviewsController`, `KpiReviewsService.mine` dari snapshot final), `POST /auth/change-password` (password lama wajib benar → **400** bukan 401; refresh token family lain dicabut, family sesi ini — dari cookie / body mobile — dipertahankan; tanpa audit log, sama dengan reset password). Riwayat absensi portal kini punya `summary.absent` (alpa via `recapEmployee`) — `AttendanceRecapService.myHistory` membungkus `AttendanceService.history` (tipe `OwnAttendanceHistory`). Web: `fetchMyProfile` di-`cache` per request (layout portal + halaman), `lib/portalAccess.ts` (`isInactiveEmployee`, `requireActiveEmployee`), `PORTAL_MENU` punya `whenInactive`. `ReadFields` diekstrak ke `components/common/` (dipakai detail karyawan & profil).
 - 2026-10-02 — **PWA (feature 37):** tanpa library (bukan Serwist; `useOffline` Next 16 masih eksperimental). `app/manifest.ts` (start_url `/` → proxy mengarahkan per peran, warna token), ikon PNG di `public/icons/` (dirender dari logo placeholder dengan Chrome headless — ganti saat ada logo resmi), `public/sw.js` **tidak meng-cache halaman/data** (data pribadi) — navigasi network-only, gagal → `public/offline.html` statis mandiri (CSS disalin dari token). Registrasi `ServiceWorkerRegistrar` di root layout; header `/sw.js` no-cache di `next.config.ts`. Install di HP butuh HTTPS (feature 38) atau port-forward/tunnel.
 
+- 2026-10-02 — **Tab KPI & Absensi detail karyawan (feature 37b, sisipan — keputusan user):** tab ini tercantum di project-overview tapi tidak pernah dijadwalkan di build-plan (masih "Segera hadir"). UI **tanpa referensi visual** (turunan pola /me/performance, /attendance/corrections, baris /kpi/reviews — izin user). Tab kini di URL (`?tab=data|salary|kpi|attendance`, Link; konstanta `EMPLOYEE_DETAIL_TABS` di `lib/employeeLabels.ts` — bukan di file "use client"), data tab KPI/Absensi hanya dimuat saat aktif dan dikirim ke `EmployeeDetailView` sebagai `tabContent`. API: `GET /kpi/employees/:id/score?month=` (`KpiScoresService.employeeScore`, bulan kalender s.d. hari ini — sama dengan skor milik sendiri) & `GET /kpi/employees/:id/reviews` (`KpiReviewsService.employeeReviews`, semua status, skor hanya final dari `final_score`) di `KpiEmployeesController`; cakupan `viewerEmployeeScope` (atasan bawahan langsung, lainnya 404). Tab Absensi memakai ulang `GET /attendance/recap/:employeeId` (respons kini + `month`/`currentMonth`) + `AttendancePeriodNav` (`keep={{tab}}`) + `AttendanceDayList` (prop `showEmployee`); tombol Koreksi tetap untuk owner/admin. `monthHref` menerima basePath ber-query.
 ---
 
 ## Catatan (Notes)
@@ -322,3 +324,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 277 per feature 35 (`dashboard.e2e.test.ts` 1 skenario — angka dashboard dibandingkan dengan /attendance/recap, /kpi/scores, /payroll/runs/:id, /compliance, /employees, /tasks/verification, /attendance/leave-requests; atasan 403). Diverifikasi visual (Playwright, desktop 1440 + mobile 390) dengan data Roti Sinar Pagi. Belum ada: pembanding skor KPI bulan lalu ("naik 3 poin" di desain), tampilan "belum cukup data" KPI awal bulan, hitungan tertunda di sidebar.
 - Total test API 278 per feature 36 (`dashboard.e2e.test.ts` + skenario atasan — hanya bawahan langsung, cocok dengan /tasks/verification, /attendance/leave-requests, /kpi/reviews, /attendance/recap, /kpi/scores versi atasan; atasan tanpa tautan semua nol; pemisahan peran 403). Diverifikasi visual (Playwright desktop 1440 + mobile 390, Hendra Roti Sinar Pagi) dan dikonfirmasi user ("sesuai"). Belum ada: pembanding skor bulan lalu, hitungan tertunda di sidebar.
 - Total test API 280 per feature 37 (`employee-portal.e2e.test.ts`: profil tersamar + nonaktif, penilaian hanya final + narasi, alpa riwayat portal, ganti password & sesi lain dicabut; `attendance.e2e` riwayat kini cek alpa). **Jangan menjalankan dua proses vitest API bersamaan** — globalSetup drop/create `exapayroll_test` sehingga run lain gagal massal. Diverifikasi visual (Playwright mobile 390: Dewi Kopi Nusantara & Sari Demo Slip Gaji) dan dikonfirmasi user ("sudah sesuai"). Belum ada: ubah kontak sendiri oleh karyawan, notifikasi push, email pemberitahuan password diubah, rate limit percobaan password saat ini; tampilan nonaktif hanya diuji otomatis (belum visual).
+- Total test API 282 per feature 37b (`employee-tabs.e2e.test.ts`: skor = /kpi/scores, cakupan atasan, riwayat penilaian, bulan payroll di rincian absensi). Sekali terlihat timeout massal 15 dtk di full suite — lulus saat diulang tanpa perubahan (beban dev server). Diverifikasi visual (Playwright desktop 1440 + mobile 390) dan dikonfirmasi user ("sudah sesuai").

@@ -1,6 +1,7 @@
 import { departments, employees, kpiIndicators, kpiTemplates, positions } from "@exapay/db";
 import {
   type AttendanceHistoryQuery,
+  type EmployeeKpiScore,
   type KpiPredicate,
   type KpiScoreList,
   type KpiScoreQuery,
@@ -8,7 +9,7 @@ import {
   type KpiScoreRow,
   type MyKpiScore,
 } from "@exapay/shared";
-import { BadRequestException, ForbiddenException, Inject, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, eq, gte, inArray, isNull, lte, or, type SQL } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
@@ -148,6 +149,27 @@ export class KpiScoresService {
       // Bulan di luar masa kerja → skor kosong (recap menandai not_employed, tanpa hari target)
       const scored = (await this.scoreEmployees(tx, [row], period, today)).get(row.id);
       return { ...base, template: scored?.template ?? null, result: scored?.result ?? null };
+    });
+  }
+
+  // Skor satu karyawan per bulan kalender (tab KPI detail karyawan, feature 37b) — periode & rumus sama dengan mine().
+  // Di luar cakupan penglihat (atasan: bukan bawahan langsung) → 404, tidak membocorkan keberadaan karyawan.
+  async employeeScore(user: AuthUser, employeeId: string, query: AttendanceHistoryQuery): Promise<EmployeeKpiScore> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      const viewer = await loadAttendanceViewer(tx, ctx);
+      if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke skor KPI");
+      const [row] = await this.selectEmployees(tx, and(eq(employees.id, employeeId), viewerEmployeeScope(viewer)));
+      if (!row) throw new NotFoundException("Karyawan tidak ditemukan");
+
+      const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
+      const today = localClock(new Date(), timeZone).date;
+      const currentMonth = today.slice(0, 7);
+      const month = query.month && query.month < currentMonth ? query.month : currentMonth;
+      const range = monthRange(month);
+      const period: Period = { from: range.from, to: range.to > today ? today : range.to };
+      const scored = (await this.scoreEmployees(tx, [row], period, today)).get(row.id);
+      return { month, currentMonth, ...period, today, template: scored?.template ?? null, result: scored?.result ?? null };
     });
   }
 

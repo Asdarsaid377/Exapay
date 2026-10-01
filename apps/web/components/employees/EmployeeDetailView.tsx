@@ -1,17 +1,16 @@
 "use client";
 
 import type { EmployeeDetail, EmployeeFormOptions, EmployeeSalaryOverview } from "@exapay/shared";
-import { ArrowLeft, Clock, Ellipsis, Pencil, UserX } from "lucide-react";
+import { ArrowLeft, Ellipsis, Pencil, UserX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { reactivateEmployee } from "@/actions/employees";
 import { Badge } from "@/components/common/Badge";
 import { Banner } from "@/components/common/Banner";
 import { Button } from "@/components/common/Button";
 import { DropdownMenu } from "@/components/common/DropdownMenu";
-import { EmptyState } from "@/components/common/EmptyState";
 import { FormAlert } from "@/components/common/FormAlert";
 import { DeactivateEmployeeDialog } from "@/components/employees/DeactivateEmployeeDialog";
 import { EmployeeAvatar } from "@/components/employees/EmployeeAvatar";
@@ -19,7 +18,7 @@ import { EmployeeDataSections } from "@/components/employees/EmployeeDataSection
 import { EmployeeForm } from "@/components/employees/EmployeeForm";
 import { EmployeeSalaryTab } from "@/components/payroll/EmployeeSalaryTab";
 import { firstNameOf, formatIsoDate } from "@/lib/datetime";
-import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES } from "@/lib/employeeLabels";
+import { EMPLOYEE_DETAIL_TABS, type EmployeeDetailTab, EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES } from "@/lib/employeeLabels";
 
 type Props = {
   employee: EmployeeDetail;
@@ -27,18 +26,21 @@ type Props = {
   options: EmployeeFormOptions | null;
   // Tab Gaji — hanya owner/admin (atasan tidak melihat tab ini)
   salary: { overview: EmployeeSalaryOverview | null; error: string | null } | null;
+  // Tab aktif dari URL (?tab=) — tab KPI & Absensi punya navigasi bulan sendiri (feature 37b)
+  tab: EmployeeDetailTab;
+  // Isi tab KPI / Absensi dirender server (hanya tab aktif yang dimuat datanya)
+  tabContent: ReactNode;
 };
 
-const TABS = ["data", "salary", "kpi", "attendance"] as const;
-type Tab = (typeof TABS)[number];
+type Tab = EmployeeDetailTab;
 const TAB_LABELS: Record<Tab, string> = { data: "Data", salary: "Gaji", kpi: "KPI", attendance: "Absensi" };
 const FORM_ID = "employee-edit";
 
 // Detail karyawan (design employees-detail): header + tab Data/Gaji/KPI/Absensi. Owner/admin: Ubah (form di tempat)
 // dan Nonaktifkan / Aktifkan kembali. Atasan: hanya baca, tanpa data pajak & rekening, tanpa tab Gaji (feature 28).
-export function EmployeeDetailView({ employee, options, salary }: Props) {
+// Tab berupa tautan ?tab= (feature 37b); tab Data tanpa parameter.
+export function EmployeeDetailView({ employee, options, salary, tab, tabContent }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("data");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -48,7 +50,7 @@ export function EmployeeDetailView({ employee, options, salary }: Props) {
   const inactive = !!employee.endDate;
   const canEdit = employee.canManage && options !== null;
   const firstName = firstNameOf(employee.fullName);
-  const tabs = TABS.filter((key) => key !== "salary" || salary !== null);
+  const tabs = EMPLOYEE_DETAIL_TABS.filter((key) => key !== "salary" || salary !== null);
 
   async function handleReactivate() {
     setError(null);
@@ -171,20 +173,20 @@ export function EmployeeDetailView({ employee, options, salary }: Props) {
             {tabs.map((key) => {
               const selected = key === tab;
               return (
-                <button
+                <Link
                   key={key}
-                  type="button"
+                  href={key === "data" ? `/employees/${employee.id}` : `/employees/${employee.id}?tab=${key}`}
+                  scroll={false}
                   role="tab"
                   id={`employee-tab-${key}`}
                   aria-selected={selected}
                   aria-controls="employee-tabpanel"
-                  onClick={() => setTab(key)}
-                  className={`h-11 shrink-0 px-0.5 text-[14.5px] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 lg:h-11.5 lg:text-[15px] ${
+                  className={`inline-flex h-11 shrink-0 items-center px-0.5 text-[14.5px] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 lg:h-11.5 lg:text-[15px] ${
                     selected ? "font-bold text-text-primary shadow-[inset_0_-2px_0_var(--color-accent)]" : "font-medium text-text-secondary hover:text-text-primary"
                   }`}
                 >
                   {TAB_LABELS[key]}
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -194,11 +196,7 @@ export function EmployeeDetailView({ employee, options, salary }: Props) {
             ) : tab === "salary" && salary ? (
               <EmployeeSalaryTab employeeId={employee.id} firstName={firstName} overview={salary.overview} error={salary.error} />
             ) : (
-              <EmptyState
-                icon={Clock}
-                title="Segera hadir"
-                description={tab === "kpi" ? `Skor dan penilaian KPI ${firstName} akan tampil di sini.` : `Rekap kehadiran ${firstName} akan tampil di sini.`}
-              />
+              tabContent
             )}
           </div>
         </>

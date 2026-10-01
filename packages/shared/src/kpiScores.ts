@@ -137,3 +137,8 @@ export const myKpiScoreSchema = z.object({
   result: kpiScoreResultSchema.nullable(),
 });
 export type MyKpiScore = z.infer<typeof myKpiScoreSchema>;
+
+// Skor satu karyawan per bulan kalender — tab KPI detail karyawan /employees/[id] (feature 37b). Rumus & periode sama dengan
+// skor milik sendiri (bulan berjalan s.d. hari ini). Cakupan: owner/admin semua, atasan bawahan langsung.
+export const employeeKpiScoreSchema = myKpiScoreSchema.omit({ access: true });
+export type EmployeeKpiScore = z.infer<typeof employeeKpiScoreSchema>;

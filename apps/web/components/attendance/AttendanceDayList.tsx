@@ -11,11 +11,13 @@ import { weekdayLabelOf } from "@/lib/workCalendarLabels";
 type Props = {
   // canCorrect = owner/admin & bukan absensinya sendiri (API tetap menolak)
   data: EmployeeAttendanceDays;
+  // Nama & jabatan di kepala card — disembunyikan di tab Absensi detail karyawan (sudah ada di header halaman, feature 37b)
+  showEmployee?: boolean;
 };
 
 // Rincian harian satu karyawan + tombol koreksi per tanggal (feature 16). Terbaru di atas; tanggal mendatang disembunyikan.
 // Tanpa referensi desain — pola AttendanceHistoryList (CalendarDate + judul + sub + Badge) di card glass-data (izin user).
-export function AttendanceDayList({ data }: Props) {
+export function AttendanceDayList({ data, showEmployee = true }: Props) {
   const { employee, summary, timeZone, today, canCorrect } = data;
   const days = data.days.filter((day) => day.date <= today && day.status !== "not_employed").reverse();
   const facts = [
@@ -28,17 +30,23 @@ export function AttendanceDayList({ data }: Props) {
 
   return (
     <section aria-labelledby="attendance-days-title" className="glass-data flex flex-col rounded-card px-4.5 pt-4.5 pb-1.5 lg:px-6 lg:pt-5.5">
-      <div className="flex items-center gap-3">
-        <EmployeeAvatar fullName={employee.fullName} size="md" inactive={employee.endDate !== null} />
-        <div className="flex min-w-0 flex-col">
-          <h2 id="attendance-days-title" className="truncate font-display text-[17px] font-bold tracking-[-0.01em] text-text-primary">
-            {employee.fullName}
-          </h2>
-          <span className="truncate text-small text-text-secondary">
-            {employee.positionName} · {employee.departmentName}
-          </span>
+      {showEmployee ? (
+        <div className="flex items-center gap-3">
+          <EmployeeAvatar fullName={employee.fullName} size="md" inactive={employee.endDate !== null} />
+          <div className="flex min-w-0 flex-col">
+            <h2 id="attendance-days-title" className="truncate font-display text-[17px] font-bold tracking-[-0.01em] text-text-primary">
+              {employee.fullName}
+            </h2>
+            <span className="truncate text-small text-text-secondary">
+              {employee.positionName} · {employee.departmentName}
+            </span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <h2 id="attendance-days-title" className="font-display text-[17px] font-bold tracking-[-0.01em] text-text-primary">
+          Rincian harian
+        </h2>
+      )}
       <p className="mt-3 text-small text-text-secondary tabular-nums">{facts.join(" · ")}</p>
       {days.length === 0 ? (
         <p className="border-t border-border-subtle py-6 mt-3 text-center text-sm text-text-secondary">Periode ini belum berjalan atau di luar masa kerja karyawan.</p>

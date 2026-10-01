@@ -42,6 +42,8 @@ export function shiftMonth(month: string, delta: number): string {
 }
 
 // Link halaman per bulan; bulan berjalan tanpa param
+// basePath boleh membawa query (mis. tab detail karyawan "/employees/<id>?tab=kpi", feature 37b)
 export function monthHref(basePath: string, month: string, currentMonth: string): string {
-  return month === currentMonth ? basePath : `${basePath}?month=${month}`;
+  if (month === currentMonth) return basePath;
+  return `${basePath}${basePath.includes("?") ? "&" : "?"}month=${month}`;
 }

@@ -111,6 +111,9 @@ export const employeeAttendanceDaysSchema = z.object({
   employee: recapEmployeeSchema,
   from: z.string(),
   to: z.string(),
+  // Bulan payroll terpilih (null = rentang bebas) & bulan berjalan — navigasi periode tab Absensi detail karyawan (feature 37b)
+  month: z.string().nullable(),
+  currentMonth: z.string(),
   today: z.string(),
   timeZone: z.string(),
   summary: attendanceRecapSummarySchema,

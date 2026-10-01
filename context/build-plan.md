@@ -236,6 +236,11 @@ Aturan yang berlaku di semua feature: tabel bisnis wajib `tenant_id` + RLS (FORC
 **Logic:** manifest + service worker (installable), tampilan offline sederhana
 - **Verifikasi:** bisa di-install di HP; semua menu karyawan berfungsi
 
+### 37b Tab KPI & Absensi Detail Karyawan
+**UI:** tab KPI & Absensi di `/employees/[id]` (sebelumnya "Segera hadir" — tidak pernah dijadwalkan; sisipan, keputusan user 2026-10-02). Tab di URL (`?tab=`), navigasi bulan per tab
+**Logic:** Absensi = rincian harian + ringkasan periode tutup buku (endpoint rekap per karyawan feature 16); KPI = skor bulan terpilih + rincian indikator (rumus feature 21) + riwayat penilaian periodik karyawan tsb (semua status, tautan ke `/kpi/reviews/[id]`). Cakupan sama: owner/admin semua, atasan bawahan langsung
+- **Verifikasi:** angka tab cocok dengan `/attendance/corrections` & `/kpi/scores`; atasan tidak bisa membuka karyawan di luar bawahannya
+
 ---
 
 ## Phase 8 — Siap Produksi

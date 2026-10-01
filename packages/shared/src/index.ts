@@ -399,6 +399,7 @@ export {
   kpiScoreResultSchema,
   kpiScoreRowSchema,
   myKpiScoreSchema,
+  employeeKpiScoreSchema,
   type KpiIndicatorScore,
   type KpiIndicatorScoreStatus,
   type KpiPredicate,
@@ -408,6 +409,7 @@ export {
   type KpiScoreResult,
   type KpiScoreRow,
   type MyKpiScore,
+  type EmployeeKpiScore,
 } from "./kpiScores.js";
 export {
   createKpiReviewsResultSchema,
@@ -420,6 +422,8 @@ export {
   KPI_REVIEW_STATUSES,
   kpiReviewDetailSchema,
   myKpiReviewListSchema,
+  employeeKpiReviewListSchema,
+  employeeKpiReviewSchema,
   myKpiReviewSchema,
   kpiReviewListQuerySchema,
   kpiReviewListSchema,
@@ -436,6 +440,7 @@ export {
   type KpiReviewDetail,
   type MyKpiReview,
   type MyKpiReviewList,
+  type EmployeeKpiReview,
   type KpiReviewList,
   type KpiReviewListQuery,
   type KpiReviewPeriod,

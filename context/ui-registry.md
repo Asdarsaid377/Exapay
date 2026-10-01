@@ -338,7 +338,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /employees/[id]
 - **Referensi desain:** context/designs/employees-detail.html
 - **Pola kelas kunci:** header avatar `lg` + nama `text-[22px] lg:text-h1` + meta + Badge; aksi Ubah (secondary) + ⋯ DropdownMenu (item bahaya `text-danger-text`); **tab bar** `border-b border-text-primary/10 gap-7`, tab `h-11.5 text-[15px]`, aktif `font-bold shadow-[inset_0_-2px_0_var(--color-accent)]`; field baca `dt text-[13px] text-text-tertiary` / `dd text-[15px] font-medium`, nilai tersamar `tracking-[0.04em]`
-- **Catatan:** client. Tab Gaji = EmployeeSalaryTab (feature 28, owner/admin — prop `salary` null = tab disembunyikan); KPI/Absensi = EmptyState "Segera hadir". Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`
+- **Catatan:** client. Tab = Link `?tab=` (feature 37b; prop `tab` + `tabContent` dari page). Tab Gaji = EmployeeSalaryTab (feature 28, owner/admin — prop `salary` null = tab disembunyikan); KPI = EmployeeKpiTab, Absensi = EmployeeAttendanceTab (feature 37b). Tombol Tampilkan → Server Action `revealSensitive` (nilai penuh hanya di state komponen, tiap buka = 1 audit). Atasan: tanpa aksi, tanpa section pajak & rekening (API mengirim `confidential: null`). Dialog nonaktifkan: tanggal keluar (default hari ini) + alasan, Button `danger`
 
 ### FileDropzone
 - **Path:** apps/web/components/common/FileDropzone.tsx
@@ -690,3 +690,9 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** token ui-tokens.md (background `#fbf8f3`, accent `#f2790f`, card 22px, tombol pill); ikon = logo placeholder ExapayLogo
 - **Catatan:** offline.html statis mandiri dengan `<style>` sendiri (bukan component — tidak boleh bergantung CSS/JS aplikasi yang belum ter-cache). SW tidak meng-cache halaman/data
 
+### EmployeeKpiTab / EmployeeAttendanceTab (tab detail karyawan)
+- **Path:** apps/web/components/employees/EmployeeKpiTab.tsx, EmployeeAttendanceTab.tsx
+- **Dipakai di:** /employees/[id]?tab=kpi · ?tab=attendance
+- **Referensi desain:** tanpa referensi — pola /me/performance + baris /kpi/reviews (KPI) dan halaman Koreksi absensi (Absensi), feature 37b, izin user
+- **Pola kelas kunci:** KPI: grid `xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start gap-4`; kiri AttendanceMonthNav (`basePath="/employees/<id>?tab=kpi"`) + card `glass-data rounded-card px-4.5 pt-4.5 pb-2.5 lg:px-6` (label `text-[13px]`, angka `font-display text-[44px] font-extrabold` + Badge predikat, caption template `text-[12.5px] text-text-tertiary`, KpiIndicatorBreakdown); kanan card `glass-data` "Penilaian periodik" — baris Link `min-h-16 px-4.5 py-3 hover:bg-row-hover lg:px-6` (periode `text-[14.5px] font-bold` + siklus · rentang `text-small`, kanan skor `font-display text-[17px] font-extrabold` + Badge predikat untuk final / Badge status untuk draf-direview, ChevronRight) ke /kpi/reviews/[id]. Absensi: AttendancePeriodNav (`keep={{ tab: "attendance" }}`) + AttendanceDayList `showEmployee={false}` (judul "Rincian harian")
+- **Catatan:** server component, data `ApiResult` dari page (EmptyState CloudOff bila gagal; KPI tanpa template = EmptyState Target; tanpa penilaian = EmptyState `surface="none"`)

@@ -161,6 +161,18 @@ export const myKpiReviewListSchema = z.discriminatedUnion("access", [
 ]);
 export type MyKpiReviewList = z.infer<typeof myKpiReviewListSchema>;
 
+// Riwayat penilaian periodik satu karyawan — tab KPI detail karyawan (feature 37b), terbaru dulu. Skor hanya untuk final
+// (draf/direview dihitung saat dibuka di /kpi/reviews/[id]).
+export const employeeKpiReviewSchema = z.object({
+  id: z.string(),
+  status: z.enum(KPI_REVIEW_STATUSES),
+  period: periodRangeSchema.extend({ cycle: z.enum(KPI_REVIEW_CYCLES) }),
+  score: z.string().nullable(),
+  predicate: z.enum(KPI_PREDICATES).nullable(),
+});
+export type EmployeeKpiReview = z.infer<typeof employeeKpiReviewSchema>;
+export const employeeKpiReviewListSchema = z.array(employeeKpiReviewSchema);
+
 // ——— Mutasi ———
 
 const versionSchema = z.string().regex(/^[0-9]{1,20}$/, "Versi tidak valid");

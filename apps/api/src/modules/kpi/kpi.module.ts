@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AttendanceModule } from "../attendance/attendance.module.js";
+import { KpiEmployeesController } from "./kpi-employees.controller.js";
 import { KpiReviewSummariesController } from "./kpi-review-summaries.controller.js";
 import { KpiReviewSummariesService } from "./kpi-review-summaries.service.js";
 import { KpiReviewsController } from "./kpi-reviews.controller.js";
@@ -15,7 +16,7 @@ import { MyKpiReviewsController } from "./my-kpi-reviews.controller.js";
 // siklus & penilaian periodik (feature 22 — memakai ulang KpiScoresService), ringkasan AI (feature 23 — antrean AI_QUEUE dari RedisModule global)
 @Module({
   imports: [AttendanceModule],
-  controllers: [KpiTemplatesController, KpiScoresController, KpiReviewsController, KpiReviewSummariesController, MyKpiReviewsController],
+  controllers: [KpiTemplatesController, KpiScoresController, KpiReviewsController, KpiReviewSummariesController, MyKpiReviewsController, KpiEmployeesController],
   providers: [KpiTemplatesService, KpiScoresService, KpiReviewsService, KpiReviewSummariesService],
   exports: [KpiScoresService],
 })

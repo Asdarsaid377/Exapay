@@ -109,3 +109,7 @@ export function employeesHref(filters: Omit<EmployeeListQuery, "page"> & { page?
   const query = params.toString();
   return query ? `/employees?${query}` : "/employees";
 }
+
+// Tab detail karyawan /employees/[id] (?tab=, feature 37b). Gaji hanya owner/admin.
+export const EMPLOYEE_DETAIL_TABS = ["data", "salary", "kpi", "attendance"] as const;
+export type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];

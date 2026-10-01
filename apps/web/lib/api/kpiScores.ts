@@ -1,4 +1,4 @@
-import { type KpiScoreList, kpiScoreListSchema, type KpiScoreQuery, type MyKpiScore, myKpiScoreSchema } from "@exapay/shared";
+import { type EmployeeKpiScore, employeeKpiScoreSchema, type KpiScoreList, kpiScoreListSchema, type KpiScoreQuery, type MyKpiScore, myKpiScoreSchema } from "@exapay/shared";
 import { cookies } from "next/headers";
 
 import { type ApiResult, apiRequest, sessionCookieHeader } from "@/lib/api/server";
@@ -27,4 +27,11 @@ export async function fetchKpiScores(query: KpiScoreQuery): Promise<ApiResult<Kp
 // month YYYY-MM (sudah divalidasi); null → bulan berjalan
 export async function fetchMyKpiScore(month: string | null): Promise<ApiResult<MyKpiScore>> {
   return apiRequest(`/kpi/scores/me${month ? `?month=${month}` : ""}`, (data) => myKpiScoreSchema.parse(data), { cookieHeader: await cookieHeader() });
+}
+
+// Tab KPI detail karyawan (feature 37b). employeeId & month sudah divalidasi; null → bulan berjalan
+export async function fetchEmployeeKpiScore(employeeId: string, month: string | null): Promise<ApiResult<EmployeeKpiScore>> {
+  return apiRequest(`/kpi/employees/${employeeId}/score${month ? `?month=${month}` : ""}`, (data) => employeeKpiScoreSchema.parse(data), {
+    cookieHeader: await cookieHeader(),
+  });
 }

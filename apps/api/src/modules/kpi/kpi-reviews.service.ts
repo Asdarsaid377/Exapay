@@ -2,6 +2,7 @@ import { departments, employees, kpiReviewPeriods, kpiReviewRatings, kpiReviews,
 import {
   type CreateKpiReviewsInput,
   type CreateKpiReviewsResult,
+  type EmployeeKpiReview,
   KPI_REVIEW_STATUS_LABELS,
   type KpiReviewCycle,
   type KpiReviewDetail,
@@ -586,6 +587,44 @@ export class KpiReviewsService {
     const parsed = kpiReviewSnapshotSchema.safeParse(review.snapshot);
     if (!parsed.success) throw new Error(`[kpi-reviews/snapshot] snapshot penilaian ${review.id} tidak valid`);
     return parsed.data;
+  }
+
+  // ——— tab KPI detail karyawan (feature 37b) ———
+
+  // Riwayat penilaian satu karyawan, terbaru dulu. Cakupan sama dengan daftar penilaian (owner/admin semua, atasan bawahan
+  // langsung) — di luar cakupan → 404. Skor hanya untuk final (kolom final_score); draf/direview dihitung di detail.
+  async employeeReviews(user: AuthUser, employeeId: string): Promise<EmployeeKpiReview[]> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      const viewer = await loadAttendanceViewer(tx, ctx);
+      if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke penilaian KPI");
+      const [employee] = await tx
+        .select({ id: employees.id })
+        .from(employees)
+        .where(and(eq(employees.id, employeeId), viewerEmployeeScope(viewer)));
+      if (!employee) throw new NotFoundException("Karyawan tidak ditemukan");
+      const rows = await tx
+        .select({
+          id: kpiReviews.id,
+          status: kpiReviews.status,
+          cycle: kpiReviewPeriods.cycle,
+          startDate: kpiReviewPeriods.startDate,
+          endDate: kpiReviewPeriods.endDate,
+          finalScore: kpiReviews.finalScore,
+          finalPredicate: kpiReviews.finalPredicate,
+        })
+        .from(kpiReviews)
+        .innerJoin(kpiReviewPeriods, and(eq(kpiReviewPeriods.tenantId, kpiReviews.tenantId), eq(kpiReviewPeriods.id, kpiReviews.periodId)))
+        .where(eq(kpiReviews.employeeId, employee.id))
+        .orderBy(desc(kpiReviewPeriods.startDate));
+      return rows.map((row) => ({
+        id: row.id,
+        status: row.status,
+        period: { cycle: row.cycle, startDate: row.startDate, endDate: row.endDate },
+        score: row.status === "final" && row.finalScore !== null ? trimDecimal(row.finalScore) : null,
+        predicate: row.status === "final" ? row.finalPredicate : null,
+      }));
+    });
   }
 
   // ——— portal karyawan (feature 37) ———

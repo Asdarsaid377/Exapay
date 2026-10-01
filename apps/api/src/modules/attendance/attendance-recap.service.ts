@@ -174,7 +174,7 @@ export class AttendanceRecapService {
 
       const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
       const today = localClock(new Date(), timeZone).date;
-      const { from, to } = await this.recapPeriod(tx, ctx, query, today);
+      const { from, to, month, currentMonth } = await this.recapPeriod(tx, ctx, query, today);
       const period = { from, to };
       const records = await this.selectRecords(tx, [row.id], period);
       const leaves = await this.selectLeaves(tx, [row.id], period);
@@ -207,6 +207,8 @@ export class AttendanceRecapService {
       return {
         employee: toEmployee(row),
         ...period,
+        month,
+        currentMonth,
         today,
         timeZone,
         summary: result.summary,
