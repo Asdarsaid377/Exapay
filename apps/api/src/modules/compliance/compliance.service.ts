@@ -7,6 +7,8 @@ import {
   complianceRemindersBetween,
   type ComplianceSource,
   COMPLIANCE_OVERDUE_LOOKBACK_MONTHS,
+  DASHBOARD_REMINDER_DAYS,
+  DASHBOARD_REMINDER_LIMIT,
   findComplianceReminder,
   shiftComplianceMonth,
 } from "@exapay/shared";
@@ -90,6 +92,33 @@ export class ComplianceService {
           doneThisMonth: reminders.filter((reminder) => reminder.status === "done").length,
         },
         minimumWage,
+      };
+    });
+  }
+
+  // Kartu pengingat dashboard (feature 35): belum selesai — terlewat (seperti calendar()) lalu tenggat hari ini s.d.
+  // DASHBOARD_REMINDER_DAYS ke depan, terdekat dulu, maks. DASHBOARD_REMINDER_LIMIT
+  async upcoming(user: AuthUser): Promise<{ overdue: number; reminders: ComplianceReminder[] }> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      await this.requireManager(tx, ctx);
+      const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
+      const today = localClock(new Date(), timeZone).date;
+      const source = await this.loadSource(tx, ctx.tenantId, timeZone);
+      const pastItems = complianceRemindersBetween(source, `${shiftComplianceMonth(today.slice(0, 7), -COMPLIANCE_OVERDUE_LOOKBACK_MONTHS)}-01`, addDays(today, -1));
+      const nextItems = complianceRemindersBetween(source, today, addDays(today, DASHBOARD_REMINDER_DAYS));
+      const states = await this.loadStates(tx, [...pastItems, ...nextItems].map((item) => item.key));
+      const open = (item: ComplianceReminderItem): boolean => !states.get(item.key)?.doneAt;
+      const overdue = pastItems.filter(open);
+      return {
+        overdue: overdue.length,
+        reminders: [...overdue, ...nextItems.filter(open)].slice(0, DASHBOARD_REMINDER_LIMIT).map((item) => ({
+          ...item,
+          daysUntil: complianceDaysBetween(today, item.dueDate),
+          status: "open",
+          doneAt: null,
+          doneByName: null,
+        })),
       };
     });
   }

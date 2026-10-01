@@ -1,5 +1,14 @@
 import { attendanceCorrections, attendanceRecords, departments, employees, leaveRequests, positions } from "@exapay/db";
-import type { AttendanceDay, AttendancePeriodQuery, AttendanceRecap, EmployeeAttendanceDays, LeaveType } from "@exapay/shared";
+import type {
+  AttendanceDailyCount,
+  AttendanceDailyRecap,
+  AttendanceDay,
+  AttendanceDayStatus,
+  AttendancePeriodQuery,
+  AttendanceRecap,
+  EmployeeAttendanceDays,
+  LeaveType,
+} from "@exapay/shared";
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, between, eq, gte, inArray, isNull, lte, or, type SQL } from "drizzle-orm";
 
@@ -18,6 +27,30 @@ import { WorkCalendarService } from "./work-calendar.service.js";
 export type Period = { from: string; to: string };
 
 const NOT_FOUND = "Karyawan tidak ditemukan";
+
+const DAY_MS = 86_400_000;
+
+// Status harian → kolom hitungan dashboard; null = bukan hari kerja dalam masa kerja (tidak dihitung)
+const DAILY_STATUS_KEYS: Record<AttendanceDayStatus, keyof Omit<AttendanceDailyCount, "date" | "expected"> | null> = {
+  on_time: "onTime",
+  late: "late",
+  permit: "leave",
+  sick: "leave",
+  leave: "leave",
+  absent: "absent",
+  pending: "pending",
+  off_day_present: null,
+  off: null,
+  not_employed: null,
+};
+
+function datesOf(period: Period): string[] {
+  const dates: string[] = [];
+  for (let ms = Date.parse(`${period.from}T00:00:00Z`), end = Date.parse(`${period.to}T00:00:00Z`); ms <= end; ms += DAY_MS) {
+    dates.push(new Date(ms).toISOString().slice(0, 10));
+  }
+  return dates;
+}
 
 const employeeColumns = {
   id: employees.id,
@@ -80,21 +113,7 @@ export class AttendanceRecapService {
   async recap(user: AuthUser, query: AttendancePeriodQuery): Promise<AttendanceRecap> {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
-      const viewer = await this.requireViewer(tx, ctx);
-      const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
-      const today = localClock(new Date(), timeZone).date;
-      const { month, currentMonth, cutoffDay, ...period } = await this.recapPeriod(tx, ctx, query, today);
-
-      // Karyawan yang masa kerjanya beririsan dengan periode
-      const rows = await this.selectEmployees(
-        tx,
-        and(viewerEmployeeScope(viewer), lte(employees.joinDate, period.to), or(isNull(employees.endDate), gte(employees.endDate, period.from))),
-      );
-      const ids = rows.map((row) => row.id);
-      const records = await this.selectRecords(tx, ids, period);
-      const leaves = await this.selectLeaves(tx, ids, period);
-      const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
-
+      const { viewer, timeZone, today, month, currentMonth, cutoffDay, period, calendar, employees: recapped } = await this.loadRecap(tx, ctx, query);
       return {
         ...period,
         month,
@@ -104,17 +123,42 @@ export class AttendanceRecapService {
         timeZone,
         scope: viewer.manage ? "all" : "subordinates",
         workingDays: countWorkingDays(calendar, period.from, period.to),
-        rows: rows.map((row) => ({
-          employee: toEmployee(row),
-          summary: recapEmployee({
-            calendar,
-            ...period,
-            today,
-            employment: row,
-            records: records.filter((r) => r.employeeId === row.id).map(toRecapRecord),
-            leaves: leaves.filter((l) => l.employeeId === row.id),
-          }).summary,
-        })),
+        rows: recapped.map(({ row, result }) => ({ employee: toEmployee(row), summary: result.summary })),
+      };
+    });
+  }
+
+  // Jumlah karyawan per status per tanggal pada periode berjalan (dashboard feature 35) — cakupan & angka sama dengan recap()
+  async dailyRecap(user: AuthUser): Promise<AttendanceDailyRecap> {
+    const ctx = tenantContextOf(user);
+    return withTenant(this.db, ctx, async (tx) => {
+      const { today, month, currentMonth, period, employees: recapped } = await this.loadRecap(tx, ctx, {});
+      const byDate = new Map<string, AttendanceDailyCount>();
+      for (const { result } of recapped) {
+        for (const { date, status } of result.days) {
+          const day = byDate.get(date) ?? { date, expected: 0, onTime: 0, late: 0, leave: 0, absent: 0, pending: 0 };
+          byDate.set(date, day);
+          const key = DAILY_STATUS_KEYS[status];
+          if (!key) continue;
+          day.expected += 1;
+          day[key] += 1;
+        }
+      }
+      const totals = { present: 0, late: 0, leave: 0, absent: 0 };
+      for (const { result } of recapped) {
+        const { summary } = result;
+        totals.present += summary.present;
+        totals.late += summary.late;
+        totals.leave += summary.permit + summary.sick + summary.leave;
+        totals.absent += summary.absent;
+      }
+      return {
+        month: month ?? currentMonth,
+        ...period,
+        today,
+        employeeCount: recapped.length,
+        days: datesOf(period).map((date) => byDate.get(date) ?? { date, expected: 0, onTime: 0, late: 0, leave: 0, absent: 0, pending: 0 }),
+        totals,
       };
     });
   }
@@ -198,6 +242,26 @@ export class AttendanceRecapService {
   }
 
   // ——— helper ———
+
+  // Periode (rentang bebas / tutup buku) + rekap per karyawan yang masa kerjanya beririsan, dalam cakupan penglihat
+  private async loadRecap(tx: Transaction, ctx: TenantContext, query: AttendancePeriodQuery) {
+    const viewer = await this.requireViewer(tx, ctx);
+    const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
+    const today = localClock(new Date(), timeZone).date;
+    const { month, currentMonth, cutoffDay, ...period } = await this.recapPeriod(tx, ctx, query, today);
+    const rows = await this.selectEmployees(
+      tx,
+      and(viewerEmployeeScope(viewer), lte(employees.joinDate, period.to), or(isNull(employees.endDate), gte(employees.endDate, period.from))),
+    );
+    const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
+    const results = await this.recapEmployees(tx, rows, period, today, calendar);
+    const recapped = rows.map((row) => {
+      const result = results.get(row.id);
+      if (!result) throw new Error("[attendance-recap] rekap karyawan hilang");
+      return { row, result };
+    });
+    return { viewer, timeZone, today, month, currentMonth, cutoffDay, period, calendar, employees: recapped };
+  }
 
   // Rentang bebas, atau periode tutup buku payroll bulan terpilih (feature 30b); tanpa bulan = periode yang memuat hari ini
   private async recapPeriod(

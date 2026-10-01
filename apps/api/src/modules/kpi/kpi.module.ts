@@ -16,5 +16,6 @@ import { KpiTemplatesService } from "./kpi-templates.service.js";
   imports: [AttendanceModule],
   controllers: [KpiTemplatesController, KpiScoresController, KpiReviewsController, KpiReviewSummariesController],
   providers: [KpiTemplatesService, KpiScoresService, KpiReviewsService, KpiReviewSummariesService],
+  exports: [KpiScoresService],
 })
 export class KpiModule {}

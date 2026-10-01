@@ -10,5 +10,6 @@ import { ComplianceService } from "./compliance.service.js";
   imports: [AttendanceModule, PayrollModule],
   controllers: [ComplianceController],
   providers: [ComplianceService],
+  exports: [ComplianceService],
 })
 export class ComplianceModule {}

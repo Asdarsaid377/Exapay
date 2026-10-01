@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 7 — Kepatuhan, Dashboard & Portal
-**Terakhir selesai:** 34 Peringatan UMK (2026-10-01)
-**Berikutnya:** 35 Dashboard Owner/Admin
+**Terakhir selesai:** 35 Dashboard Owner/Admin (2026-10-01)
+**Berikutnya:** 36 Dashboard Atasan
 
 ---
 
@@ -63,7 +63,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 7 — Kepatuhan, Dashboard & Portal
 - [x] 33 Kalender Kepatuhan
 - [x] 34 Peringatan UMK
-- [ ] 35 Dashboard Owner/Admin
+- [x] 35 Dashboard Owner/Admin
 - [ ] 36 Dashboard Atasan
 - [ ] 37 Portal Karyawan Lengkap & PWA
 
@@ -245,6 +245,9 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-01 — Keputusan user (feature 34): **dasar pembanding upah minimum = gaji pokok + tunjangan tetap** (komponen `base_salary` + `fixed_allowance`, PP 36/2021 — sama dengan dasar upah BPJS; berbeda dari teks build-plan/desain "gaji pokok"); **peringatan dini** untuk versi upah minimum berikutnya yang sudah ada di data regulasi (status `below_upcoming`). UI turunan referensi yang ada: kolom Keterangan ⚠ `employees.html` + banner "di bawah UMK" `dashboard.html` (lewat Banner). Keputusan sendiri (disetujui saat verifikasi): hanya owner/admin (atasan tidak melihat gaji); karyawan nonaktif / gaji belum diatur tidak ditandai; tanpa email (di luar scope build-plan).
 - 2026-10-01 — **Peringatan UMK (feature 34):** tanpa migration. Fungsi murni `minimumWageFlagOf` (`apps/api/src/modules/payroll/minimum-wage-check.ts`, decimal.js): tanggal pembanding = hari ini (zona waktu usaha) atau tanggal masuk bila belum mulai; di bawah upah minimum yang berlaku → `below`, selain itu di bawah versi berikutnya pada tanggal mulai berlakunya (memakai versi gaji yang berlaku saat itu — kenaikan terjadwal ikut dihitung) → `below_upcoming`. `MinimumWageService` (diekspor PayrollModule, dipakai EmployeesModule & ComplianceModule; upah = SUM numeric di DB) + `RegulationsService.nextMinimumWage` (UMK didahulukan atas UMP, fallback sama). API: `GET /employees` → `minimumWage { current, upcoming, flags per id }` (null untuk atasan), `GET /compliance` → `minimumWage { locationSet, current, upcoming, employees }` (keadaan hari ini, tidak bergantung bulan; bukan pengingat — tidak bisa ditandai selesai). Tipe di `@exapay/shared` `minimumWage.ts` (`minimumWageLabel` → "UMK Kota X 2026"/"UMP Provinsi 2026").
 
+- 2026-10-01 — Keputusan user (feature 35): grafik kehadiran memakai **periode absensi berjalan (tutup buku)** = default /attendance (bukan 30 hari bergulir dari teks desain); **biaya gaji = bruto + BPJS perusahaan** periode gaji terbaru yang dibuka. Keputusan sendiri: tindakan tertunda ditambah **penilaian KPI berstatus reviewed (menunggu difinalkan)**; skor KPI = skor ad-hoc bulan kalender berjalan (sama dengan /kpi/scores — tanggal 1 semua 0 / Perlu Perbaikan, belum ada tampilan "belum cukup data"); pengingat = terlewat + tenggat ≤ 45 hari ke depan, maks. 4, hanya baca; legenda grafik "Tepat waktu" (hadir − telat) agar batang bertumpuk tidak menghitung ganda. UI mengikuti snapshot dashboard.html.
+- 2026-10-01 — **Dashboard owner/admin (feature 35):** tanpa migration. Modul API baru `dashboard` (`GET /dashboard`, `@Roles("owner","admin")` + peran dibaca ulang via `loadAttendanceViewer`) merangkai service halaman sumber agar angka identik: `AttendanceRecapService.dailyRecap` (baru — `recap()` & `dailyRecap()` kini berbagi `loadRecap` privat), `KpiScoresService.list(user, {})`, `PayrollRunsService.list` + `detail` (periode terbaru), `ComplianceService.upcoming` (baru), `MinimumWageService.summary`; hitungan tertunda (task_logs pending + tanggal terlama, leave_requests pending per jenis, kpi_reviews reviewed, karyawan aktif per status kerja) query langsung dengan filter sama dengan tab Menunggu. Ekspor baru: `KpiModule` → KpiScoresService, `PayrollModule` → PayrollRunsService, `ComplianceModule` → ComplianceService. Tipe `OwnerDashboard`/`AttendanceDailyRecap` di `@exapay/shared` `dashboard.ts`. Atasan → 403 (web menampilkan placeholder sampai feature 36).
+
 ---
 
 ## Catatan (Notes)
@@ -310,3 +313,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 256 per feature 32 (`payroll-reports.e2e.test.ts`: rekap = jumlah slip = total snapshot, isi Excel dibaca `read-excel-file`, audit, akses, draf 409) + 4 unit test worker. Data dev "Demo Slip Gaji": karyawan belum punya rekening (semua di sheet "Tanpa rekening").
 - Total test API 267 per feature 33 (`compliance-reminders.test.ts` 8 unit — aturan dibaca dari seed `0028`; `compliance.e2e.test.ts` 3 skenario; `tenant-isolation` + 2 tabel). Email worker diverifikasi manual ujung-ke-ujung di dev (H-7, H-1, tanpa duplikat; data dikembalikan). Sekali terlihat flake 404 login di run gabungan — lulus saat diulang. Belum ada: pergeseran tenggat ke hari kerja berikutnya saat libur, pengingat perubahan UMK (feature 34), kartu pengingat di dashboard (feature 35).
 - Total test API 276 per feature 34 (`minimum-wage-check.test.ts` 7 unit; `minimum-wage.e2e.test.ts` 2 — fallback UMP Sulsel 2026 karena seed belum punya UMK; peringatan dini hanya teruji di unit karena seed belum punya versi 2027). Data dev: Siti Rahmawati (Kopi Nusantara) punya gaji contoh Gaji Pokok Rp3,5 jt mulai 1 Okt 2026 (di bawah UMP Sulsel) dari verifikasi feature 34. Belum ada: email/kartu dashboard peringatan UMK (dashboard di feature 35), tanda di tab Gaji detail karyawan, filter "di bawah UMK" di daftar karyawan, aturan gaji pokok ≥ 75% upah.
+- Total test API 277 per feature 35 (`dashboard.e2e.test.ts` 1 skenario — angka dashboard dibandingkan dengan /attendance/recap, /kpi/scores, /payroll/runs/:id, /compliance, /employees, /tasks/verification, /attendance/leave-requests; atasan 403). Diverifikasi visual (Playwright, desktop 1440 + mobile 390) dengan data Roti Sinar Pagi. Belum ada: pembanding skor KPI bulan lalu ("naik 3 poin" di desain), tampilan "belum cukup data" KPI awal bulan, hitungan tertunda di sidebar.

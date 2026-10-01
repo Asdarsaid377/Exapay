@@ -181,10 +181,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### StatTile
 - **Path:** apps/web/components/common/StatTile.tsx
-- **Dipakai di:** /admin/tenants (nanti dashboard feature 35/36)
+- **Dipakai di:** /admin/tenants, /dashboard, /compliance, /attendance, /payroll/*, dll.
 - **Referensi desain:** context/designs/dashboard.html (stat tile)
-- **Pola kelas kunci:** `glass-strong min-h-30 lg:min-h-34 rounded-card p-5 gap-2.5`; label `text-sm text-text-secondary`; angka `font-display text-[26px] lg:text-num font-extrabold tabular-nums`; catatan `text-[13px] text-text-tertiary`
-- **Catatan:** props `label`, `value` (string terformat), `note?`, `badge?`. Prefix "Rp" untuk uang belum ada — tambahkan prop saat dashboard dibangun
+- **Pola kelas kunci:** `glass-strong h-full min-h-30 lg:min-h-34 rounded-card p-5 gap-2.5`; label `text-sm text-text-secondary`; angka `font-display text-[26px] lg:text-num font-extrabold tabular-nums`; prefix `font-display text-[15px] lg:text-[17px] font-bold`; suffix `font-display text-base lg:text-xl font-semibold text-text-secondary`; catatan `text-[13px] text-text-tertiary`
+- **Catatan:** props `label`, `value` (string terformat), `prefix?` (mis. "Rp"), `suffix?` (mis. "/14"), `note?`, `badge?`. `h-full` (feature 35) agar tinggi sama saat dibungkus `div` col-span. Label pendek bila ada badge (agar tidak terbungkus)
 
 ### Dialog
 - **Path:** apps/web/components/common/Dialog.tsx
@@ -648,4 +648,11 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /compliance (di bawah PageHeader, di atas StatTile)
 - **Referensi desain:** context/designs/dashboard.html (banner "N karyawan bergaji pokok di bawah UMK …") lewat Banner (design-tokens "banner")
 - **Pola kelas kunci:** Banner warning per status (`below` / `below_upcoming`), description = teks + `ul mt-1.5 flex-col gap-1` nama tautan `font-bold text-accent-strong` + "— upah Rp …" `tabular-nums`; Banner neutral ikon MapPin bila lokasi usaha belum diatur (aksi Button secondary "Atur lokasi usaha" → /settings/company) atau data upah minimum belum ada
-- **Catatan:** server component, prop `summary: MinimumWageSummary`. Tidak merender apa pun bila tidak ada karyawan tertandai. Label lewat `minimumWageLabel` (@exapay/shared) + `minimumWageReferenceOf` (lib/employeeLabels.ts). Dipakai ulang kartu dashboard feature 35
+- **Catatan:** server component, prop `summary: MinimumWageSummary`. Tidak merender apa pun bila tidak ada karyawan tertandai. Label lewat `minimumWageLabel` (@exapay/shared) + `minimumWageReferenceOf` (lib/employeeLabels.ts). Dipakai ulang di /dashboard (feature 35)
+
+### AttendanceChartCard / PendingActionsCard
+- **Path:** apps/web/components/dashboard/AttendanceChartCard.tsx, PendingActionsCard.tsx
+- **Dipakai di:** /dashboard (owner/admin)
+- **Referensi desain:** context/designs/dashboard.html (card "Rekap kehadiran 30 hari", "Tindakan tertunda", state empty tindakan tertunda, mobile 390)
+- **Pola kelas kunci:** Chart: `glass-strong rounded-card px-5 py-5 sm:px-6 gap-4.5`; panel detail `rounded-field bg-fill-subtle px-3.5 py-2.5 text-small` (tanggal `min-w-36 font-bold`, angka `<b>`); area batang `h-40.5 border-b border-border-control gap-0.5 sm:gap-1.5`, batang = `<button>` flex-1 `flex-col-reverse` segmen `bg-chart-present|late|leave|absent` tinggi % terhadap karyawan terjadwal terbanyak, non-aktif `opacity-55`; label sumbu `text-xs text-text-tertiary` (tgl pertama, tiap 7 hari, terakhir); legenda kotak `size-2.5 rounded-[3px]` + label · total. Pending: header judul `text-h2` + pill jumlah `bg-inverse text-on-inverse h-5.5 rounded-full text-xs`; baris `border-t border-border-subtle py-3 sm:py-4` judul `text-sm sm:text-[15px] font-bold` + sub; tautan `buttonClassName` (primary untuk payroll, secondary lainnya) `max-sm:hidden` + chevron `size-11 sm:hidden`; kosong = ikon CircleCheck success + judul + teks
+- **Catatan:** Chart client (`useState` tanggal aktif, default hari ini; hover/focus/klik), prop `recap: AttendanceDailyRecap`; legenda "Tepat waktu" = hadir − telat (total halaman /attendance: hadir termasuk telat). PendingActionsCard server, prop `items: PendingAction[]` (`key,title,description,action,href,primary?`) — teks disusun di page. Halaman /dashboard juga memakai StatTile (prefix/suffix), KpiPredicateDistribution (prop baru `title?`, `action?` tautan "Lihat skor"), ComplianceReminderList (prop baru `actions={false}` = hanya baca), MinimumWageBanner; kartu pengingat inline di page (header + Badge danger "n terlewat" + tautan "Buka kalender", kosong = EmptyState `surface="none"`). Mobile: daftar (pending + pengingat) sebelum grafik (`max-xl:order-first`); tile 1 & 4 `max-xl:col-span-2`. Skeleton `app/(main)/dashboard/loading.tsx`. Atasan: placeholder sampai feature 36

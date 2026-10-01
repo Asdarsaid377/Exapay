@@ -8,11 +8,13 @@ import { complianceDueBadge, compliancePeriodLabel, complianceTitle } from "@/li
 
 type Props = {
   reminders: ComplianceReminder[];
+  // false = hanya baca (kartu dashboard) — tanpa tombol tandai selesai
+  actions?: boolean;
 };
 
 // Daftar pengingat kepatuhan (feature 33) — baris pola "Pengingat kepatuhan" dashboard.html: tanggal 44px · judul + sub ·
 // badge tenggat; ditambah aksi tandai selesai/batalkan. Yang selesai diredupkan.
-export function ComplianceReminderList({ reminders }: Props) {
+export function ComplianceReminderList({ reminders, actions = true }: Props) {
   return (
     <ul>
       {reminders.map((reminder) => {
@@ -37,7 +39,7 @@ export function ComplianceReminderList({ reminders }: Props) {
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
               <Badge tone={badge.tone}>{badge.label}</Badge>
-              <ComplianceReminderAction reminderKey={reminder.key} done={done} />
+              {actions ? <ComplianceReminderAction reminderKey={reminder.key} done={done} /> : null}
             </div>
           </li>
         );

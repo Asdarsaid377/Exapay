@@ -1,23 +1,30 @@
 import { KPI_PREDICATES, type KpiScoreList } from "@exapay/shared";
+import type { ReactNode } from "react";
 
 import { PREDICATE_BAR_CLASSES, PREDICATE_RANGES, predicateLabel } from "@/lib/kpiScoreLabels";
 
 type Props = {
   counts: KpiScoreList["predicateCounts"];
   subtitle: string;
+  title?: string;
+  // Tautan di kanan judul (dashboard: "Lihat skor")
+  action?: ReactNode;
 };
 
 // Sebaran predikat KPI — mengikuti card "Sebaran predikat KPI" snapshot context/designs/dashboard.html
 // (label + rentang, jumlah J 800 18px, bar 10px; lebar relatif terhadap predikat terbanyak).
-export function KpiPredicateDistribution({ counts, subtitle }: Props) {
+export function KpiPredicateDistribution({ counts, subtitle, title = "Sebaran predikat", action }: Props) {
   const max = Math.max(1, ...KPI_PREDICATES.map((predicate) => counts[predicate]));
   return (
     <section aria-labelledby="kpi-distribution-title" className="glass-strong flex flex-col gap-5 rounded-card px-5 py-5 sm:px-6">
-      <div className="flex flex-col gap-1">
-        <h2 id="kpi-distribution-title" className="font-display text-h2 font-bold tracking-[-0.01em] text-text-primary">
-          Sebaran predikat
-        </h2>
-        <span className="text-small text-text-secondary">{subtitle}</span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 id="kpi-distribution-title" className="font-display text-h2 font-bold tracking-[-0.01em] text-text-primary">
+            {title}
+          </h2>
+          <span className="text-small text-text-secondary">{subtitle}</span>
+        </div>
+        {action}
       </div>
       <ul className="flex flex-1 flex-col justify-center gap-4">
         {KPI_PREDICATES.map((predicate) => (

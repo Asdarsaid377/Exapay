@@ -23,6 +23,6 @@ import { SalaryComponentsService } from "./salary-components.service.js";
   imports: [AttendanceModule, RegulationsModule],
   controllers: [SalaryComponentsController, EmployeeSalariesController, PayrollRunsController, PayslipsController, MyPayslipsController, PayrollReportsController],
   providers: [SalaryComponentsService, EmployeeSalariesService, PayrollRunsService, PayslipsService, PayrollReportsService, MinimumWageService],
-  exports: [MinimumWageService],
+  exports: [MinimumWageService, PayrollRunsService],
 })
 export class PayrollModule {}
