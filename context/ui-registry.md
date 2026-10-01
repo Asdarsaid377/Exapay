@@ -550,3 +550,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** RatingForm = card `glass-strong rounded-card p-5 lg:p-6`, per indikator SegmentedControl 1–5 `fullWidth size="lg"` + keterangan skala caption, tombol "Simpan nilai" (secondary) + "Kirim untuk difinalkan" (primary); StatusActions = "Kembalikan ke draf" (secondary) + "Finalkan" (primary) → Dialog konfirmasi (FormAlert warning jika ada catatan tugas belum diverifikasi); BackLink = pola KpiTemplatesBackLink ke `/kpi/reviews?period=`
 - **Catatan:** client (kecuali BackLink). Layout detail: kiri StatTile skor (sementara/final + badge predikat) + RatingForm/Finalisasi, kanan card "Rincian skor" berisi KpiIndicatorBreakdown (`lg:grid-cols-[1fr_1.85fr]`); Banner untuk final (Lock), direview, tanpa template, catatan tugas menunggu verifikasi
 
+### KpiReviewSummaryPanel
+- **Path:** apps/web/components/kpi/KpiReviewSummaryPanel.tsx
+- **Dipakai di:** /kpi/reviews/[id] (kolom kanan, di bawah "Rincian skor")
+- **Referensi desain:** tanpa referensi — pola card detail penilaian + TextAreaField + Dialog (feature 23, izin user)
+- **Pola kelas kunci:** card `glass-strong rounded-card p-5 lg:p-6`; header h2 "Ringkasan kinerja" + Badge status kanan (info Sedang dibuat / warning Menunggu ditinjau / success Sudah ditinjau / danger Gagal dibuat); narasi `text-body whitespace-pre-line` + caption asal & peninjau; saat AI menulis skeleton `animate-exa-pulse` 3 bar; action bar `border-t pt-5`: Ubah/Tulis sendiri (secondary), Buat (ulang) dengan AI (primary jika kosong), Tandai sudah ditinjau (primary) + caption kuota rata kanan
+- **Catatan:** client; polling `router.refresh()` tiap 3 dtk selama `generation.pending`; mode edit = TextAreaField 10 baris + hitungan karakter (maks. 4000), simpan = sekaligus ditinjau; buat ulang saat sudah ada narasi → Dialog konfirmasi (memakai satu kuota). Kuota habis → tombol AI nonaktif + caption tanggal reset. Panel Finalisasi menyesuaikan teks jika narasi belum ditinjau / sedang dibuat
+

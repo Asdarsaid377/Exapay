@@ -96,6 +96,7 @@ describe("role runtime app_user", () => {
        where n.nspname = 'public' and c.relkind = 'r'`,
     );
     expect(rows.map((r) => r.relname).sort()).toEqual([
+      "ai_generations",
       "attendance_corrections",
       "attendance_deduction_rules",
       "attendance_records",
@@ -108,6 +109,7 @@ describe("role runtime app_user", () => {
       "kpi_indicators",
       "kpi_review_periods",
       "kpi_review_ratings",
+      "kpi_review_summaries",
       "kpi_reviews",
       "kpi_templates",
       "leave_requests",

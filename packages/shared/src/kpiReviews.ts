@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { kpiReviewSummarySchema, kpiReviewSummarySnapshotSchema } from "./kpiReviewSummaries.js";
 import { KPI_PREDICATES, kpiScoreResultSchema } from "./kpiScores.js";
 import { KPI_RATING_SCALE_MAX } from "./kpiTemplates.js";
 import { isoDateSchema } from "./workCalendar.js";
@@ -112,6 +113,8 @@ export const kpiReviewSnapshotSchema = z.object({
   employee: z.object({ fullName: z.string(), positionName: z.string(), departmentName: z.string() }),
   template: z.object({ id: z.string(), name: z.string() }),
   result: kpiScoreResultSchema,
+  // Narasi ringkasan yang sudah ditinjau (feature 23); tidak ada / null = final tanpa narasi
+  summary: kpiReviewSummarySnapshotSchema.nullable().optional(),
 });
 export type KpiReviewSnapshot = z.infer<typeof kpiReviewSnapshotSchema>;
 
@@ -131,7 +134,10 @@ export const kpiReviewDetailSchema = z.object({
   submittedByName: z.string().nullable(),
   finalizedAt: z.string().nullable(),
   finalizedByName: z.string().nullable(),
-  permissions: z.object({ rate: z.boolean(), returnToDraft: z.boolean(), finalize: z.boolean() }),
+  // Ringkasan AI / narasi kinerja (feature 23)
+  summary: kpiReviewSummarySchema,
+  // summary = boleh generate, edit, dan menandai narasi sudah ditinjau
+  permissions: z.object({ rate: z.boolean(), returnToDraft: z.boolean(), finalize: z.boolean(), summary: z.boolean() }),
 });
 export type KpiReviewDetail = z.infer<typeof kpiReviewDetailSchema>;
 

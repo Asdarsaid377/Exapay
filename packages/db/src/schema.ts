@@ -1,6 +1,8 @@
 import {
   ABSENCE_DEDUCTION_MODES,
+  AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
+  DEFAULT_AI_SUMMARY_MONTHLY_QUOTA,
   EMPLOYMENT_STATUSES,
   GENDERS,
   KPI_INDICATOR_TYPES,
@@ -8,6 +10,8 @@ import {
   KPI_RATING_SCALE_MAX,
   KPI_REVIEW_CYCLES,
   KPI_REVIEW_STATUSES,
+  KPI_SUMMARY_MAX_LENGTH,
+  KPI_SUMMARY_SOURCES,
   KPI_SYSTEM_METRICS,
   KPI_TARGET_PERIODS,
   LEAVE_ATTACHMENT_TYPES,
@@ -96,12 +100,15 @@ export const tenants = pgTable(
     payday: smallint("payday"),
     // Siklus penilaian KPI periodik (feature 22, /settings/kpi) — hanya memengaruhi periode yang dibuat berikutnya
     kpiReviewCycle: kpiReviewCycle("kpi_review_cycle").notNull().default("monthly"),
+    // Kuota generate ringkasan AI per bulan (feature 23). Hanya super-admin/app_owner yang boleh mengubah (trigger)
+    aiSummaryMonthlyQuota: integer("ai_summary_monthly_quota").notNull().default(DEFAULT_AI_SUMMARY_MONTHLY_QUOTA),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     check("tenants_npwp_format", sql`${t.npwp} ~ '^[0-9]{15,16}$'`),
     check("tenants_payday_range", sql`${t.payday} between 1 and 31`),
+    check("tenants_ai_summary_monthly_quota", sql`${t.aiSummaryMonthlyQuota} >= 0`),
   ],
 );
 
@@ -928,5 +935,89 @@ export const kpiReviewRatings = pgTable(
       "cascade",
     ),
     check("kpi_review_ratings_range", sql`${t.rating} BETWEEN 1 AND ${sql.raw(String(KPI_RATING_SCALE_MAX))}`),
+  ],
+);
+
+export const aiGenerationStatus = pgEnum("ai_generation_status", AI_GENERATION_STATUSES);
+export const kpiSummarySource = pgEnum("kpi_summary_source", KPI_SUMMARY_SOURCES);
+
+// Satu permintaan generate AI (feature 23): input terstruktur, output, versi prompt, model, token — jejak lengkap agar
+// narasi bisa dijelaskan. Dibuat API (queued) lalu diproses worker lewat antrean BullMQ (running → succeeded/failed).
+// Kuota bulanan = jumlah baris bukan failed di bulan berjalan (zona waktu usaha). Tanpa DELETE.
+export const aiGenerations = pgTable(
+  "ai_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    reviewId: uuid("review_id").notNull(),
+    status: aiGenerationStatus("status").notNull().default("queued"),
+    // KpiSummaryInput (@exapay/shared) — tanpa nama/identitas karyawan
+    input: jsonb("input").notNull(),
+    output: text("output"),
+    // Pesan aman untuk pengguna (detail teknis hanya di log worker)
+    error: text("error"),
+    // Diisi worker saat memproses
+    provider: text("provider"),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    attempts: smallint("attempts").notNull().default(0),
+    requestedByUserId: uuid("requested_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    requestedByName: text("requested_by_name"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("ai_generations_tenant_id_id_key").on(t.tenantId, t.id),
+    // Hitung kuota bulan berjalan; juga melayani filter tenant
+    index("ai_generations_tenant_created_idx").on(t.tenantId, t.createdAt),
+    index("ai_generations_tenant_review_idx").on(t.tenantId, t.reviewId),
+    foreignKey({ name: "ai_generations_review_fk", columns: [t.tenantId, t.reviewId], foreignColumns: [kpiReviews.tenantId, kpiReviews.id] }).onDelete(
+      "restrict",
+    ),
+    check("ai_generations_output", sql`(${t.status} = 'succeeded') = (${t.output} IS NOT NULL) AND (${t.status} = 'failed') = (${t.error} IS NOT NULL)`),
+  ],
+);
+
+// Narasi ringkasan kinerja satu penilaian (feature 23) — satu baris per penilaian. generation_id = generasi AI terakhir yang
+// diminta (hasilnya hanya dipasang jika masih yang terakhir). reviewed_at = sudah ditinjau manusia (syarat final jika ada
+// narasi). Trigger kpi_review_summaries_guard_final menolak perubahan setelah penilaian final (narasi ada di snapshot).
+export const kpiReviewSummaries = pgTable(
+  "kpi_review_summaries",
+  {
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    reviewId: uuid("review_id").notNull(),
+    body: text("body"),
+    source: kpiSummarySource("source"),
+    generationId: uuid("generation_id"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    reviewedByName: text("reviewed_by_name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Juga melayani filter tenant
+    primaryKey({ name: "kpi_review_summaries_pkey", columns: [t.tenantId, t.reviewId] }),
+    foreignKey({ name: "kpi_review_summaries_review_fk", columns: [t.tenantId, t.reviewId], foreignColumns: [kpiReviews.tenantId, kpiReviews.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({
+      name: "kpi_review_summaries_generation_fk",
+      columns: [t.tenantId, t.generationId],
+      foreignColumns: [aiGenerations.tenantId, aiGenerations.id],
+    }).onDelete("restrict"),
+    check(
+      "kpi_review_summaries_body",
+      sql`(${t.body} IS NULL) = (${t.source} IS NULL) AND (${t.body} IS NULL OR char_length(${t.body}) BETWEEN 1 AND ${sql.raw(String(KPI_SUMMARY_MAX_LENGTH))})
+        AND (${t.reviewedAt} IS NULL OR ${t.body} IS NOT NULL)`,
+    ),
   ],
 );

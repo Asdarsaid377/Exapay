@@ -10,3 +10,9 @@ try {
 }
 process.env.DATABASE_URL = inject("testDatabaseUrl");
 process.env.NODE_ENV = "test";
+// Antrean test (BullMQ, feature 23) di database Redis terpisah agar tidak diambil worker dev yang sedang berjalan
+if (process.env.REDIS_URL) {
+  const redisUrl = new URL(process.env.REDIS_URL);
+  redisUrl.pathname = "/15";
+  process.env.REDIS_URL = redisUrl.toString();
+}

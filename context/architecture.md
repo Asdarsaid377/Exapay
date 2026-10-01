@@ -57,7 +57,7 @@
 │   │       │   ├── filters/          → AllExceptionsFilter → { success: false, error }
 │   │       │   └── config/           → skema env (zod) untuk ConfigModule
 │   │       ├── database/             → koneksi DB + helper transaksi ber-tenant (withTenant/withUser, TenantContext), errors.ts
-│   │       ├── redis/                → koneksi Redis global (health, antrean)
+│   │       ├── redis/                → koneksi Redis global (health) + produsen antrean BullMQ `AI_QUEUE` (feature 23)
 │   │       ├── scripts/              → seed-dev.ts (`db:seed`), create-super-admin.ts (`admin:create-super-admin`)
 │   │       └── modules/              → satu folder per domain
 │   │           ├── auth/
@@ -72,12 +72,16 @@
 │   │           ├── attendance/       → absensi (/attendance): jadwal kerja & hari libur + hitung hari kerja (work-calendar.ts murni, WorkCalendarService diekspor — feature 13); absen masuk/pulang milik sendiri /attendance/me (my-attendance.controller, attendance.service, attendance-clock.ts murni — feature 14); pengajuan izin/sakit/cuti /attendance/me/leave-requests + persetujuan /attendance/leave-requests (leave-requests.service, my-leave-requests.controller, leave-requests.controller, leave-attachment.ts murni — feature 15; rekap /attendance/recap + koreksi /attendance/corrections (attendance-recap.ts murni, attendance-recap.service/controller, attendance-corrections.service/controller, attendance-viewer.ts cakupan penglihat — feature 16))
 │   │           ├── storage/          → abstraksi FileStorage (put/get/remove) + S3FileStorage (SeaweedFS), StorageModule global; key `tenants/<tenant_id>/…`, bucket dibuat saat start (feature 15)
 │   │           ├── tasks/            → log tugas harian /tasks/me + foto /tasks/logs/:id/photo (task-logs.service, my-task-logs.controller, task-logs.controller, task-log-rules.ts murni — feature 19)
-│   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22)
+│   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22); ringkasan AI /kpi/reviews/:id/summary (kpi-review-summary.ts, kpi-review-summaries.service/controller — feature 23)
 │   │           ├── payroll/
 │   │           ├── compliance/
 │   │           └── audit/
-│   ├── worker/                       → Proses BullMQ (bisa NestJS standalone app)
-│   │   └── src/processors/           → pdf, ai-summary, whatsapp, erp-sync
+│   ├── worker/                       → Proses BullMQ (NestJS standalone app)
+│   │   └── src/
+│   │       ├── config/               → skema env worker (zod): REDIS_URL, DATABASE_URL, ANTHROPIC_API_KEY, AI_MODEL
+│   │       ├── database/             → pool Postgres app_user + Drizzle (withTenant dari @exapay/db, tenant dari payload job)
+│   │       ├── ai/                   → lapisan abstraksi provider AI: AiProvider, AnthropicAiProvider (Claude), FakeAiProvider (dev), prompt berversi (feature 23)
+│   │       └── processors/           → kpi-review-summary (feature 23); pdf, whatsapp, erp-sync menyusul
 │   └── web/                          → Next.js
 │       ├── app/
 │       │   ├── globals.css           → Import Tailwind + @theme tokens
@@ -122,7 +126,7 @@
 ├── packages/
 │   ├── shared/                       → zod schema, DTO type, enum (role, status) — dipakai api & web
 │   ├── payroll-engine/               → Perhitungan gaji MURNI: tanpa NestJS, tanpa DB, + unit test
-│   └── db/                           → Schema Drizzle + migration (drizzle-kit)
+│   └── db/                           → Schema Drizzle + migration (drizzle-kit) + helper transaksi ber-tenant `withTenant`/`withUser` (src/tenant-transaction.ts, dipakai api & worker sejak feature 23)
 │       ├── src/schema.ts
 │       ├── drizzle.config.ts
 │       └── migrations/

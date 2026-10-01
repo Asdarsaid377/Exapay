@@ -30,6 +30,7 @@ import { localClock } from "../attendance/attendance-clock.js";
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "../attendance/attendance-viewer.js";
 import { AttendanceService } from "../attendance/attendance.service.js";
 import { AuditService } from "../audit/audit.service.js";
+import { canWriteSummary, finalSummaryView, generationPending, loadSummary, summaryQuota, summarySnapshotOf, summaryView } from "./kpi-review-summary.js";
 import { candidatePeriods, periodsOverlap, reviewPeriodOf } from "./kpi-review-periods.js";
 import { KpiScoresService, type Scored, type ScoredEmployee } from "./kpi-scores.service.js";
 
@@ -43,7 +44,7 @@ const versionOf = sql<string>`(extract(epoch from ${kpiReviews.updatedAt}) * 100
 
 type ReviewEmployee = ScoredEmployee & { fullName: string; positionName: string; departmentName: string; supervisorId: string | null };
 
-type ReviewRecord = {
+export type ReviewRecord = {
   id: string;
   status: KpiReviewStatus;
   version: string;
@@ -268,6 +269,7 @@ export class KpiReviewsService {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
       const viewer = await this.requireViewer(tx, ctx);
+      const now = new Date();
       const [row] = await selectReviews(tx, eq(kpiReviews.id, id));
       const review = row ? toRecord(row) : null;
       if (!review || !viewerCanSee(viewer, review.employee.supervisorId)) throw new NotFoundException(NOT_FOUND);
@@ -291,22 +293,14 @@ export class KpiReviewsService {
           template: snapshot.template,
           result: snapshot.result,
           pendingTaskLogs: 0,
-          permissions: { rate: false, returnToDraft: false, finalize: false },
+          summary: finalSummaryView(snapshot.summary),
+          permissions: { rate: false, returnToDraft: false, finalize: false, summary: false },
         };
       }
 
-      const scored = await this.scoreReview(tx, review, await this.today(tx, ctx));
-      const [pending] = await tx
-        .select({ total: count() })
-        .from(taskLogs)
-        .where(
-          and(
-            eq(taskLogs.employeeId, review.employee.id),
-            eq(taskLogs.status, "pending"),
-            gte(taskLogs.workDate, review.startDate),
-            lte(taskLogs.workDate, review.endDate),
-          ),
-        );
+      const { today, timeZone } = await this.clock(tx, ctx, now);
+      const scored = await this.scoreReview(tx, review, today);
+      const summary = summaryView(await loadSummary(tx, review.id), await summaryQuota(tx, ctx.tenantId, today, timeZone), now);
       const decider = viewer.manage && !own && review.status === "reviewed";
       return {
         ...base,
@@ -318,8 +312,14 @@ export class KpiReviewsService {
         },
         template: scored.template,
         result: scored.result,
-        pendingTaskLogs: pending?.total ?? 0,
-        permissions: { rate: review.status === "draft" && !own && scored.template !== null, returnToDraft: decider, finalize: decider },
+        pendingTaskLogs: await this.pendingTaskLogs(tx, review),
+        summary,
+        permissions: {
+          rate: review.status === "draft" && !own && scored.template !== null,
+          returnToDraft: decider,
+          finalize: decider,
+          summary: canWriteSummary(viewer, { status: review.status, employeeId: review.employee.id }, scored.template !== null),
+        },
       };
     });
   }
@@ -393,10 +393,19 @@ export class KpiReviewsService {
       const scored = await this.scoreReview(tx, review, await this.today(tx, ctx));
       if (!scored.template || !scored.result) throw new BadRequestException(NO_TEMPLATE);
       if (unratedOf(scored.result) > 0) throw new BadRequestException(`${UNRATED} Template KPI berubah sejak penilaian dikirim — kembalikan ke draf.`);
+      // Narasi opsional, tapi jika ada wajib sudah ditinjau manusia (feature 23). Dikunci agar hasil AI tidak masuk di tengah finalisasi.
+      const summary = await loadSummary(tx, review.id, true);
+      if (generationPending(summary?.generation ?? null, new Date())) {
+        throw new ConflictException("Ringkasan AI sedang dibuat. Tunggu sampai selesai, tinjau, lalu finalkan.");
+      }
+      if (summary?.body && !summary.reviewedAt) {
+        throw new BadRequestException("Tinjau ringkasan kinerja terlebih dahulu: tandai sudah ditinjau atau ubah narasinya.");
+      }
       const snapshot: KpiReviewSnapshot = {
         employee: { fullName: review.employee.fullName, positionName: review.employee.positionName, departmentName: review.employee.departmentName },
         template: scored.template,
         result: scored.result,
+        summary: summarySnapshotOf(summary),
       };
       await tx
         .update(kpiReviews)
@@ -415,12 +424,61 @@ export class KpiReviewsService {
         entityId: review.id,
         action: "finalize",
         before: { status: "reviewed" },
-        after: { status: "final", score: scored.result.score, predicate: scored.result.predicate, template: scored.template.name },
+        after: {
+          status: "final",
+          score: scored.result.score,
+          predicate: scored.result.predicate,
+          template: scored.template.name,
+          summary: snapshot.summary ? snapshot.summary.source : null,
+        },
       });
     });
   }
 
+  // ——— untuk ringkasan AI (feature 23) ———
+
+  // Kunci penilaian yang belum final + skor & data pendukung untuk mutasi narasi. Cakupan dicek; hak tulis dicek pemanggil.
+  async lockForSummary(
+    tx: Transaction,
+    ctx: TenantContext,
+    viewer: AttendanceViewer,
+    id: string,
+  ): Promise<{ review: ReviewRecord; scored: Scored; pendingTaskLogs: number; today: string; timeZone: string }> {
+    const review = await this.lockReview(tx, viewer, id, null);
+    if (review.status === "final") throw new ConflictException("Penilaian ini sudah final — ringkasan terkunci.");
+    const { today, timeZone } = await this.clock(tx, ctx, new Date());
+    const scored = await this.scoreReview(tx, review, today);
+    return { review, scored, pendingTaskLogs: await this.pendingTaskLogs(tx, review), today, timeZone };
+  }
+
+  async requireViewer(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {
+    const viewer = await loadAttendanceViewer(tx, ctx);
+    if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke penilaian KPI");
+    return viewer;
+  }
+
+  async actorName(tx: Transaction, user: AuthUser): Promise<string | null> {
+    const [actor] = await tx.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.userId));
+    return actor?.fullName ?? null;
+  }
+
   // ——— helper ———
+
+  // Catatan tugas di periode yang masih menunggu verifikasi (belum masuk skor)
+  private async pendingTaskLogs(tx: Transaction, review: ReviewRecord): Promise<number> {
+    const [pending] = await tx
+      .select({ total: count() })
+      .from(taskLogs)
+      .where(
+        and(
+          eq(taskLogs.employeeId, review.employee.id),
+          eq(taskLogs.status, "pending"),
+          gte(taskLogs.workDate, review.startDate),
+          lte(taskLogs.workDate, review.endDate),
+        ),
+      );
+    return pending?.total ?? 0;
+  }
 
   private async periodRows(tx: Transaction, period: KpiReviewPeriod, scope: SQL | undefined, today: string): Promise<KpiReviewRow[]> {
     const records = (await selectReviews(tx, and(eq(kpiReviews.periodId, period.id), scope))).map(toRecord);
@@ -487,12 +545,12 @@ export class KpiReviewsService {
     return rows.map((row) => row.id);
   }
 
-  // Kunci baris penilaian (bukan karyawan/template) lalu periksa cakupan & versi
-  private async lockReview(tx: Transaction, viewer: AttendanceViewer, id: string, version: string): Promise<ReviewRecord> {
+  // Kunci baris penilaian (bukan karyawan/template) lalu periksa cakupan & versi (null = tanpa cek versi penilaian)
+  private async lockReview(tx: Transaction, viewer: AttendanceViewer, id: string, version: string | null): Promise<ReviewRecord> {
     const [row] = await selectReviews(tx, eq(kpiReviews.id, id)).for("update", { of: kpiReviews });
     const review = row ? toRecord(row) : null;
     if (!review || !viewerCanSee(viewer, review.employee.supervisorId)) throw new NotFoundException(NOT_FOUND);
-    if (review.status !== "final" && review.version !== version) throw new ConflictException(CHANGED);
+    if (version !== null && review.status !== "final" && review.version !== version) throw new ConflictException(CHANGED);
     return review;
   }
 
@@ -536,18 +594,12 @@ export class KpiReviewsService {
   }
 
   private async today(tx: Transaction, ctx: TenantContext): Promise<string> {
-    return localClock(new Date(), await this.attendance.tenantTimeZone(tx, ctx.tenantId)).date;
+    return (await this.clock(tx, ctx, new Date())).today;
   }
 
-  private async actorName(tx: Transaction, user: AuthUser): Promise<string | null> {
-    const [actor] = await tx.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.userId));
-    return actor?.fullName ?? null;
-  }
-
-  private async requireViewer(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {
-    const viewer = await loadAttendanceViewer(tx, ctx);
-    if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke penilaian KPI");
-    return viewer;
+  private async clock(tx: Transaction, ctx: TenantContext, now: Date): Promise<{ today: string; timeZone: string }> {
+    const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
+    return { today: localClock(now, timeZone).date, timeZone };
   }
 
   private async requireManager(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {

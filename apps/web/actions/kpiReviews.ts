@@ -8,6 +8,12 @@ import {
   kpiReviewRatingsSchema,
   type KpiReviewStatusInput,
   kpiReviewStatusSchema,
+  type KpiReviewSummaryEditInput,
+  kpiReviewSummaryEditSchema,
+  type KpiReviewSummaryGenerateInput,
+  kpiReviewSummaryGenerateSchema,
+  type KpiReviewSummaryReviewInput,
+  kpiReviewSummaryReviewSchema,
   type KpiSettingsInput,
   kpiSettingsInputSchema,
   kpiSettingsSchema,
@@ -66,5 +72,38 @@ export async function changeKpiReviewStatus(id: string, input: KpiReviewStatusIn
   const result = await send("POST", `/kpi/reviews/${parsedId.data}/status`, ignoreData, parsed.data);
   if (!result.ok) return { kind: "error", message: result.error };
   revalidatePath("/kpi/reviews", "layout");
+  return { kind: "success" };
+}
+
+// ——— Ringkasan AI (feature 23) ———
+
+export async function generateKpiReviewSummary(id: string, input: KpiReviewSummaryGenerateInput): Promise<KpiReviewActionOutcome> {
+  const parsedId = z.uuid().safeParse(id);
+  const parsed = kpiReviewSummaryGenerateSchema.safeParse(input);
+  if (!parsedId.success || !parsed.success) return INVALID;
+  const result = await send("POST", `/kpi/reviews/${parsedId.data}/summary/generate`, ignoreData, parsed.data);
+  if (!result.ok) return { kind: "error", message: result.error };
+  revalidatePath(`/kpi/reviews/${parsedId.data}`);
+  return { kind: "success" };
+}
+
+export async function saveKpiReviewSummary(id: string, input: KpiReviewSummaryEditInput): Promise<KpiReviewActionOutcome> {
+  const parsedId = z.uuid().safeParse(id);
+  const parsed = kpiReviewSummaryEditSchema.safeParse(input);
+  if (!parsedId.success) return INVALID;
+  if (!parsed.success) return { kind: "error", message: parsed.error.issues[0]?.message ?? "Input tidak valid" };
+  const result = await send("PUT", `/kpi/reviews/${parsedId.data}/summary`, ignoreData, parsed.data);
+  if (!result.ok) return { kind: "error", message: result.error };
+  revalidatePath(`/kpi/reviews/${parsedId.data}`);
+  return { kind: "success" };
+}
+
+export async function markKpiReviewSummaryReviewed(id: string, input: KpiReviewSummaryReviewInput): Promise<KpiReviewActionOutcome> {
+  const parsedId = z.uuid().safeParse(id);
+  const parsed = kpiReviewSummaryReviewSchema.safeParse(input);
+  if (!parsedId.success || !parsed.success) return INVALID;
+  const result = await send("POST", `/kpi/reviews/${parsedId.data}/summary/review`, ignoreData, parsed.data);
+  if (!result.ok) return { kind: "error", message: result.error };
+  revalidatePath(`/kpi/reviews/${parsedId.data}`);
   return { kind: "success" };
 }

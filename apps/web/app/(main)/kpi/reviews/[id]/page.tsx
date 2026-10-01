@@ -11,6 +11,7 @@ import { KpiIndicatorBreakdown } from "@/components/kpi/KpiIndicatorBreakdown";
 import { KpiReviewRatingForm } from "@/components/kpi/KpiReviewRatingForm";
 import { KpiReviewsBackLink } from "@/components/kpi/KpiReviewsBackLink";
 import { KpiReviewStatusActions } from "@/components/kpi/KpiReviewStatusActions";
+import { KpiReviewSummaryPanel } from "@/components/kpi/KpiReviewSummaryPanel";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchKpiReview } from "@/lib/api/kpiReviews";
 import { formatDateTime } from "@/lib/datetime";
@@ -23,7 +24,8 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// Detail penilaian KPI periodik (feature 22): skor + rincian, nilai atasan (draft), finalisasi (owner/admin).
+// Detail penilaian KPI periodik (feature 22): skor + rincian, nilai atasan (draft), finalisasi (owner/admin),
+// ringkasan kinerja AI yang wajib ditinjau sebelum final bila ada (feature 23).
 // Tanpa referensi desain — pola /kpi/scores (StatTile + rincian) + FormSection/action bar (izin user).
 export default async function KpiReviewDetailPage({ params }: Props) {
   const { id } = await params;
@@ -45,6 +47,7 @@ export default async function KpiReviewDetailPage({ params }: Props) {
   const predicate = review.result?.predicate ?? null;
   const final = review.status === "final";
   const ratingIndicators = review.result?.indicators.filter((indicator) => indicator.type === "rating") ?? [];
+  const summaryUnreviewed = review.summary.body !== null && review.summary.reviewedAt === null;
 
   return (
     <>
@@ -98,7 +101,13 @@ export default async function KpiReviewDetailPage({ params }: Props) {
             <section className="glass-strong flex flex-col gap-4 rounded-card p-5 lg:p-6">
               <div className="flex flex-col gap-1">
                 <h2 className="font-display text-h2 font-bold text-text-primary">Finalisasi</h2>
-                <p className="text-small text-text-secondary text-pretty">Periksa rincian skor. Setelah final, penilaian terkunci dan menjadi dasar ringkasan kinerja.</p>
+                <p className="text-small text-text-secondary text-pretty">
+                  {review.summary.generation?.pending
+                    ? "Ringkasan AI sedang dibuat. Tunggu selesai dan tinjau dulu sebelum memfinalkan."
+                    : summaryUnreviewed
+                      ? "Tinjau ringkasan kinerja dulu (tandai sudah ditinjau atau ubah narasinya) sebelum memfinalkan."
+                      : "Periksa rincian skor dan ringkasan kinerja. Setelah final, keduanya terkunci."}
+                </p>
               </div>
               <KpiReviewStatusActions
                 reviewId={review.id}
@@ -110,20 +119,23 @@ export default async function KpiReviewDetailPage({ params }: Props) {
             </section>
           ) : null}
         </div>
-        <section className="glass-strong flex flex-col gap-1 rounded-card p-5 lg:p-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-display text-h2 font-bold text-text-primary">Rincian skor</h2>
-            <p className="text-small text-text-secondary">
-              {periodLabel}
-              {review.period.cycle === "weekly" ? "" : ` · ${range}`}
-            </p>
-          </div>
-          {review.result ? (
-            <KpiIndicatorBreakdown result={review.result} />
-          ) : (
-            <p className="py-6 text-small text-text-secondary">Rincian tampil setelah jabatan karyawan memakai template KPI.</p>
-          )}
-        </section>
+        <div className="flex flex-col gap-3 lg:gap-4">
+          <section className="glass-strong flex flex-col gap-1 rounded-card p-5 lg:p-6">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-display text-h2 font-bold text-text-primary">Rincian skor</h2>
+              <p className="text-small text-text-secondary">
+                {periodLabel}
+                {review.period.cycle === "weekly" ? "" : ` · ${range}`}
+              </p>
+            </div>
+            {review.result ? (
+              <KpiIndicatorBreakdown result={review.result} />
+            ) : (
+              <p className="py-6 text-small text-text-secondary">Rincian tampil setelah jabatan karyawan memakai template KPI.</p>
+            )}
+          </section>
+          <KpiReviewSummaryPanel reviewId={review.id} summary={review.summary} canWrite={review.permissions.summary} final={final} />
+        </div>
       </div>
     </>
   );

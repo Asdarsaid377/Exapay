@@ -126,6 +126,16 @@ Catatan referensi library yang dipakai project ini. Tujuan file ini: mencegah Cl
 - Upload NestJS: `FileInterceptor` dari `@nestjs/platform-express` (multer 2.x dibundel; tanpa `dest` = memory storage, `file.buffer`). `limits.fileSize` terlampaui → `PayloadTooLargeException` (413).
 
 
+### bullmq (v6.3) — antrean (feature 23)
+- **Dipakai untuk:** antrean `ai` — produsen di `apps/api` (`new Queue(name, { connection, defaultJobOptions })`), konsumen di `apps/worker` (`new Worker(name, processor, { connection, concurrency })`)
+- **Pola:** `queue.add(jobName, data, { jobId })` untuk idempotensi; `job.attemptsMade` = jumlah percobaan gagal SEBELUM percobaan berjalan (percobaan terakhir: `attemptsMade + 1 >= opts.attempts`); `UnrecoverableError` = gagal tanpa retry. Test: `queue.getJob(id)`, `queue.obliterate({ force: true })`
+- **Gotcha:** koneksi ioredis yang diberikan ke Queue/Worker dianggap *shared* — `close()` tidak menutupnya, tutup sendiri (`quit()`). Worker wajib `maxRetriesPerRequest: null`. Install memicu build script `msgpackr-extract` (opsional, ada fallback JS) → `allowBuilds.msgpackr-extract: false`
+
+### @anthropic-ai/sdk (v0.129) — ringkasan AI (feature 23)
+- **Dipakai untuk:** `AnthropicAiProvider` di `apps/worker/src/ai/`
+- **Pola:** `client.beta.messages.create({ model, max_tokens, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default", output_config: { effort: "medium" }, system, messages })`; cek `stop_reason` (`refusal` → permanen, `max_tokens` → retry) sebelum membaca blok `text`; `response.model` = model yang benar-benar menjawab. Error: `AuthenticationError`/`PermissionDeniedError`/`NotFoundError`/`BadRequestError` permanen, `RateLimitError`/`InternalServerError`/`APIConnectionError` dicoba ulang. Model default `claude-opus-5` (Opus 5: thinking adaptif default, tanpa prefill, tanpa `budget_tokens`)
+- **Gotcha:** jangan pakai `temperature`/`budget_tokens` di Opus 5 (400). Bentuk `fallbacks: "default"` wajib header `-2026-07-01` (bentuk array memakai `-2026-06-01`)
+
 ### @aws-sdk/client-s3 (v3.1142) — storage lampiran (feature 15)
 - **Dipakai untuk:** `S3FileStorage` di `apps/api/src/modules/storage/` terhadap SeaweedFS (S3-compatible)
 - **Pola:** `new S3Client({ endpoint, region, credentials, forcePathStyle: true, requestChecksumCalculation: "WHEN_REQUIRED", responseChecksumValidation: "WHEN_REQUIRED" })`; `PutObjectCommand` / `GetObjectCommand` (`Body.transformToByteArray()`) / `DeleteObjectCommand` / `HeadBucketCommand` + `CreateBucketCommand`. Error layanan = `S3ServiceException` (`$metadata.httpStatusCode`)
