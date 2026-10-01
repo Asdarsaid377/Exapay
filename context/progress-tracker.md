@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 7 — Kepatuhan, Dashboard & Portal
-**Terakhir selesai:** 32 Laporan & Ekspor Payroll (2026-10-01)
-**Berikutnya:** 33 Kalender Kepatuhan
+**Terakhir selesai:** 33 Kalender Kepatuhan (2026-10-01)
+**Berikutnya:** 34 Peringatan UMK
 
 ---
 
@@ -61,7 +61,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 32 Laporan & Ekspor Payroll
 
 ### Phase 7 — Kepatuhan, Dashboard & Portal
-- [ ] 33 Kalender Kepatuhan
+- [x] 33 Kalender Kepatuhan
 - [ ] 34 Peringatan UMK
 - [ ] 35 Dashboard Owner/Admin
 - [ ] 36 Dashboard Atasan
@@ -240,6 +240,8 @@ _Format: tanggal — keputusan — alasan._
 
 - 2026-10-01 — Keputusan user (feature 32): UI `/payroll/reports` **tanpa referensi visual** (turunkan dari pola, izin user); **transfer bank = Excel umum + sheet per bank** (format upload khusus bank belum); **rekap setor per periode + rekap tahunan**. Keputusan sendiri (disetujui saat verifikasi): nomor rekening di file transfer = data karyawan **saat diunduh** (bukan snapshot), ekspor dicatat audit `payroll_run`/`export_transfer`; Excel dibuat sinkron di API (bukan antrean — kecil); NIK/NPWP tidak dimasukkan (e-Bupot di luar MVP).
 - 2026-10-01 — **Laporan & ekspor (feature 32):** tanpa migration. `PayrollReportsService` (`GET /payroll/reports?year=` — default tahun berjalan zona waktu usaha; `GET /payroll/reports/runs/:id/transfer|contributions` → xlsx, periode draf 409), owner/admin. Total = SUM numeric `payroll_run_employees` status `calculated` per periode final (= jumlah slip = total snapshot periode). Builder murni `payroll-reports.excel.ts` (`write-excel-file`): transfer → sheet Semua + per kode bank + "Tanpa rekening" (rekening sel Teks, keterangan rekening kosong/nominal ≤ 0, baris total); rekap setor → Ringkasan setor (per program perusahaan/karyawan/total + subtotal + PPh 21), BPJS per karyawan, PPh 21 per karyawan. Nominal ditulis angka (format ribuan), total dijumlah decimal.js. `FIELD` (konteks cipher) kini diekspor dari `employees.service.ts`.
+- 2026-10-01 — Keputusan user (feature 33): UI `/compliance` **tanpa referensi visual** (turunan kartu "Pengingat kepatuhan" dashboard.html + StatTile/OrgListCard, izin user); **tenggat = tabel regulasi berlaku-tanggal** (tidak di-hardcode); **halaman, endpoint & email hanya owner/admin** (menu Kepatuhan disembunyikan dari atasan — `navigation.ts`); **pengingat bisa ditandai selesai** (+ batalkan, audit) → yang selesai tidak dikirimi email. Keputusan sendiri (disetujui saat verifikasi): tenggat **sebelum tanggal usaha terdaftar tidak diingatkan**; tenggat hari libur tetap tanggal nominal (lebih awal = aman, dijelaskan di halaman & email).
+- 2026-10-01 — **Kalender kepatuhan (feature 33):** migration `0028_compliance_calendar` — `compliance_deadlines` (data regulasi platform pola 0021: `kind` enum `compliance_deadline_kind`, `due_day` 1–31, `month_offset` 0–2, berlaku per **masa**, exclusion `compliance_deadlines_no_overlap`, seed: BPJS Kesehatan tgl 10 bulan berjalan (Perpres 82/2018 Ps 39), BPJS TK tgl 15 bulan berikutnya (PP 44/2015, 46/2015), setor PPh 21 tgl 10 masa 2024 (PMK 242/2014) → tgl 15 mulai masa 2025 (PMK 81/2024 Ps 94), lapor SPT Masa tgl 20) + `compliance_reminders` (tenant, RLS FORCE; `key` unik per usaha, CHECK prefix key = kind; app_user SELECT/INSERT + UPDATE kolom selesai/notified saja, tanpa DELETE) + fungsi `compliance_active_tenant_ids()` (SECURITY DEFINER, hanya id usaha aktif — satu-satunya bacaan lintas tenant, dipakai job worker). **Pengingat dihitung saat dibaca** oleh fungsi murni `complianceRemindersBetween`/`findComplianceReminder` di `@exapay/shared` (`compliance.ts`) — dipakai API & worker: tenggat berkala hanya untuk masa dengan karyawan aktif; kontrak/percobaan dari status kerja saat ini (karyawan yang keluar pada/sebelum tanggal itu dilewati). Kunci: `<jenis>:<YYYY-MM>` / `<jenis>:<employee id>:<tanggal>` → tanggal kontrak diubah = kunci baru (kunci lama 404). Tabel tenant hanya menyimpan status selesai + `notified_h7_at`/`notified_h1_at`. API `ComplianceService` (`GET /compliance?month=` — bulan + terlewat 12 bulan + ringkasan; `POST /compliance/reminders/complete|reopen` idempoten, audit `compliance_reminder` complete/reopen), owner/admin. Worker `ComplianceProcessor` antrean `compliance`: job scheduler `compliance-daily` (`upsertJobScheduler`, env `COMPLIANCE_CRON` default `0 7 * * *`, `COMPLIANCE_CRON_TZ` default Asia/Jakarta) → `compliance-scan` → satu `compliance-notify` per usaha (jobId unik per scan) → satu email ringkasan ke owner/admin terverifikasi untuk pengingat belum selesai yang belum dikirimi tahapnya (H-7: sisa 2–7 hari, H-1: ≤ 1 hari; at-least-once). Pemindaian manual: `pnpm --filter @exapay/worker compliance:scan` (folder baru `apps/worker/src/scripts/`).
 
 ---
 
@@ -304,3 +306,4 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 255 per feature 31 (`payslips.e2e.test.ts` 2 skenario — hasil worker ditiru di DB; `tenant-isolation` + `payslips`) + 161 unit test payroll-engine + 4 unit test worker (`payslip-content.test.ts`: isi slip, PPh 21 negatif, total tidak cocok, render PDF). Worker sungguhan diverifikasi ujung-ke-ujung (PDF + email Mailpit). Data dev: usaha **"Demo Slip Gaji"** (`owner|admin|karyawan@demo-slip.local`, password `password123`) dengan payroll September 2026 final + 2 slip terbit — dibuat untuk verifikasi visual.
 - Email API lain (reset password, verifikasi, undangan) masih fire-and-forget — bisa dipindah ke antrean worker memakai `Mailer` worker bila dibutuhkan.
 - Total test API 256 per feature 32 (`payroll-reports.e2e.test.ts`: rekap = jumlah slip = total snapshot, isi Excel dibaca `read-excel-file`, audit, akses, draf 409) + 4 unit test worker. Data dev "Demo Slip Gaji": karyawan belum punya rekening (semua di sheet "Tanpa rekening").
+- Total test API 267 per feature 33 (`compliance-reminders.test.ts` 8 unit — aturan dibaca dari seed `0028`; `compliance.e2e.test.ts` 3 skenario; `tenant-isolation` + 2 tabel). Email worker diverifikasi manual ujung-ke-ujung di dev (H-7, H-1, tanpa duplikat; data dikembalikan). Sekali terlihat flake 404 login di run gabungan — lulus saat diulang. Belum ada: pergeseran tenggat ke hari kerja berikutnya saat libur, pengingat perubahan UMK (feature 34), kartu pengingat di dashboard (feature 35).

@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json && concurrently -k -n tsc,node \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --env-file-if-exists=../../.env dist/main.js\"",
     "start": "node dist/main.js",
+    "compliance:scan": "node --env-file-if-exists=../../.env dist/scripts/run-compliance-scan.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

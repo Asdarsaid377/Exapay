@@ -27,7 +27,7 @@ export type NavSection = {
 const ALL: readonly StaffRole[] = ["owner", "admin", "atasan"];
 const MANAGE: readonly StaffRole[] = ["owner", "admin"];
 
-// Sesuai project-overview.md "Navigasi": atasan tidak melihat Payroll & Pengaturan.
+// Sesuai project-overview.md "Navigasi": atasan tidak melihat Payroll & Pengaturan (juga Kepatuhan sejak feature 33).
 export const STAFF_MENU: readonly NavSection[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard", roles: ALL },
   { label: "Karyawan", icon: "employees", href: "/employees", roles: ALL },
@@ -65,7 +65,8 @@ export const STAFF_MENU: readonly NavSection[] = [
       { label: "Laporan", href: "/payroll/reports", roles: MANAGE },
     ],
   },
-  { label: "Kepatuhan", icon: "compliance", href: "/compliance", roles: ALL },
+  // Kepatuhan (BPJS/pajak/kontrak) khusus owner/admin — keputusan user feature 33
+  { label: "Kepatuhan", icon: "compliance", href: "/compliance", roles: MANAGE },
   {
     label: "Pengaturan",
     icon: "settings",

@@ -75,14 +75,15 @@
 │   │           ├── tasks/            → log tugas harian /tasks/me + foto /tasks/logs/:id/photo (task-logs.service, my-task-logs.controller, task-logs.controller, task-log-rules.ts murni — feature 19)
 │   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22); ringkasan AI /kpi/reviews/:id/summary (kpi-review-summary.ts, kpi-review-summaries.service/controller — feature 23)
 │   │           ├── payroll/          → komponen gaji (feature 28): katalog /salary-components + kelompok risiko JKK (salary-components.service/controller, salary-builtin-components.ts data bawaan + seed), gaji karyawan berlaku-tanggal /employees/:id/salary (employee-salaries.service/controller), salary-access.ts (owner/admin); run payroll draf /payroll/runs (payroll-draft.ts murni → payroll-engine, payroll-runs.service/controller — feature 29)
-│   │           ├── compliance/
+│   │           ├── compliance/       → kalender kepatuhan /compliance (compliance.service/controller — pengingat dari fungsi murni @exapay/shared compliance.ts, feature 33)
 │   │           └── audit/
 │   ├── worker/                       → Proses BullMQ (NestJS standalone app)
 │   │   └── src/
 │   │       ├── config/               → skema env worker (zod): REDIS_URL, DATABASE_URL, ANTHROPIC_API_KEY, AI_MODEL
 │   │       ├── database/             → pool Postgres app_user + Drizzle (withTenant dari @exapay/db, tenant dari payload job)
 │   │       ├── ai/                   → lapisan abstraksi provider AI: AiProvider, AnthropicAiProvider (Claude), FakeAiProvider (dev), prompt berversi (feature 23)
-│   │       └── processors/           → kpi-review-summary (feature 23); pdf, whatsapp, erp-sync menyusul
+│   │       ├── scripts/              → run-compliance-scan.ts (`compliance:scan` — pemindaian kepatuhan manual, feature 33)
+│   │       └── processors/           → kpi-review-summary (feature 23), payslip (feature 31), compliance (job terjadwal email H-7/H-1, feature 33); whatsapp, erp-sync menyusul
 │   └── web/                          → Next.js
 │       ├── app/
 │       │   ├── globals.css           → Import Tailwind + @theme tokens
@@ -111,6 +112,7 @@
 │       │   ├── (main)/kpi/reviews/ → penilaian periodik per periode + detail [id] (feature 22)
 │       │   ├── (main)/settings/kpi/ → siklus penilaian KPI (feature 22)
 │       │   ├── (main)/settings/salary-components/ → katalog komponen gaji & kelompok risiko JKK (feature 28); gaji per karyawan = tab Gaji di employees/[id]
+│       │   ├── (main)/compliance/ → kalender kepatuhan (feature 33)
 │       │   ├── (main)/payroll/ → periode gaji (page.tsx), draf [id], rincian & penyesuaian [id]/employees/[employeeId] (feature 29), slip gaji [id]/slips + PDF [id]/slips/[payslipId]/pdf (feature 31), laporan reports + unduh Excel reports/[runId]/transfer|contributions (feature 32); portal (portal)/me/payslips + PDF [id]/pdf
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/

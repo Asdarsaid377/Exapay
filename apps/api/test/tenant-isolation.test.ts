@@ -103,6 +103,8 @@ describe("role runtime app_user", () => {
       "audit_logs",
       "bpjs_rates",
       "company_holidays",
+      "compliance_deadlines",
+      "compliance_reminders",
       "departments",
       "email_verification_tokens",
       "employee_salaries",

@@ -23,8 +23,11 @@ export const envSchema = z
     SMTP_USER: z.string().optional(),
     SMTP_PASSWORD: z.string().optional(),
     SMTP_FROM: z.string().min(1),
-    // URL publik web — tautan di email slip gaji
+    // URL publik web — tautan di email slip gaji & pengingat kepatuhan
     APP_WEB_URL: z.url().transform((url) => url.replace(/\/+$/, "")),
+    // Kalender kepatuhan (feature 33): jadwal pemindaian harian email H-7/H-1 (cron 5 kolom + zona waktu IANA)
+    COMPLIANCE_CRON: z.string().trim().min(1).default("0 7 * * *"),
+    COMPLIANCE_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.ANTHROPIC_API_KEY !== undefined, {
     path: ["ANTHROPIC_API_KEY"],

@@ -3,6 +3,8 @@ import {
   AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
   BPJS_PROGRAMS,
+  COMPLIANCE_DEADLINE_KINDS,
+  COMPLIANCE_REMINDER_KINDS,
   DEFAULT_AI_SUMMARY_MONTHLY_QUOTA,
   EMPLOYMENT_STATUSES,
   GENDERS,
@@ -1484,5 +1486,59 @@ export const payslips = pgTable(
       "payslips_email",
       sql`(${t.emailStatus} IS NULL) = (${t.emailTo} IS NULL AND ${t.emailRequestedAt} IS NULL) AND (${t.emailStatus} IS NULL OR ${t.publishedAt} IS NOT NULL)`,
     ),
+  ],
+);
+
+// ——— Kalender kepatuhan (feature 33) ———
+
+export const complianceDeadlineKind = pgEnum("compliance_deadline_kind", COMPLIANCE_DEADLINE_KINDS);
+export const complianceReminderKind = pgEnum("compliance_reminder_kind", COMPLIANCE_REMINDER_KINDS);
+
+// Data regulasi platform (pola feature 24): tenggat setor/lapor per masa. Masa M → tanggal due_day pada bulan
+// M + month_offset (bulan pendek → hari terakhir). Versi berlaku menurut tanggal 1 masa (effective_from/to inklusif,
+// exclusion compliance_deadlines_no_overlap). Diisi/diubah hanya lewat migration.
+export const complianceDeadlines = pgTable(
+  "compliance_deadlines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: complianceDeadlineKind("kind").notNull(),
+    dueDay: smallint("due_day").notNull(),
+    monthOffset: smallint("month_offset").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    source: text("source").notNull(),
+  },
+  (t) => [
+    check("compliance_deadlines_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check("compliance_deadlines_values", sql`${t.dueDay} BETWEEN 1 AND 31 AND ${t.monthOffset} BETWEEN 0 AND 2`),
+  ],
+);
+
+// Status pengingat kepatuhan per usaha. Pengingat sendiri dihitung saat dibaca (@exapay/shared complianceRemindersBetween);
+// baris dibuat saat pengingat ditandai selesai atau email H-7/H-1 terkirim. key = kunci pengingat (jenis + masa / karyawan
+// + tanggal) — tanggal kontrak berubah → kunci baru. Tanpa DELETE.
+export const complianceReminders = pgTable(
+  "compliance_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    key: text("key").notNull(),
+    kind: complianceReminderKind("kind").notNull(),
+    dueDate: date("due_date", { mode: "string" }).notNull(),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    doneByUserId: uuid("done_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    doneByName: text("done_by_name"),
+    notifiedH7At: timestamp("notified_h7_at", { withTimezone: true }),
+    notifiedH1At: timestamp("notified_h1_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("compliance_reminders_tenant_key").on(t.tenantId, t.key),
+    index("compliance_reminders_tenant_due_idx").on(t.tenantId, t.dueDate),
+    check("compliance_reminders_done", sql`(${t.doneAt} IS NULL) = (${t.doneByName} IS NULL)`),
+    check("compliance_reminders_key_kind", sql`split_part(${t.key}, ':', 1) = ${t.kind}::text`),
   ],
 );

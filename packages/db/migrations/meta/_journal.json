@@ -197,6 +197,13 @@
       "when": 1790856542478,
       "tag": "0027_payslips",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790861346652,
+      "tag": "0028_compliance_calendar",
+      "breakpoints": true
     }
   ]
 }
