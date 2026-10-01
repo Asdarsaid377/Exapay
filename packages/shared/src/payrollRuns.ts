@@ -78,6 +78,7 @@ export const payrollRunPeriodSchema = z.object({
   id: z.string(),
   // "2026-10"
   month: z.string(),
+  // Rentang absensi periode (tutup buku, feature 30b): final = tersimpan, draf = pengaturan usaha saat ini
   periodStart: z.string(),
   periodEnd: z.string(),
   // Tanggal gajian dari profil usaha (hari terakhir bulan bila bulan lebih pendek); null = belum diatur
@@ -94,7 +95,7 @@ export type PayrollRunPeriod = z.infer<typeof payrollRunPeriodSchema>;
 export const payrollRunListSchema = z.object({
   // Hari ini di zona waktu usaha
   today: z.string(),
-  // Bulan yang bisa dibuka (belum punya periode): bulan berjalan s.d. 12 bulan ke belakang, terbaru dulu
+  // Bulan yang bisa dibuka (belum punya periode): bulan payroll berjalan (tutup buku) s.d. 12 bulan ke belakang, terbaru dulu
   openableMonths: z.array(z.string()),
   // Terbaru dulu
   runs: z.array(payrollRunPeriodSchema.extend({ adjustmentCount: z.number().int() })),
@@ -107,6 +108,9 @@ export const payrollRunEmployeeSchema = z.object({
   employeeNumber: z.string().nullable(),
   positionName: z.string(),
   departmentName: z.string(),
+  // Masa kerja — label Masuk/Keluar bila jatuh di dalam periode (feature 30b)
+  joinDate: z.string(),
+  endDate: z.string().nullable(),
 });
 export type PayrollRunEmployee = z.infer<typeof payrollRunEmployeeSchema>;
 
@@ -189,8 +193,6 @@ export type PayrollSalaryItem = z.infer<typeof payrollSalaryItemSchema>;
 export const payrollEmployeeDetailSchema = z.object({
   run: payrollRunPeriodSchema.extend({ periodEnded: z.boolean() }),
   employee: payrollRunEmployeeSchema.extend({
-    joinDate: z.string(),
-    endDate: z.string().nullable(),
     ptkpStatus: z.enum(PTKP_STATUSES),
   }),
   status: z.enum(PAYROLL_EMPLOYEE_STATUSES),
@@ -218,7 +220,8 @@ export type PayrollEmployeeDetail = z.infer<typeof payrollEmployeeDetailSchema>;
 
 // ——— Snapshot final (feature 30) ———
 
-// Per karyawan (payroll_run_employees.snapshot): rincian seperti detail draf saat final, tanpa data periode
+// Per karyawan (payroll_run_employees.snapshot): rincian seperti detail draf saat final, tanpa data periode.
+// `warnings` = peringatan karyawan saja (peringatan periode di PayrollRunSnapshot, digabung saat dibaca)
 export const payrollEmployeeSnapshotSchema = payrollEmployeeDetailSchema.omit({ run: true }).extend({
   status: z.enum(["calculated", "excluded"]),
 });
@@ -237,7 +240,9 @@ export const payrollRunSnapshotSchema = z.object({
     regencyCode: z.string().nullable(),
     minimumWage: z.string().nullable(),
     jkkRiskLevel: z.number().int(),
-    // Aturan potongan absensi versi tanggal 1 + tanggal versi baru di tengah periode
+    // Tanggal tutup buku saat final (feature 30b; snapshot sebelumnya tanpa isian = akhir bulan)
+    attendanceCutoffDay: z.number().int().nullable().default(null),
+    // Aturan potongan absensi versi hari pertama periode + tanggal versi baru di tengah periode
     attendanceRules: attendanceDeductionRulesSchema,
     attendanceRulesChangedOn: z.string().nullable(),
     // PayrollRegulations (tarif BPJS, TER, Pasal 17, PTKP, biaya jabatan + sumber & tanggal berlaku) apa adanya

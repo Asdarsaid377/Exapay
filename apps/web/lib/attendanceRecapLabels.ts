@@ -19,9 +19,18 @@ export function periodQueryFrom(raw: SearchParams): AttendancePeriodQuery {
   return parsed.success ? parsed.data : {};
 }
 
-export function periodViewOf(query: AttendancePeriodQuery, today: string): PeriodView {
+// `currentMonth` = bulan default tanpa query (rekap absensi: bulan payroll berjalan sesuai tutup buku, feature 30b)
+export function periodViewOf(query: AttendancePeriodQuery, currentMonth: string): PeriodView {
   if (query.from && query.to) return { kind: "range", from: query.from, to: query.to };
-  return { kind: "month", month: query.month ?? today.slice(0, 7) };
+  return { kind: "month", month: query.month ?? currentMonth };
+}
+
+// Keterangan rentang di bawah nama bulan bila periode tidak sama dengan bulan kalender (tutup buku / peralihan)
+export function periodRangeCaption(view: PeriodView, from: string, to: string): string | null {
+  if (view.kind !== "month") return null;
+  const lastDay = new Date(Date.UTC(Number(view.month.slice(0, 4)), Number(view.month.slice(5, 7)), 0)).getUTCDate();
+  const calendar = from === `${view.month}-01` && to === `${view.month}-${String(lastDay).padStart(2, "0")}`;
+  return calendar ? null : formatDateRange(from, to);
 }
 
 export function periodLabel(view: PeriodView): string {

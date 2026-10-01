@@ -9,11 +9,12 @@ import { type Database, type TenantContext, type Transaction, withTenant } from 
 import { AuditService } from "../audit/audit.service.js";
 
 // Kolom profil yang bisa diubah — juga menjadi isi before/after audit log
-type ProfileFields = Pick<UpdateCompanyProfile, "name" | "address" | "npwp" | "regencyCode" | "payday">;
+type ProfileFields = Pick<UpdateCompanyProfile, "name" | "address" | "npwp" | "regencyCode" | "payday" | "attendanceCutoffDay">;
 
-const PROFILE_FIELDS = ["name", "address", "npwp", "regencyCode", "payday"] as const;
+const PROFILE_FIELDS = ["name", "address", "npwp", "regencyCode", "payday", "attendanceCutoffDay"] as const;
 
-// Profil usaha aktif (feature 09). Baris tenant dibaca lewat policy tenant_isolation (hanya tenant aktif).
+// Profil usaha aktif (feature 09) + tanggal tutup buku absensi payroll (feature 30b — berlaku untuk periode draf;
+// periode final memakai rentang tersimpan). Baris tenant dibaca lewat policy tenant_isolation (hanya tenant aktif).
 @Injectable()
 export class CompanyService {
   constructor(
@@ -30,7 +31,14 @@ export class CompanyService {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
       const [current] = await tx
-        .select({ name: tenants.name, address: tenants.address, npwp: tenants.npwp, regencyCode: tenants.regencyCode, payday: tenants.payday })
+        .select({
+          name: tenants.name,
+          address: tenants.address,
+          npwp: tenants.npwp,
+          regencyCode: tenants.regencyCode,
+          payday: tenants.payday,
+          attendanceCutoffDay: tenants.attendanceCutoffDay,
+        })
         .from(tenants)
         .where(eq(tenants.id, ctx.tenantId))
         .for("update");
@@ -53,7 +61,14 @@ export class CompanyService {
       if (Object.keys(after).length > 0) {
         await tx
           .update(tenants)
-          .set({ name: input.name, address: input.address, npwp: input.npwp, regencyCode: input.regencyCode, payday: input.payday })
+          .set({
+            name: input.name,
+            address: input.address,
+            npwp: input.npwp,
+            regencyCode: input.regencyCode,
+            payday: input.payday,
+            attendanceCutoffDay: input.attendanceCutoffDay,
+          })
           .where(eq(tenants.id, ctx.tenantId));
         await this.audit.record(tx, ctx, { entity: "tenant", entityId: ctx.tenantId, action: "update_profile", before, after });
       }
@@ -68,6 +83,7 @@ export class CompanyService {
         address: tenants.address,
         npwp: tenants.npwp,
         payday: tenants.payday,
+        attendanceCutoffDay: tenants.attendanceCutoffDay,
         updatedAt: tenants.updatedAt,
         regencyCode: regencies.code,
         regencyName: regencies.name,

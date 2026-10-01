@@ -17,7 +17,7 @@ import { DRIZZLE } from "../../database/database.module.js";
 import { exclusionViolationConstraint } from "../../database/errors.js";
 import { type Database, type TenantContext, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
-import { localClock, monthRange } from "./attendance-clock.js";
+import { localClock } from "./attendance-clock.js";
 import { type DeductionLeave, deductionFacts } from "./attendance-deduction-facts.js";
 import {
   columnsToRules,
@@ -28,6 +28,7 @@ import {
   rulesToColumns,
   versionStatus,
 } from "./attendance-deduction-rules.js";
+import { AttendancePeriodsService } from "./attendance-periods.service.js";
 import { type RecapEmployment, recapEmployee } from "./attendance-recap.js";
 import { loadAttendanceViewer } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
@@ -89,6 +90,7 @@ export class AttendanceDeductionRulesService {
     private readonly attendance: AttendanceService,
     private readonly workCalendar: WorkCalendarService,
     private readonly audit: AuditService,
+    private readonly periods: AttendancePeriodsService,
   ) {}
 
   async settings(user: AuthUser): Promise<AttendanceDeductionSettings> {
@@ -169,7 +171,7 @@ export class AttendanceDeductionRulesService {
     }
   }
 
-  // Pratinjau: rekap absensi nyata karyawan di bulan terpilih + gaji isian (belum ada komponen gaji — feature 28).
+  // Pratinjau: rekap absensi nyata karyawan di periode payroll bulan terpilih + gaji isian (belum ada komponen gaji — feature 28).
   // Aturan dari form (belum tentu disimpan) agar admin bisa mencoba sebelum menyimpan.
   async preview(user: AuthUser, input: AttendanceDeductionPreviewInput): Promise<AttendanceDeductionPreview> {
     const ctx = tenantContextOf(user);
@@ -183,7 +185,9 @@ export class AttendanceDeductionRulesService {
       if (!employee) throw new NotFoundException("Karyawan tidak ditemukan");
 
       const today = await this.today(tx, ctx);
-      const period = monthRange(input.month);
+      // Periode tutup buku payroll bulan itu (feature 30b) — sama dengan draf payroll
+      const { from, to } = await this.periods.payrollPeriod(tx, ctx, input.month);
+      const period = { from, to };
       const facts = await this.periodFacts(tx, employee, period.from, period.to, today);
       const result = calculateAttendanceDeduction({
         rules: input.rules,

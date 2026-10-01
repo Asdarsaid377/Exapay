@@ -10,7 +10,7 @@ import { StatTile } from "@/components/common/StatTile";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchAttendanceRecap } from "@/lib/api/attendanceRecap";
 import { formatDuration } from "@/lib/attendanceLabels";
-import { correctionsHref, periodQueryFrom, periodViewOf } from "@/lib/attendanceRecapLabels";
+import { correctionsHref, periodQueryFrom, periodRangeCaption, periodViewOf } from "@/lib/attendanceRecapLabels";
 
 export const metadata: Metadata = { title: "Rekap absensi — Exapay" };
 
@@ -34,8 +34,9 @@ export default async function AttendanceRecapPage({ searchParams }: Props) {
   }
   const recap = result.data;
   const manage = recap.scope === "all";
-  const view = periodViewOf(query, recap.today);
-  const currentMonth = recap.today.slice(0, 7);
+  // Bulan = periode tutup buku payroll (feature 30b)
+  const currentMonth = recap.currentMonth;
+  const view = periodViewOf(query, currentMonth);
 
   const totals = recap.rows.reduce(
     (sum, { summary }) => ({
@@ -61,7 +62,14 @@ export default async function AttendanceRecapPage({ searchParams }: Props) {
           ) : null
         }
       />
-      <AttendancePeriodNav view={view} currentMonth={currentMonth} from={recap.from} to={recap.to} basePath="/attendance" />
+      <AttendancePeriodNav
+        view={view}
+        currentMonth={currentMonth}
+        from={recap.from}
+        to={recap.to}
+        caption={periodRangeCaption(view, recap.from, recap.to)}
+        basePath="/attendance"
+      />
       {recap.rows.length === 0 ? (
         <EmptyState
           icon={Users}

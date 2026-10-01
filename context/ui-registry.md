@@ -282,7 +282,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /settings/company
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 09, izin user)
 - **Pola kelas kunci:** form = card `glass-strong rounded-card p-5 lg:p-7`; section `grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-8 border-t border-border-subtle py-6 first:border-t-0 first:pt-0` (kiri judul `text-h2` + penjelasan `text-small`, kanan field `gap-4`); pasangan field `grid sm:grid-cols-2 gap-4`; footer `border-t pt-6`: FormAlert hasil + caption "Terakhir diubah" `text-caption text-text-tertiary` + Button primary
-- **Catatan:** client. Props `profile`, `provinces`. Provinsi → kab/kota bertahap (ganti provinsi mengosongkan kota). NPWP ditampilkan `formatNpwp`. **Pola acuan form pengaturan berikutnya** (/settings/attendance, /settings/kpi, /settings/salary-components) — ekstrak `SettingsSection` saat dipakai kedua kalinya
+- **Catatan:** client. Props `profile`, `provinces`. Provinsi → kab/kota bertahap (ganti provinsi mengosongkan kota). NPWP ditampilkan `formatNpwp`. Feature 30b: SelectField "Tutup buku absensi" (Akhir bulan / tanggal 1–28, hint rentang) berpasangan dengan Tanggal gajian `grid sm:grid-cols-2`, FormAlert warning bila `paydayBeforeCutoff` (dari shared). **Pola acuan form pengaturan berikutnya** (/settings/attendance, /settings/kpi, /settings/salary-components) — ekstrak `SettingsSection` saat dipakai kedua kalinya
 
 ### OrgListCard / AddOrgItemButton / OrgItemActions / OrgItemFormDialog / DeleteOrgItemDialog
 - **Path:** apps/web/components/organization/OrgListCard.tsx, AddOrgItemButton.tsx, OrgItemActions.tsx, OrgItemFormDialog.tsx, DeleteOrgItemDialog.tsx
@@ -436,7 +436,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /attendance, /attendance/corrections
 - **Referensi desain:** tanpa referensi — pola AttendanceMonthNav + panel filter EmployeeFilters (feature 16, izin user)
 - **Pola kelas kunci:** panel `glass rounded-card p-2 sm:p-2.5 flex flex-wrap sm:flex-nowrap`; panah `size-11 rounded-field hover:bg-fill-subtle`; label periode `font-display text-[17px] font-bold tabular-nums sm:min-w-44`; kanan tautan teks "Per bulan" (`text-accent-strong font-bold`, hanya mode rentang) + Button secondary CalendarRange "Pilih/Ubah rentang" (mobile `w-full` di baris kedua); dialog grid 2 kolom TextField `type="date"`
-- **Catatan:** client. Props `view` (`PeriodView` month|range dari `lib/attendanceRecapLabels.ts`), `currentMonth` (bulan setelahnya = panah nonaktif `text-text-muted`), `from`/`to` (isi awal dialog), `basePath`, `keep` (param lain yang dipertahankan, mis. `employee`). Validasi `attendancePeriodQuerySchema` (maks. 92 hari). URL: bulan berjalan tanpa param, `?month=YYYY-MM`, `?from=&to=`
+- **Catatan:** client. Props `view` (`PeriodView` month|range dari `lib/attendanceRecapLabels.ts`), `currentMonth` (bulan setelahnya = panah nonaktif `text-text-muted`), `from`/`to` (isi awal dialog), `basePath`, `keep` (param lain yang dipertahankan, mis. `employee`). Validasi `attendancePeriodQuerySchema` (maks. 92 hari). URL: bulan berjalan tanpa param, `?month=YYYY-MM`, `?from=&to=`. Feature 30b: prop `caption` (rentang `text-caption text-text-tertiary` di bawah nama bulan, dari `periodRangeCaption` bila periode ≠ bulan kalender); `currentMonth` rekap/koreksi = `recap.currentMonth` (bulan payroll menurut tutup buku)
 
 ### AttendanceRecapTable
 - **Path:** apps/web/components/attendance/AttendanceRecapTable.tsx
@@ -590,7 +590,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Path:** apps/web/components/payroll/PayrollRunEmployeeTable.tsx
 - **Dipakai di:** /payroll/[id]
 - **Referensi desain:** tanpa referensi — pola AttendanceRecapTable/KpiReviewList (feature 29, izin user)
-- **Pola kelas kunci:** `glass-data rounded-card`, thead `bg-table-head h-11` desktop kolom Karyawan · Pendapatan bruto · Potongan · PPh 21 · Gaji diterima (`font-display text-[15px]/[17px] font-bold tabular-nums` rata kanan) · chevron; mobile nama + gaji diterima; baris kedua Badge status (non-dihitung) + Badge warning "N catatan"
+- **Pola kelas kunci:** `glass-data rounded-card`, thead `bg-table-head h-11` desktop kolom Karyawan · Pendapatan bruto · Potongan · PPh 21 · Gaji diterima (`font-display text-[15px]/[17px] font-bold tabular-nums` rata kanan) · chevron; mobile nama + gaji diterima; baris kedua Badge status (non-dihitung) + Badge info "Masuk {tgl}" / outline "Keluar {tgl}" (tanggal di dalam rentang periode, feature 30b; props `periodStart`/`periodEnd`) + Badge warning "N catatan"
 - **Catatan:** server. Di halaman: Banner warning (peringatan periode, list) + Banner danger (karyawan belum bisa dihitung) + 4 StatTile `grid-cols-2 xl:grid-cols-4` (Pendapatan bruto, BPJS perusahaan, PPh 21, Gaji diterima — angka tanpa "Rp", satuan di label)
 
 ### PayrollFinalizeAction

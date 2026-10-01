@@ -110,6 +110,8 @@ export const tenants = pgTable(
     // Kelompok risiko JKK usaha 1–5 (PP 44/2015; feature 28, /settings/salary-components). Default 1 = sangat rendah
     // (kantor, toko — mayoritas UMKM); tarifnya dari bpjs_rates.
     jkkRiskLevel: smallint("jkk_risk_level").notNull().default(1),
+    // Tanggal tutup buku absensi payroll (feature 30b): 1–28; null = akhir bulan
+    attendanceCutoffDay: smallint("attendance_cutoff_day"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -118,6 +120,7 @@ export const tenants = pgTable(
     check("tenants_payday_range", sql`${t.payday} between 1 and 31`),
     check("tenants_ai_summary_monthly_quota", sql`${t.aiSummaryMonthlyQuota} >= 0`),
     check("tenants_jkk_risk_level", sql`${t.jkkRiskLevel} BETWEEN 1 AND 5`),
+    check("tenants_attendance_cutoff_day", sql`${t.attendanceCutoffDay} BETWEEN 1 AND 28`),
   ],
 );
 
@@ -1292,6 +1295,9 @@ export const payrollRuns = pgTable(
     finalizedByName: text("finalized_by_name"),
     // PayrollRunSnapshot (@exapay/shared) — divalidasi zod saat dibaca
     snapshot: jsonb("snapshot"),
+    // Rentang absensi periode saat final (feature 30b, tutup buku); draf dihitung dari pengaturan usaha saat dibaca
+    periodStart: date("period_start", { mode: "string" }),
+    periodEnd: date("period_end", { mode: "string" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -1300,7 +1306,11 @@ export const payrollRuns = pgTable(
     // Satu periode per bulan per usaha; juga melayani filter tenant & urutan daftar
     unique("payroll_runs_tenant_month_key").on(t.tenantId, t.periodMonth),
     check("payroll_runs_period_month", sql`extract(day from ${t.periodMonth}) = 1`),
-    check("payroll_runs_final", sql`(${t.status} = 'final') = (${t.finalizedAt} IS NOT NULL AND ${t.snapshot} IS NOT NULL)`),
+    check(
+      "payroll_runs_final",
+      sql`(${t.status} = 'final') = (${t.finalizedAt} IS NOT NULL AND ${t.snapshot} IS NOT NULL AND ${t.periodStart} IS NOT NULL AND ${t.periodEnd} IS NOT NULL)`,
+    ),
+    check("payroll_runs_period_range", sql`${t.periodEnd} IS NULL OR ${t.periodEnd} >= ${t.periodStart}`),
   ],
 );
 

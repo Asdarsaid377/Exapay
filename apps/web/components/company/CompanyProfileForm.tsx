@@ -2,9 +2,12 @@
 
 import {
   type CompanyProfile,
+  CUTOFF_DAY_MAX,
+  CUTOFF_DAY_MIN,
   formatNpwp,
   PAYDAY_MAX,
   PAYDAY_MIN,
+  paydayBeforeCutoff,
   type RegionProvince,
   type UpdateCompanyProfileInput,
   updateCompanyProfileSchema,
@@ -26,11 +29,13 @@ type Props = {
 };
 
 // Nilai form (semua string — dikonversi saat simpan)
-type Values = { name: string; address: string; npwp: string; provinceCode: string; regencyCode: string; payday: string };
+// attendanceCutoffDay "" = akhir bulan
+type Values = { name: string; address: string; npwp: string; provinceCode: string; regencyCode: string; payday: string; attendanceCutoffDay: string };
 type FieldErrors = Partial<Record<keyof UpdateCompanyProfileInput, string>>;
 
-const FIELDS: readonly (keyof UpdateCompanyProfileInput)[] = ["name", "address", "npwp", "regencyCode", "payday"];
+const FIELDS: readonly (keyof UpdateCompanyProfileInput)[] = ["name", "address", "npwp", "regencyCode", "payday", "attendanceCutoffDay"];
 const PAYDAYS = Array.from({ length: PAYDAY_MAX - PAYDAY_MIN + 1 }, (_, i) => PAYDAY_MIN + i);
+const CUTOFF_DAYS = Array.from({ length: CUTOFF_DAY_MAX - CUTOFF_DAY_MIN + 1 }, (_, i) => CUTOFF_DAY_MIN + i);
 
 function valuesOf(profile: CompanyProfile): Values {
   return {
@@ -40,6 +45,7 @@ function valuesOf(profile: CompanyProfile): Values {
     provinceCode: profile.regency?.provinceCode ?? "",
     regencyCode: profile.regency?.code ?? "",
     payday: profile.payday ? String(profile.payday) : "",
+    attendanceCutoffDay: profile.attendanceCutoffDay ? String(profile.attendanceCutoffDay) : "",
   };
 }
 
@@ -50,6 +56,7 @@ function inputOf(values: Values): UpdateCompanyProfileInput {
     npwp: values.npwp,
     regencyCode: values.regencyCode || null,
     payday: values.payday ? Number(values.payday) : null,
+    attendanceCutoffDay: values.attendanceCutoffDay ? Number(values.attendanceCutoffDay) : null,
   };
 }
 
@@ -75,6 +82,8 @@ export function CompanyProfileForm({ profile, provinces }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const regencies = provinces.find((p) => p.code === values.provinceCode)?.regencies ?? [];
+  const payday = values.payday ? Number(values.payday) : null;
+  const cutoffDay = values.attendanceCutoffDay ? Number(values.attendanceCutoffDay) : null;
 
   function update(field: keyof Values, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -155,7 +164,7 @@ export function CompanyProfileForm({ profile, provinces }: Props) {
 
       <Section
         title="Lokasi & penggajian"
-        description="Kota/kabupaten menentukan UMK yang dipakai untuk memeriksa gaji pokok karyawan. Tanggal gajian dipakai untuk pengingat dan periode payroll."
+        description="Kota/kabupaten menentukan UMK yang dipakai untuk memeriksa gaji pokok karyawan. Tanggal tutup buku menentukan rentang absensi yang dihitung di payroll tiap bulan."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
@@ -188,7 +197,7 @@ export function CompanyProfileForm({ profile, provinces }: Props) {
             ))}
           </SelectField>
         </div>
-        <div className="sm:max-w-[calc(50%-0.5rem)]">
+        <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
             id="company-payday"
             label="Tanggal gajian"
@@ -205,7 +214,32 @@ export function CompanyProfileForm({ profile, provinces }: Props) {
               </option>
             ))}
           </SelectField>
+          <SelectField
+            id="company-cutoff"
+            label="Tutup buku absensi"
+            value={values.attendanceCutoffDay}
+            onChange={(e) => update("attendanceCutoffDay", e.target.value)}
+            error={fieldErrors.attendanceCutoffDay}
+            hint={
+              cutoffDay === null
+                ? "Absensi dihitung per bulan kalender."
+                : `Gaji bulan ini menghitung absensi tanggal ${cutoffDay + 1} bulan lalu s.d. tanggal ${cutoffDay} bulan ini.`
+            }
+            disabled={submitting}
+          >
+            <option value="">Akhir bulan</option>
+            {CUTOFF_DAYS.map((day) => (
+              <option key={day} value={day}>
+                Tanggal {day}
+              </option>
+            ))}
+          </SelectField>
         </div>
+        {paydayBeforeCutoff(payday, cutoffDay) ? (
+          <FormAlert tone="warning">
+            {`Gajian tanggal ${payday} jatuh sebelum absensi ditutup (${cutoffDay === null ? "akhir bulan" : `tanggal ${cutoffDay}`}) — payroll belum bisa difinalisasi di hari gajian. Pilih tanggal tutup buku sebelum tanggal gajian.`}
+          </FormAlert>
+        ) : null}
       </Section>
 
       <div className="flex flex-col gap-4 border-t border-border-subtle pt-6">

@@ -5,10 +5,14 @@ import type { ReactNode } from "react";
 
 import { Badge } from "@/components/common/Badge";
 import { EmployeeAvatar } from "@/components/employees/EmployeeAvatar";
+import { formatIsoDate } from "@/lib/datetime";
 import { EMPLOYEE_STATUS_LABELS, EMPLOYEE_STATUS_TONES, employeeHref, minusRupiah } from "@/lib/payrollRunLabels";
 
 type Props = {
   runId: string;
+  // Rentang absensi periode — label Masuk/Keluar bila tanggal masuk/keluar di dalamnya (feature 30b)
+  periodStart: string;
+  periodEnd: string;
   rows: PayrollRunRow[];
   footer?: ReactNode;
 };
@@ -27,7 +31,7 @@ function subtitle(row: PayrollRunRow): string {
 
 // Draf per karyawan dalam satu periode (feature 29): bruto · potongan · PPh 21 · diterima, tiap baris membuka rincian.
 // Tanpa referensi desain — pola AttendanceRecapTable/KpiReviewList (glass-data, thead table-head) (izin user).
-export function PayrollRunEmployeeTable({ runId, rows, footer }: Props) {
+export function PayrollRunEmployeeTable({ runId, periodStart, periodEnd, rows, footer }: Props) {
   return (
     <section className="overflow-hidden rounded-card glass-data">
       <div className={`${ROW_GRID} hidden h-11 border-b border-border-subtle bg-table-head py-0 text-caption font-bold text-text-secondary lg:grid`}>
@@ -41,6 +45,9 @@ export function PayrollRunEmployeeTable({ runId, rows, footer }: Props) {
       <ul>
         {rows.map((row) => {
           const calculated = row.status === "calculated";
+          const { joinDate, endDate } = row.employee;
+          const joined = joinDate > periodStart && joinDate <= periodEnd;
+          const left = endDate !== null && endDate >= periodStart && endDate <= periodEnd;
           return (
             <li key={row.employee.id} className="border-t border-border-subtle first:border-t-0">
               <Link
@@ -61,9 +68,11 @@ export function PayrollRunEmployeeTable({ runId, rows, footer }: Props) {
                   {row.takeHomePay ? formatRupiah(row.takeHomePay) : "–"}
                 </span>
                 <ChevronRight aria-hidden className="hidden size-5 text-text-secondary lg:block" />
-                {!calculated || row.warningCount > 0 ? (
+                {!calculated || row.warningCount > 0 || joined || left ? (
                   <span className="flex flex-wrap gap-1.5 pl-12 lg:col-span-6 lg:-mt-1 lg:pb-1">
                     {!calculated ? <Badge tone={EMPLOYEE_STATUS_TONES[row.status]}>{EMPLOYEE_STATUS_LABELS[row.status]}</Badge> : null}
+                    {joined ? <Badge tone="info">{`Masuk ${formatIsoDate(joinDate)}`}</Badge> : null}
+                    {left && endDate ? <Badge tone="outline">{`Keluar ${formatIsoDate(endDate)}`}</Badge> : null}
                     {row.warningCount > 0 ? <Badge tone="warning">{`${row.warningCount} catatan`}</Badge> : null}
                   </span>
                 ) : null}

@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { Pagination } from "@/components/common/Pagination";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchAttendanceCorrections, fetchAttendanceRecap, fetchEmployeeAttendanceDays } from "@/lib/api/attendanceRecap";
-import { correctionsHref, periodQueryFrom, periodViewOf, recapHref } from "@/lib/attendanceRecapLabels";
+import { correctionsHref, periodQueryFrom, periodRangeCaption, periodViewOf, recapHref } from "@/lib/attendanceRecapLabels";
 
 export const metadata: Metadata = { title: "Koreksi absensi — Exapay" };
 
@@ -49,8 +49,9 @@ export default async function AttendanceCorrectionsPage({ searchParams }: Props)
     );
   }
 
-  const view = periodViewOf(period, recap.data.today);
-  const currentMonth = recap.data.today.slice(0, 7);
+  // Bulan = periode tutup buku payroll (feature 30b)
+  const currentMonth = recap.data.currentMonth;
+  const view = periodViewOf(period, currentMonth);
   const employees = recap.data.rows.map((row) => row.employee);
   // Karyawan terpilih di luar periode tetap bisa dipilih ulang
   if (days?.ok && !employees.some((employee) => employee.id === days.data.employee.id)) employees.push(days.data.employee);
@@ -95,6 +96,7 @@ export default async function AttendanceCorrectionsPage({ searchParams }: Props)
             currentMonth={currentMonth}
             from={recap.data.from}
             to={recap.data.to}
+            caption={periodRangeCaption(view, recap.data.from, recap.data.to)}
             basePath="/attendance/corrections"
             keep={employeeId ? { employee: employeeId } : {}}
           />

@@ -70,6 +70,12 @@ const recapEmployeeSchema = z.object({
 export const attendanceRecapSchema = z.object({
   from: z.string(),
   to: z.string(),
+  // Bulan payroll yang ditampilkan (periode tutup buku, feature 30b); null = rentang bebas
+  month: z.string().nullable(),
+  // Bulan payroll yang periodenya memuat hari ini — bulan sesudahnya belum bisa dibuka
+  currentMonth: z.string(),
+  // Tanggal tutup buku usaha (null = akhir bulan)
+  cutoffDay: z.number().int().nullable(),
   // Tanggal hari ini di zona waktu usaha (hari kerja ≥ hari ini belum dihitung alpa)
   today: z.string(),
   timeZone: z.string(),

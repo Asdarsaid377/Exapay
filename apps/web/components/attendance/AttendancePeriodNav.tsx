@@ -19,6 +19,8 @@ type Props = {
   // Rentang tampilan sekarang (untuk isi awal dialog)
   from: string;
   to: string;
+  // Rentang di bawah nama bulan bila periode ≠ bulan kalender (tutup buku payroll, feature 30b)
+  caption?: string | null;
   basePath: string;
   // Parameter lain yang dipertahankan saat periode berganti (mis. karyawan terpilih)
   keep?: Record<string, string>;
@@ -31,7 +33,7 @@ const ARROW_CLASSES =
 
 // Pilih periode rekap/koreksi: panah per bulan, atau rentang bebas (maks. 92 hari) lewat dialog. Periode di URL.
 // Tanpa referensi desain (feature 16, izin user) — pola AttendanceMonthNav + panel filter EmployeeFilters.
-export function AttendancePeriodNav({ view, currentMonth, from, to, basePath, keep = {}, rangeHint = "Maksimal 92 hari. Hari ini dan sesudahnya belum dihitung alpa." }: Props) {
+export function AttendancePeriodNav({ view, currentMonth, from, to, caption = null, basePath, keep = {}, rangeHint = "Maksimal 92 hari. Hari ini dan sesudahnya belum dihitung alpa." }: Props) {
   const router = useRouter();
   const [loading, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -77,8 +79,9 @@ export function AttendancePeriodNav({ view, currentMonth, from, to, basePath, ke
               <ChevronLeft aria-hidden className="size-5" />
             </Link>
           ) : null}
-          <span aria-current="page" className="truncate px-1 text-center font-display text-[17px] font-bold text-text-primary tabular-nums sm:min-w-44">
-            {periodLabel(view)}
+          <span aria-current="page" className="flex min-w-0 flex-col items-center px-1 text-center sm:min-w-44">
+            <span className="truncate font-display text-[17px] font-bold text-text-primary tabular-nums">{periodLabel(view)}</span>
+            {caption ? <span className="truncate text-caption text-text-tertiary tabular-nums">{caption}</span> : null}
           </span>
           {next && month && month < currentMonth ? (
             <Link href={hrefFor({ kind: "month", month: next })} scroll={false} aria-label={`Bulan berikutnya, ${monthLabel(next)}`} className={ARROW_CLASSES}>

@@ -9,6 +9,8 @@ import { type Database, type TenantContext, type Transaction, withTenant } from 
 import { localClock, monthRange } from "./attendance-clock.js";
 import { type RecapEmployment, type RecapLeave, type RecapRecord, type RecapResult, recapEmployee } from "./attendance-recap.js";
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
+import { payrollMonthOf } from "./attendance-period.js";
+import { AttendancePeriodsService } from "./attendance-periods.service.js";
 import { AttendanceService } from "./attendance.service.js";
 import { countWorkingDays, type WorkCalendar } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
@@ -49,7 +51,8 @@ type RecordRow = {
 
 type LeaveRow = RecapLeave & { employeeId: string };
 
-// Periode dari query: rentang bebas, bulan, atau bulan berjalan (tanggal hari ini di zona waktu usaha)
+// Periode dari query: rentang bebas, bulan kalender, atau bulan berjalan (tanggal hari ini di zona waktu usaha).
+// Dipakai skor KPI; rekap absensi memakai periode tutup buku payroll (AttendanceRecapService.recapPeriod).
 export function resolvePeriod(query: AttendancePeriodQuery, today: string): Period {
   if (query.from && query.to) return { from: query.from, to: query.to };
   return monthRange(query.month ?? today.slice(0, 7));
@@ -71,6 +74,7 @@ export class AttendanceRecapService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly attendance: AttendanceService,
     private readonly workCalendar: WorkCalendarService,
+    private readonly periods: AttendancePeriodsService,
   ) {}
 
   async recap(user: AuthUser, query: AttendancePeriodQuery): Promise<AttendanceRecap> {
@@ -79,7 +83,7 @@ export class AttendanceRecapService {
       const viewer = await this.requireViewer(tx, ctx);
       const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
       const today = localClock(new Date(), timeZone).date;
-      const period = resolvePeriod(query, today);
+      const { month, currentMonth, cutoffDay, ...period } = await this.recapPeriod(tx, ctx, query, today);
 
       // Karyawan yang masa kerjanya beririsan dengan periode
       const rows = await this.selectEmployees(
@@ -93,6 +97,9 @@ export class AttendanceRecapService {
 
       return {
         ...period,
+        month,
+        currentMonth,
+        cutoffDay,
         today,
         timeZone,
         scope: viewer.manage ? "all" : "subordinates",
@@ -122,7 +129,8 @@ export class AttendanceRecapService {
 
       const timeZone = await this.attendance.tenantTimeZone(tx, ctx.tenantId);
       const today = localClock(new Date(), timeZone).date;
-      const period = resolvePeriod(query, today);
+      const { from, to } = await this.recapPeriod(tx, ctx, query, today);
+      const period = { from, to };
       const records = await this.selectRecords(tx, [row.id], period);
       const leaves = await this.selectLeaves(tx, [row.id], period);
       const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
@@ -190,6 +198,21 @@ export class AttendanceRecapService {
   }
 
   // ——— helper ———
+
+  // Rentang bebas, atau periode tutup buku payroll bulan terpilih (feature 30b); tanpa bulan = periode yang memuat hari ini
+  private async recapPeriod(
+    tx: Transaction,
+    ctx: TenantContext,
+    query: AttendancePeriodQuery,
+    today: string,
+  ): Promise<Period & { month: string | null; currentMonth: string; cutoffDay: number | null }> {
+    const cutoffDay = await this.periods.cutoffDay(tx, ctx);
+    const currentMonth = payrollMonthOf(today, cutoffDay);
+    if (query.from && query.to) return { from: query.from, to: query.to, month: null, currentMonth, cutoffDay };
+    const month = query.month ?? currentMonth;
+    const { from, to } = await this.periods.payrollPeriod(tx, ctx, month);
+    return { from, to, month, currentMonth, cutoffDay };
+  }
 
   private async requireViewer(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {
     const viewer = await loadAttendanceViewer(tx, ctx);

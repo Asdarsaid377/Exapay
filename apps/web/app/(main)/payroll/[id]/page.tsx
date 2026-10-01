@@ -122,6 +122,8 @@ export default async function PayrollRunPage({ params }: Props) {
       ) : (
         <PayrollRunEmployeeTable
           runId={run.id}
+          periodStart={run.periodStart}
+          periodEnd={run.periodEnd}
           rows={run.rows}
           footer={
             <p className="text-small text-pretty text-text-secondary tabular-nums">

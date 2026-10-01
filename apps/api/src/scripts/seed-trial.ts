@@ -34,7 +34,8 @@ import { seedTenantDefaults } from "../modules/tenants/tenant-defaults.js";
 // Data uji coba "sudah production 1 bulan": usaha terpisah "Roti Sinar Pagi (Uji Coba)" (Kota Makassar, WITA) dengan
 // 15 karyawan dan operasional September 2026 — absensi harian (telat, alpa, lupa pulang), izin/sakit/cuti, log tugas
 // harian + verifikasi atasan, gaji berlaku-tanggal, aturan potongan, dan periode payroll September (draf, siap dicoba
-// finalisasi). Sengaja berisi kasus tepi: karyawan baru tengah bulan, resign tengah bulan, gaji di bawah UMP, karyawan
+// finalisasi). Tutup buku absensi tanggal 25 & gajian tanggal 28 (feature 30b) → periode September = 26 Agu – 25 Sep,
+// jadi absensi dibuat mulai 26 Agustus. Sengaja berisi kasus tepi: karyawan baru tengah bulan, resign tengah bulan, gaji di bawah UMP, karyawan
 // tanpa gaji, pengajuan menunggu/ditolak, log tugas menunggu/ditolak/dikoreksi.
 // Jalankan: pnpm --filter @exapay/api db:seed-trial — hanya development, idempotent (dilewati bila sudah ada).
 // Memakai role app_owner (DATABASE_MIGRATION_URL); RLS tetap berlaku (FORCE) — setiap insert dengan konteks tenant.
@@ -44,6 +45,9 @@ const DOMAIN = "sinarpagi.local";
 const TENANT_NAME = "Roti Sinar Pagi (Uji Coba)";
 const TIME_ZONE = "Asia/Makassar";
 const MONTH_FROM = "2026-09-01";
+// Awal periode payroll September dengan tutup buku 25
+const ATTENDANCE_FROM = "2026-08-26";
+const CUTOFF_DAY = 25;
 const MONTH_TO = "2026-09-30";
 
 type Dept = "Produksi" | "Toko" | "Penjualan" | "Gudang" | "Kantor";
@@ -447,6 +451,7 @@ async function main(): Promise<void> {
         npwp: "012345678805000",
         regencyCode: "73.71",
         payday: 28,
+        attendanceCutoffDay: CUTOFF_DAY,
         jkkRiskLevel: 2,
       });
       await seedTenantDefaults(tx, { tenantId, userId: ownerId });
@@ -598,7 +603,7 @@ async function main(): Promise<void> {
       let taskCount = 0;
       for (const e of EMPLOYEES) {
         const employeeId = id(employeeIdOf, e.key);
-        const from = e.joinDate > MONTH_FROM ? e.joinDate : MONTH_FROM;
+        const from = e.joinDate > ATTENDANCE_FROM ? e.joinDate : ATTENDANCE_FROM;
         const to = e.endDate && e.endDate < MONTH_TO ? e.endDate : MONTH_TO;
         const templateId = positionTemplates[e.pos];
         const loggable = indicators.filter((i) => i.templateId === templateId && (i.type === "count" || i.type === "numeric"));

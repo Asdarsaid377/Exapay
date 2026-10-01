@@ -336,7 +336,11 @@ describe("draf cocok dengan hitungan manual", () => {
 
     const detail = await runDetail(f, runId);
     expect(detail.periodEnded).toBe(true);
-    expect(detail.warnings).toEqual([]);
+    expect(detail).toMatchObject({ periodStart: "2026-10-01", periodEnd: "2026-10-31", payDate: "2026-10-25" });
+    // Gajian 25 tanpa tutup buku (akhir bulan) → peringatan (feature 30b)
+    expect(detail.warnings).toEqual([
+      "Tanggal gajian (25 Oktober 2026) jatuh sebelum absensi ditutup (31 Oktober 2026) — payroll belum bisa difinalisasi di hari gajian. Atur tanggal tutup buku di Profil usaha.",
+    ]);
     expect(detail.rows.map((row) => row.employee.fullName)).toEqual(["Andi Saputra", "Budi Santoso", "Citra Lestari", "Dodi Pratama"]);
 
     // Andi (TK/0, sebulan penuh, 5 program BPJS). Upah BPJS = 5 jt + 1 jt = 6 jt.
@@ -566,7 +570,7 @@ describe("finalisasi", () => {
     setNow("2026-10-20T03:00:00Z");
     const admin = await tokenOf(f.ws, "admin");
     const running: PayrollRunDetail = (await send("get", admin, `/payroll/runs/${runId}`)).body.data;
-    expect(running.finalization?.blockers[0]).toBe("Periode baru bisa difinalisasi setelah berakhir (mulai 1 November 2026).");
+    expect(running.finalization?.blockers[0]).toBe("Periode baru bisa difinalisasi setelah absensi ditutup (mulai 1 November 2026).");
     vi.useRealTimers();
     setNow();
 
@@ -696,5 +700,82 @@ describe("finalisasi", () => {
     expect(gita.pph21?.annual).toMatchObject({ grossIncome: "20000000.00", withheldThisEmployer: "200000.00", annualTax: "0.00" });
     expect(gita.pph21?.pph21).toBe("-200000.00");
     expect((await finalize(f, december)).status).toBe(200);
+  });
+});
+
+// Feature 30b: tanggal tutup buku absensi per usaha
+describe("tutup buku absensi", () => {
+  async function setCutoff(f: Fixture, attendanceCutoffDay: number | null): Promise<void> {
+    const owner = await tokenOf(f.ws, "owner");
+    const res = await send("put", owner, "/company", { name: "Kopi Tutup Buku", address: null, npwp: null, regencyCode: "73.71", payday: 28, attendanceCutoffDay });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+  }
+
+  it("tutup buku 25 & gajian 28: rentang 26 Sep – 25 Okt, final tanggal 26, periode berikutnya & peralihan", async () => {
+    const f = await createFixture("Kopi Tutup Buku");
+    await setCutoff(f, 25);
+    // Andi juga hadir 28–30 Sep; Citra tidak (alpa 3 hari di rentang ini + 2 hari Oktober)
+    await attend(f.ws, f.andi, ["2026-09-28", "2026-09-29", "2026-09-30"]);
+
+    // Senin 26 Okt 2026, 11:00 WITA — absensi Oktober sudah ditutup
+    setNow("2026-10-26T03:00:00Z");
+    f.admin = await tokenOf(f.ws, "admin");
+    const list: PayrollRunList = (await send("get", f.admin, "/payroll/runs")).body.data;
+    expect(list.openableMonths[0]).toBe("2026-11");
+    const runId = await openOctober(f);
+
+    const draft = await runDetail(f, runId);
+    // Gajian 28 setelah tutup buku → tanpa peringatan gajian. Aturan potongan fixture baru berlaku 1 Okt (di tengah periode)
+    expect(draft).toMatchObject({ periodStart: "2026-09-26", periodEnd: "2026-10-25", payDate: "2026-10-28", periodEnded: true });
+    expect(draft.warnings).toEqual([
+      "Aturan potongan absensi berubah mulai 1 Oktober 2026 — periode ini memakai aturan yang berlaku di hari pertama periode; aturan baru dipakai mulai periode berikutnya.",
+    ]);
+
+    // Hari kerja 26 Sep – 25 Okt: 28–30 Sep (3) + 1–23 Okt (17) = 20
+    const andi = await employeeDetail(f, runId, f.andi);
+    expect(andi.attendanceFacts).toMatchObject({ periodWorkingDays: 20, employedWorkingDays: 20, absentDays: 0 });
+    expect(andi.employee).toMatchObject({ joinDate: "2025-01-01", endDate: null });
+    const citra = await employeeDetail(f, runId, f.citra);
+    expect(citra.attendanceFacts?.absentDays).toBe(5);
+    // Budi masuk 15 Okt: 15–16 & 19–23 Okt = 7 dari 20 hari kerja → 4.000.000 × 7 ÷ 20 = 1.400.000
+    const budi = await employeeDetail(f, runId, f.budi);
+    expect(budi.result?.proration).toMatchObject({ periodWorkingDays: 20, employedWorkingDays: 7 });
+    expect(budi.result?.grossPay).toBe("1400000.00");
+    // Label Masuk di daftar
+    expect(rowOf(draft, f.budi).employee).toMatchObject({ joinDate: "2026-10-15", endDate: null });
+
+    // Rekap absensi bulan Oktober = rentang tutup buku; pratinjau bulan berjalan = November
+    const recap = (await send("get", f.admin, "/attendance/recap?month=2026-10")).body.data;
+    expect(recap).toMatchObject({ from: "2026-09-26", to: "2026-10-25", month: "2026-10", currentMonth: "2026-11", cutoffDay: 25 });
+
+    expect((await adjust(f, runId, f.dodi, { kind: "exclude", reason: "Gaji belum disepakati" })).status).toBe(200);
+    expect((await runDetail(f, runId)).finalization?.blockers).toEqual([]);
+    expect((await finalize(f, runId)).status).toBe(200);
+    const stored = await withTenant(db, { tenantId: f.ws.tenantId, userId: null }, (tx) =>
+      tx.select({ periodStart: payrollRuns.periodStart, periodEnd: payrollRuns.periodEnd }).from(payrollRuns).where(eq(payrollRuns.id, runId)),
+    );
+    expect(stored).toEqual([{ periodStart: "2026-09-26", periodEnd: "2026-10-25" }]);
+
+    // Gaji berlaku-mundur dibatasi akhir rentang final (25 Okt), bukan akhir bulan
+    const salary = (effectiveFrom: string) =>
+      send("post", f.admin, `/employees/${f.citra}/salary`, {
+        effectiveFrom,
+        items: [{ componentId: f.componentId("Gaji Pokok"), amount: "3600000" }],
+        bpjsPrograms: ["kesehatan"],
+        note: null,
+      });
+    expect((await salary("2026-10-25")).body.error).toMatch(/harus setelah 25 Oktober 2026/);
+    expect((await salary("2026-10-26")).status).toBe(201);
+
+    // November dimulai sehari setelah periode final; tutup buku diubah ke akhir bulan → peralihan 26 Okt – 30 Nov
+    const november = (await send("post", f.admin, "/payroll/runs", { month: "2026-11" })).body.data.id;
+    expect(await runDetail(f, november)).toMatchObject({ periodStart: "2026-10-26", periodEnd: "2026-11-25" });
+    await setCutoff(f, null);
+    const transition = await runDetail(f, november);
+    expect(transition).toMatchObject({ periodStart: "2026-10-26", periodEnd: "2026-11-30" });
+    expect(transition.warnings.join(" ")).toMatch(/Periode peralihan 26 Oktober 2026 – 30 November 2026/);
+    expect(transition.warnings.join(" ")).toMatch(/Tanggal gajian \(28 November 2026\) jatuh sebelum absensi ditutup/);
+    // Periode final tetap memakai rentang tersimpan
+    expect(await runDetail(f, runId)).toMatchObject({ periodStart: "2026-09-26", periodEnd: "2026-10-25" });
   });
 });

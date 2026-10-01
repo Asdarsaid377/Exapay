@@ -58,7 +58,7 @@ async function tokenOf(email: string): Promise<string> {
   return res.body.data.tokens.accessToken;
 }
 
-const VALID = { name: "Konveksi Sari Jaya", address: "Jl. Perintis Kemerdekaan No. 10", npwp: "01.234.567.8-901.000", regencyCode: "73.71", payday: 25 };
+const VALID = { name: "Konveksi Sari Jaya", address: "Jl. Perintis Kemerdekaan No. 10", npwp: "01.234.567.8-901.000", regencyCode: "73.71", payday: 25, attendanceCutoffDay: null };
 
 async function put(token: string, body: object): Promise<request.Response> {
   return request(server).put("/company").set("Authorization", `Bearer ${token}`).send(body);
@@ -112,7 +112,7 @@ describe("profil usaha", () => {
     const token = await tokenOf(ws.emails.owner);
 
     const empty = await request(server).get("/company").set("Authorization", `Bearer ${token}`);
-    expect(empty.body.data).toMatchObject({ name: "Toko Profil", address: null, npwp: null, regency: null, payday: null });
+    expect(empty.body.data).toMatchObject({ name: "Toko Profil", address: null, npwp: null, regency: null, payday: null, attendanceCutoffDay: null });
 
     const saved = await put(token, VALID);
     expect(saved.status, JSON.stringify(saved.body)).toBe(200);
@@ -130,14 +130,14 @@ describe("profil usaha", () => {
     const me = await request(server).get("/auth/me").set("Authorization", `Bearer ${token}`);
     expect(me.body.data.activeTenant.tenantName).toBe("Konveksi Sari Jaya");
 
-    // Admin mengosongkan alamat + ganti tanggal gajian
+    // Admin mengosongkan alamat + ganti tanggal gajian + tutup buku tanggal 25 (feature 30b)
     const adminToken = await tokenOf(ws.emails.admin);
-    const cleared = await put(adminToken, { ...VALID, address: "  ", npwp: "0123456789010000", payday: 1 });
+    const cleared = await put(adminToken, { ...VALID, address: "  ", npwp: "0123456789010000", payday: 1, attendanceCutoffDay: 25 });
     expect(cleared.status).toBe(200);
-    expect(cleared.body.data).toMatchObject({ address: null, npwp: "0123456789010000", payday: 1 });
+    expect(cleared.body.data).toMatchObject({ address: null, npwp: "0123456789010000", payday: 1, attendanceCutoffDay: 25 });
 
     // Tanpa perubahan → tidak ada audit baru
-    expect((await put(adminToken, { ...VALID, address: null, npwp: "0123456789010000", payday: 1 })).status).toBe(200);
+    expect((await put(adminToken, { ...VALID, address: null, npwp: "0123456789010000", payday: 1, attendanceCutoffDay: 25 })).status).toBe(200);
 
     const audit = await withTenant(db, { tenantId: ws.tenantId, userId: null }, (tx) =>
       tx
@@ -149,8 +149,8 @@ describe("profil usaha", () => {
     expect(audit).toHaveLength(2);
     expect(audit[0]?.before).toEqual({ name: "Toko Profil", address: null, npwp: null, regencyCode: null, payday: null });
     expect(audit[1]).toEqual({
-      before: { address: "Jl. Perintis Kemerdekaan No. 10", npwp: "012345678901000", payday: 25 },
-      after: { address: null, npwp: "0123456789010000", payday: 1 },
+      before: { address: "Jl. Perintis Kemerdekaan No. 10", npwp: "012345678901000", payday: 25, attendanceCutoffDay: null },
+      after: { address: null, npwp: "0123456789010000", payday: 1, attendanceCutoffDay: 25 },
     });
   });
 
@@ -162,6 +162,7 @@ describe("profil usaha", () => {
       [{ ...VALID, npwp: "01.234.567.8-901.00A" }, "NPWP harus 15 atau 16 digit angka"],
       [{ ...VALID, payday: 32 }, "Tanggal gajian 1–31"],
       [{ ...VALID, payday: 0 }, "Tanggal gajian 1–31"],
+      [{ ...VALID, attendanceCutoffDay: 29 }, "Tanggal tutup buku 1–28"],
       [{ ...VALID, regencyCode: "Makassar" }, "Pilih kota/kabupaten"],
       [{ ...VALID, regencyCode: "99.99" }, "Kota/kabupaten tidak dikenal"],
       [{ ...VALID, name: "A" }, "Nama usaha minimal 2 karakter"],
@@ -172,7 +173,7 @@ describe("profil usaha", () => {
       expect(res.body.error).toBe(message);
     }
     // Kolom opsional boleh null
-    expect((await put(token, { name: "Toko Validasi", address: null, npwp: null, regencyCode: null, payday: null })).status).toBe(200);
+    expect((await put(token, { name: "Toko Validasi", address: null, npwp: null, regencyCode: null, payday: null, attendanceCutoffDay: null })).status).toBe(200);
   });
 
   it("hanya profil usaha aktif yang terbaca & berubah", async () => {

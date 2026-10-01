@@ -15,7 +15,7 @@ import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
 import { exclusionViolationConstraint } from "../../database/errors.js";
 import { type Database, type TenantContext, type Transaction, withTenant } from "../../database/tenant-transaction.js";
-import { localClock, monthRange } from "../attendance/attendance-clock.js";
+import { localClock } from "../attendance/attendance-clock.js";
 import { previousDate, versionStatus } from "../attendance/attendance-deduction-rules.js";
 import { AttendanceService } from "../attendance/attendance.service.js";
 import { AuditService } from "../audit/audit.service.js";
@@ -131,14 +131,15 @@ export class EmployeeSalariesService {
         // FOR SHARE periode bulan ini & sesudahnya: bergantian dengan finalisasi (FOR UPDATE) — finalisasi yang menunggu
         // membaca versi gaji ini, atau simpan ini melihat periode yang baru final
         const laterRuns = await tx
-          .select({ periodMonth: payrollRuns.periodMonth, status: payrollRuns.status })
+          .select({ periodMonth: payrollRuns.periodMonth, status: payrollRuns.status, periodEnd: payrollRuns.periodEnd })
           .from(payrollRuns)
           .where(gte(payrollRuns.periodMonth, `${input.effectiveFrom.slice(0, 7)}-01`))
           .orderBy(desc(payrollRuns.periodMonth))
           .for("share");
-        const lastFinal = laterRuns.find((run) => run.status === "final");
-        if (lastFinal) {
-          const { to } = monthRange(lastFinal.periodMonth.slice(0, 7));
+        // Periode final (bulan ini atau sesudahnya) yang rentang absensinya (tutup buku) sampai tanggal berlaku ini atau lebih
+        const lastFinal = laterRuns.find((run) => run.status === "final" && run.periodEnd !== null && run.periodEnd >= input.effectiveFrom);
+        if (lastFinal?.periodEnd) {
+          const to = lastFinal.periodEnd;
           throw new BadRequestException(
             `Payroll ${formatIdMonth(lastFinal.periodMonth.slice(0, 7))} sudah final — tanggal berlaku harus setelah ${formatIdDate(to)}. Koreksi gaji periode final lewat penyesuaian periode berikutnya.`,
           );

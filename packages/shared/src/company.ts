@@ -4,6 +4,14 @@ import { z } from "zod";
 
 export const PAYDAY_MIN = 1;
 export const PAYDAY_MAX = 31;
+// Tanggal tutup buku absensi (feature 30b): 1–28 (ada di semua bulan); null = akhir bulan
+export const CUTOFF_DAY_MIN = 1;
+export const CUTOFF_DAY_MAX = 28;
+
+// Gajian jatuh pada/sebelum tutup buku → payroll belum bisa difinalisasi di hari gajian
+export function paydayBeforeCutoff(payday: number | null, cutoffDay: number | null): boolean {
+  return payday !== null && (cutoffDay === null || payday <= cutoffDay);
+}
 
 // Teks kosong → null (kolom opsional)
 const optionalText = (max: number, message: string) =>
@@ -35,6 +43,12 @@ export const updateCompanyProfileSchema = z.object({
     .min(PAYDAY_MIN, "Tanggal gajian 1–31")
     .max(PAYDAY_MAX, "Tanggal gajian 1–31")
     .nullable(),
+  attendanceCutoffDay: z
+    .number("Pilih tanggal tutup buku")
+    .int()
+    .min(CUTOFF_DAY_MIN, "Tanggal tutup buku 1–28")
+    .max(CUTOFF_DAY_MAX, "Tanggal tutup buku 1–28")
+    .nullable(),
 });
 // Nilai form sebelum dinormalisasi (web) vs sesudah (API)
 export type UpdateCompanyProfileInput = z.input<typeof updateCompanyProfileSchema>;
@@ -54,6 +68,7 @@ export type CompanyProfile = {
   npwp: string | null;
   regency: CompanyRegency | null;
   payday: number | null;
+  attendanceCutoffDay: number | null;
   updatedAt: string;
 };
 
@@ -70,6 +85,7 @@ export const companyProfileSchema: z.ZodType<CompanyProfile> = z.object({
   npwp: z.string().nullable(),
   regency: z.object({ code: z.string(), name: z.string(), provinceCode: z.string(), provinceName: z.string() }).nullable(),
   payday: z.number().nullable(),
+  attendanceCutoffDay: z.number().nullable(),
   updatedAt: z.string(),
 });
 

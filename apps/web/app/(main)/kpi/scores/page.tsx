@@ -38,8 +38,8 @@ export default async function KpiScoresPage({ searchParams }: Props) {
   }
   const list = result.data;
   const manage = list.scope === "all";
-  const view = periodViewOf(query, list.today);
   const currentMonth = list.today.slice(0, 7);
+  const view = periodViewOf(query, currentMonth);
   const scoredCount = list.rows.filter((row) => row.result?.score).length;
   const withoutTemplate = list.rows.filter((row) => row.template === null).length;
   const period = formatDateRange(list.from, list.to);
