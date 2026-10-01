@@ -7,11 +7,15 @@ import { AnthropicAiProvider } from "./ai/anthropic-ai-provider.js";
 import { FakeAiProvider } from "./ai/fake-ai-provider.js";
 import { type Env, envSchema } from "./config/env.js";
 import { DatabaseModule } from "./database/database.module.js";
+import { Mailer, SmtpMailer } from "./email/mailer.js";
 import { KpiReviewSummaryProcessor } from "./processors/kpi-review-summary.processor.js";
+import { PayslipProcessor } from "./processors/payslip.processor.js";
+import { FileStorage, S3FileStorage } from "./storage/file-storage.js";
 
 const REDIS_CLIENT = Symbol("REDIS_CLIENT");
 
-// Processor BullMQ: ringkasan AI penilaian KPI (feature 23). pdf, whatsapp, erp-sync didaftarkan di sini pada feature terkait.
+// Processor BullMQ: ringkasan AI penilaian KPI (feature 23), slip gaji PDF + email (feature 31). whatsapp, erp-sync
+// didaftarkan di sini pada feature terkait.
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true, validationSchema: envSchema }), DatabaseModule],
   providers: [
@@ -30,7 +34,32 @@ const REDIS_CLIENT = Symbol("REDIS_CLIENT");
         return apiKey ? new AnthropicAiProvider(apiKey, config.get("AI_MODEL", { infer: true })) : new FakeAiProvider();
       },
     },
+    {
+      provide: FileStorage,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>): FileStorage =>
+        new S3FileStorage({
+          endpoint: config.get("S3_ENDPOINT", { infer: true }),
+          region: config.get("S3_REGION", { infer: true }),
+          bucket: config.get("S3_BUCKET", { infer: true }),
+          accessKeyId: config.get("S3_ACCESS_KEY_ID", { infer: true }),
+          secretAccessKey: config.get("S3_SECRET_ACCESS_KEY", { infer: true }),
+        }),
+    },
+    {
+      provide: Mailer,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>): Mailer =>
+        new SmtpMailer({
+          host: config.get("SMTP_HOST", { infer: true }),
+          port: config.get("SMTP_PORT", { infer: true }),
+          user: config.get("SMTP_USER", { infer: true }),
+          password: config.get("SMTP_PASSWORD", { infer: true }),
+          from: config.get("SMTP_FROM", { infer: true }),
+        }),
+    },
     KpiReviewSummaryProcessor,
+    PayslipProcessor,
   ],
 })
 export class WorkerModule implements OnApplicationBootstrap, OnApplicationShutdown {

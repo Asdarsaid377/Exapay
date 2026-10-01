@@ -7,18 +7,23 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json && concurrently -k -n tsc,node \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --env-file-if-exists=../../.env dist/main.js\"",
     "start": "node dist/main.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
+    "@aws-sdk/client-s3": "^3.1142.0",
     "@exapay/db": "workspace:*",
     "@exapay/shared": "workspace:*",
     "@nestjs/common": "^12.1.1",
     "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^12.1.1",
     "bullmq": "^6.3.10",
+    "decimal.js": "^10.6.0",
     "drizzle-orm": "^0.45.3",
     "ioredis": "^6.0.0",
+    "nodemailer": "^10.0.12",
+    "pdfkit": "^0.20.2",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
@@ -26,8 +31,11 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.23.1",
     "concurrently": "^9.2.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.11"
   }
 }

@@ -111,7 +111,7 @@
 │       │   ├── (main)/kpi/reviews/ → penilaian periodik per periode + detail [id] (feature 22)
 │       │   ├── (main)/settings/kpi/ → siklus penilaian KPI (feature 22)
 │       │   ├── (main)/settings/salary-components/ → katalog komponen gaji & kelompok risiko JKK (feature 28); gaji per karyawan = tab Gaji di employees/[id]
-│       │   ├── (main)/payroll/ → periode gaji (page.tsx), draf [id], rincian & penyesuaian [id]/employees/[employeeId] (feature 29)
+│       │   ├── (main)/payroll/ → periode gaji (page.tsx), draf [id], rincian & penyesuaian [id]/employees/[employeeId] (feature 29), slip gaji [id]/slips + PDF [id]/slips/[payslipId]/pdf (feature 31); portal (portal)/me/payslips + PDF [id]/pdf
 │       │   └── error.tsx             → gangguan server (mis. API tidak terjangkau) — sesi TIDAK diakhiri, tombol coba lagi
 │       ├── components/
 │       │   ├── ui/                   → shadcn/ui primitives saja

@@ -614,3 +614,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** daftar penyesuaian (judul bold + nilai + alasan `text-small` + pembuat·waktu caption + tautan teks "Ubah" accent / "Hapus|Terapkan lagi|Ikutkan kembali" `text-danger-text`); tombol secondary `flex-col sm:flex-row sm:flex-wrap`: Pendapatan / potongan, Ubah nominal, Batalkan potongan absensi, Keluarkan
 - **Catatan:** client. Dialog: Line (SelectField jenis + TextField keterangan + MoneyField), Override (SelectField komponen versi gaji — terkunci saat ubah, MoneyField boleh 0, TextAreaField alasan), Reason (waive/exclude, tombol `dark`). Server Action `actions/payrollRuns.ts`; `editable=false` saat periode final (feature 30)
 
+
+### PayslipTable / PayslipRunActions / ResendPayslipEmailButton / PayslipAutoRefresh
+- **Path:** apps/web/components/payroll/PayslipTable.tsx, PayslipRunActions.tsx, ResendPayslipEmailButton.tsx, PayslipAutoRefresh.tsx
+- **Dipakai di:** /payroll/[id]/slips (tautan tombol primary "Slip gaji" ikon `FileText` di PageHeader /payroll/[id] bila final)
+- **Referensi desain:** tanpa referensi — pola PayrollRunEmployeeTable + PayrollFinalizeAction (feature 31, izin user)
+- **Pola kelas kunci:** `glass-data rounded-card`, thead `bg-table-head h-11` desktop kolom Karyawan · Gaji diterima · Status · Aksi; baris avatar + nama + caption (no. karyawan · keterangan email, `text-danger-text` bila gagal); Badge status (Menunggu/Sedang dibuat neutral, Gagal danger, "Siap · belum terbit" warning, "Terbit <tgl pendek>" success, email antre/gagal); aksi tautan teks accent "Buka PDF" (ikon FileText, tab baru) + "Kirim ulang email" (`min-h-11`); mobile badge & aksi turun `pl-12`
+- **Catatan:** Table & halaman server; Actions/Resend/AutoRefresh client. PayslipRunActions: Button secondary "Proses ulang" (ada slip gagal/menunggu) + primary "Terbitkan N slip" → Dialog konfirmasi (jumlah slip, karyawan yang dikirimi email, tanpa akun portal); disembunyikan bila semua slip sudah terbit. AutoRefresh `router.refresh()` tiap 3 dtk selama ada slip pending/generating atau email antre. Halaman: Banner danger (gagal) / neutral ikon Info (sedang dibuat) + 4 StatTile (Slip siap x/y, Sudah terbit, Email terkirim, Tanpa akun portal). Label & href di `lib/payslipLabels.ts`; Server Action `actions/payslips.ts`; PDF lewat Route Handler `/payroll/[id]/slips/[payslipId]/pdf` (gagal → `?pdf=error`).
+
+### MyPayslipList / MaskedAmount
+- **Path:** apps/web/components/payroll/MyPayslipList.tsx, MaskedAmount.tsx
+- **Dipakai di:** /me/payslips
+- **Referensi desain:** kartu "Slip gaji terakhir" snapshot me.html (nominal tersamar + Lihat/Sembunyikan) + pola MyLeaveRequestList (feature 31, izin user)
+- **Pola kelas kunci:** satu card `surface-solid rounded-card px-4.5 py-4` per bulan: judul `font-display text-[17px] font-bold` "Gaji <bulan>" + `runPeriodSummary` `text-small tabular-nums`; pemisah `border-t`; label "Gaji diterima" `text-[13px]` + MaskedAmount (`font-display text-[19px] font-extrabold`, tersamar "Rp ••••••••" `tracking-[0.08em]`, tombol `aria-pressed` Eye/EyeOff accent-strong `min-h-11`); tautan `buttonClassName({ variant: "secondary", size: "lg", fullWidth: true })` "Unduh slip PDF" ikon Download
+- **Catatan:** List server, MaskedAmount client. Kosong = EmptyState `surface="solid"` ikon Receipt; belum tertaut = FormAlert info. PDF lewat Route Handler `/me/payslips/[id]/pdf` (hanya slip terbit milik sendiri).

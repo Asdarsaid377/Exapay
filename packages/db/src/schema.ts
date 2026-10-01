@@ -24,6 +24,8 @@ import {
   PAYROLL_ADJUSTMENT_KINDS,
   PAYROLL_COMPONENT_KINDS,
   PAYROLL_RUN_STATUSES,
+  PAYSLIP_EMAIL_STATUSES,
+  PAYSLIP_STATUSES,
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
@@ -1425,6 +1427,62 @@ export const payrollRunEmployees = pgTable(
       sql`(${t.status} = 'calculated') = (${t.grossPay} IS NOT NULL AND ${t.totalDeductions} IS NOT NULL AND ${t.bpjsEmployer} IS NOT NULL
         AND ${t.bpjsEmployee} IS NOT NULL AND ${t.pph21} IS NOT NULL AND ${t.takeHomePay} IS NOT NULL
         AND ${t.pph21GrossIncome} IS NOT NULL AND ${t.pensionContribution} IS NOT NULL)`,
+    ),
+  ],
+);
+
+export const payslipStatus = pgEnum("payslip_status", PAYSLIP_STATUSES);
+export const payslipEmailStatus = pgEnum("payslip_email_status", PAYSLIP_EMAIL_STATUSES);
+
+// Slip gaji PDF (feature 31): satu per karyawan yang DIHITUNG di periode final (FK ke snapshot payroll_run_employees).
+// Dibuat finalisasi (pending) di transaksi yang sama → worker membuat PDF dari snapshot ke storage (generating →
+// ready/failed). published_at = diterbitkan owner/admin (baru terlihat di portal karyawan); email_* = pemberitahuan
+// berisi tautan (tujuan di-snapshot saat diminta). Slip siap tidak bisa dibuat ulang/diganti, terbit tidak bisa dibatalkan
+// (trigger). Tanpa DELETE.
+export const payslips = pgTable(
+  "payslips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    runId: uuid("run_id").notNull(),
+    employeeId: uuid("employee_id").notNull(),
+    status: payslipStatus("status").notNull().default("pending"),
+    attempts: smallint("attempts").notNull().default(0),
+    // Key storage tenants/<tenant_id>/payslips/<run_id>/<id>.pdf
+    fileKey: text("file_key"),
+    fileSize: integer("file_size"),
+    generatedAt: timestamp("generated_at", { withTimezone: true }),
+    // Pesan aman untuk pengguna (detail teknis hanya di log worker)
+    error: text("error"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    publishedByUserId: uuid("published_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    publishedByName: text("published_by_name"),
+    emailStatus: payslipEmailStatus("email_status"),
+    emailTo: text("email_to"),
+    emailRequestedAt: timestamp("email_requested_at", { withTimezone: true }),
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    emailError: text("email_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("payslips_tenant_id_id_key").on(t.tenantId, t.id),
+    // Juga melayani filter tenant & daftar per periode
+    unique("payslips_run_employee_key").on(t.tenantId, t.runId, t.employeeId),
+    // Portal karyawan: slip milik sendiri
+    index("payslips_tenant_employee_idx").on(t.tenantId, t.employeeId),
+    foreignKey({
+      name: "payslips_run_employee_fk",
+      columns: [t.tenantId, t.runId, t.employeeId],
+      foreignColumns: [payrollRunEmployees.tenantId, payrollRunEmployees.runId, payrollRunEmployees.employeeId],
+    }).onDelete("restrict"),
+    check("payslips_file", sql`(${t.status} = 'ready') = (${t.fileKey} IS NOT NULL AND ${t.fileSize} IS NOT NULL AND ${t.generatedAt} IS NOT NULL)`),
+    check("payslips_published", sql`${t.publishedAt} IS NULL OR ${t.status} = 'ready'`),
+    check(
+      "payslips_email",
+      sql`(${t.emailStatus} IS NULL) = (${t.emailTo} IS NULL AND ${t.emailRequestedAt} IS NULL) AND (${t.emailStatus} IS NULL OR ${t.publishedAt} IS NOT NULL)`,
     ),
   ],
 );

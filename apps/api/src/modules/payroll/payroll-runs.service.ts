@@ -64,6 +64,7 @@ import {
   salaryVersionForPeriod,
 } from "./payroll-draft.js";
 import { requireSalaryManager } from "./salary-access.js";
+import { PayslipsService } from "./payslips.service.js";
 import { toJkkRiskLevel } from "./salary-components.service.js";
 
 const RUN_NOT_FOUND = "Periode payroll tidak ditemukan";
@@ -336,6 +337,7 @@ export class PayrollRunsService {
     private readonly deductions: AttendanceDeductionRulesService,
     private readonly regulations: RegulationsService,
     private readonly audit: AuditService,
+    private readonly payslips: PayslipsService,
   ) {}
 
   async list(user: AuthUser): Promise<PayrollRunList> {
@@ -465,10 +467,11 @@ export class PayrollRunsService {
   // ——— finalisasi (feature 30) ———
 
   // Satu transaksi: hitung ulang draf di bawah kunci periode, cek syarat & sidik draf yang direview, simpan snapshot per
-  // karyawan + periode, tandai final, audit. Setelah ini angka periode tidak pernah dihitung ulang.
+  // karyawan + periode, tandai final, baris slip gaji (feature 31), audit. Setelah ini angka periode tidak pernah dihitung
+  // ulang. PDF slip diantrekan setelah commit.
   async finalize(user: AuthUser, runId: string, input: FinalizePayrollRunInput): Promise<void> {
     const ctx = tenantContextOf(user);
-    await withTenant(this.db, ctx, async (tx) => {
+    const payslipIds = await withTenant(this.db, ctx, async (tx) => {
       await requireSalaryManager(tx, ctx);
       await this.lockRunSequence(tx, ctx);
       const run = await this.findRun(tx, runId, "update");
@@ -560,7 +563,9 @@ export class PayrollRunsService {
           excluded: draft.employees.filter((employee) => employee.draft.status === "excluded").map((employee) => employee.row.id),
         },
       });
+      return this.payslips.createForRun(tx, ctx, run.id);
     });
+    await this.payslips.enqueueGeneration(ctx.tenantId, payslipIds);
   }
 
   // Syarat finalisasi (keputusan user): periode berakhir, semua karyawan terhitung/dikeluarkan, ada yang dihitung,

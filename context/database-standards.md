@@ -164,6 +164,7 @@ Aturan:
 - Retry dengan backoff; kegagalan dicatat, tidak meruntuhkan proses lain
 - Redis bukan sumber kebenaran — status penting disimpan di Postgres
 - **Implementasi (feature 23):** antrean `ai` (`AI_QUEUE_NAME`, payload `{ tenantId, generationId }` di `@exapay/shared`). Produsen `AI_QUEUE` di `apps/api/src/redis/` (koneksi sendiri `enableOfflineQueue: false`), enqueue setelah commit, `jobId` = id baris status, attempts 3 + backoff eksponensial. Konsumen di `apps/worker` (koneksi `maxRetriesPerRequest: null`); status di tabel Postgres (queued → running → succeeded/failed), job yang barisnya sudah selesai dilewati (idempoten); kegagalan terakhir → `UnrecoverableError`
+- **Antrean `payslips` (feature 31):** job `payslip-generate` (PDF dari snapshot final → storage) & `payslip-email` (pemberitahuan berisi tautan), payload `{ tenantId, payslipId }`, status di `payslips`. Enqueue setelah commit; job yang hilang dipulihkan lewat "Proses ulang" (jobId unik per permintaan ulang). Worker menulis ke storage lewat `FileStorage` miliknya sendiri (`apps/worker/src/storage/`) dan mengirim email lewat `Mailer` (`apps/worker/src/email/`)
 
 ---
 

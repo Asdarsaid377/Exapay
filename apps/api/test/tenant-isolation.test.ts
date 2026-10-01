@@ -124,6 +124,7 @@ describe("role runtime app_user", () => {
       "payroll_adjustments",
       "payroll_run_employees",
       "payroll_runs",
+      "payslips",
       "positions",
       "pph21_parameters",
       "provinces",

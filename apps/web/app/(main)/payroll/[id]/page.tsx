@@ -1,9 +1,11 @@
-import { CloudOff, Lock, Users } from "lucide-react";
+import { CloudOff, FileText, Lock, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { z } from "zod";
 
 import { Badge } from "@/components/common/Badge";
 import { Banner } from "@/components/common/Banner";
+import { buttonClassName } from "@/components/common/Button";
 import { EmptyState } from "@/components/common/EmptyState";
 import { StatTile } from "@/components/common/StatTile";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -13,6 +15,7 @@ import { PayrollRunEmployeeTable } from "@/components/payroll/PayrollRunEmployee
 import { fetchPayrollRun } from "@/lib/api/payrollRuns";
 import { formatDateTime } from "@/lib/datetime";
 import { RUN_STATUS_LABELS, RUN_STATUS_TONES, rupiahNumber, runPeriodSummary, runTitle } from "@/lib/payrollRunLabels";
+import { payslipsHref } from "@/lib/payslipLabels";
 
 export const metadata: Metadata = { title: "Periode gaji — Exapay" };
 
@@ -21,7 +24,7 @@ type Props = {
 };
 
 // Draf payroll satu periode (feature 29): total + daftar per karyawan; rincian & penyesuaian per karyawan di sub-halaman.
-// Finalisasi (feature 30): tombol + syarat yang belum terpenuhi; periode final menampilkan snapshot.
+// Finalisasi (feature 30): tombol + syarat yang belum terpenuhi; periode final menampilkan snapshot + tautan Slip gaji (feature 31).
 // Tanpa referensi desain — pola /kpi/reviews + /attendance (StatTile + tabel glass-data) (izin user).
 export default async function PayrollRunPage({ params }: Props) {
   const { id } = await params;
@@ -61,6 +64,12 @@ export default async function PayrollRunPage({ params }: Props) {
                 takeHomeLabel={`Rp ${rupiahNumber(totals.takeHomePay)}`}
                 blocked={finalization.blockers.length > 0}
               />
+            ) : null}
+            {run.status === "final" ? (
+              <Link href={payslipsHref(run.id)} className={buttonClassName()}>
+                <FileText aria-hidden className="size-4" />
+                Slip gaji
+              </Link>
             ) : null}
           </div>
         }
