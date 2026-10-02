@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}input::placeholder,textarea::placeholder{color:#8A7561}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Tinjauan absensi</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636">/attendance/review · Absensi › Tinjauan · Kopi Nusantara, Budi Santoso (Pemilik)</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="settings-locations.html">← Lokasi kerja</a>
+      <a href="me-attendance-location.html">Portal kartu absen →</a>
+      <a href="geofence-components.html">Komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Desktop · 1440px — segmented, filter Jenis tanda, Diterima / Perlu tindak lanjut, dan ⋯ → Ubah keputusan berfungsi. Tweak “Tampilan” untuk kosong/memuat.</div>
+    <div data-screen-label="Tinjauan Desktop" style="position:relative;width:1440px;min-height:1024px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:-260px;right:-180px"></div>
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#EADCCB;top:340px;left:-140px"></div>
+        <div style="position:absolute;width:580px;height:360px;border-radius:56px;background:#FAE0C8;top:720px;right:60px"></div>
+      </div>
+      <div style="position:relative;display:flex;gap:20px;padding:20px;min-height:1024px;box-sizing:border-box">
+        <aside style="width:248px;flex:none;box-sizing:border-box;padding:20px 14px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 10px">
+            <div style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</div>
+            <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+              <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:12px;color:#221208;font:{{ item.font }};cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+                <span style="width:19px;height:19px;flex:none;background:currentColor;-webkit-mask:{{ item.mask }};mask:{{ item.mask }}"></span>
+                <span style="flex:1">{{ item.label }}</span>
+                <sc-if value="{{ item.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ item.count }}</span></sc-if>
+                <sc-if value="{{ item.hasSubs }}"><span style="width:16px;height:16px;flex:none;background:#5B4636;-webkit-mask:{{ item.chev }};mask:{{ item.chev }}"></span></sc-if>
+              </div>
+              <sc-if value="{{ item.open }}">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:2px 0 6px 31px">
+                  <sc-for list="{{ item.subs }}" as="c">
+                    <div style="height:38px;padding:0 12px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;background:{{ c.bg }};color:{{ c.fg }};font:{{ c.font }};cursor:pointer" style-hover="background:rgba(255,255,255,0.62)"><span>{{ c.label }}</span><sc-if value="{{ c.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ c.count }}</span></sc-if></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-for>
+          </nav>
+        </aside>
+
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <header style="height:68px;flex:none;box-sizing:border-box;padding:0 12px 0 10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+            <div style="height:50px;padding:0 14px;display:flex;align-items:center;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:13px;color:#5B4636">Pemilik · Makassar</span></div>
+              <span style="width:18px;height:18px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span style="font-size:14px;color:#5B4636">Jumat, 2 Oktober 2026</span>
+              <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">BS</span>
+            </div>
+          </header>
+
+          <div style="display:flex;flex-direction:column;gap:6px;padding:4px 6px 0">
+            <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Tinjauan absensi</h2>
+            <p style="margin:0;font-size:15px;color:#5B4636">Absen bertanda tetap tercatat dan tidak mengubah gaji. Koreksi jam lewat menu <a href="#">Koreksi</a>.</p>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14)">
+            <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+              <sc-for list="{{ segs }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.click }}" style="height:36px;padding:0 16px;border:none;border-radius:999px;background:{{ s.bg }};box-shadow:{{ s.shadow }};color:{{ s.fg }};font:{{ s.font }};cursor:pointer;font-variant-numeric:tabular-nums">{{ s.label }}</button>
+              </sc-for>
+            </div>
+            <div style="flex:1"></div>
+            <div style="position:relative;width:220px">
+              <select onChange="{{ onKind }}" aria-label="Jenis tanda" style="width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 40px 0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;cursor:pointer;outline:none">
+                <option value="">Semua jenis tanda</option><option value="out">Di luar lokasi</option><option value="weak">Lokasi tidak akurat</option><option value="none">Tanpa lokasi</option>
+              </select>
+              <span style="position:absolute;right:14px;top:14px;width:16px;height:16px;pointer-events:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+            </div>
+            <div style="width:220px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:space-between;font:400 15px 'DM Sans',sans-serif;cursor:pointer;font-variant-numeric:tabular-nums">24 Sep – 2 Okt 2026<span style="width:17px;height:17px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar.svg) center / contain no-repeat"></span></div>
+          </div>
+
+          <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:none;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);border-radius:22px 22px 0 0;font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">
+                <span>Karyawan</span><span>Tanggal</span><span>Absen</span><span>Tanda</span><span>{{ lastCol }}</span>
+              </div>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+                <div style="position:relative;display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
+                  <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                    <span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
+                    <div style="display:flex;flex-direction:column;gap:1px;min-width:0"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div>
+                  </div>
+                  <span style="font-size:14px;font-variant-numeric:tabular-nums">{{ r.date }}</span>
+                  <span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span>
+                  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0">
+                    <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span>
+                    <span style="font-size:13.5px;line-height:1.4;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ r.detail }}</span>
+                  </div>
+                  <sc-if value="{{ r.pending }}">
+                    <div style="display:flex;gap:8px;justify-content:flex-end">
+                      <button onClick="{{ r.accept }}" style="height:36px;padding:0 16px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.85);color:#221208;font:700 13.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">Diterima</button>
+                      <button onClick="{{ r.follow }}" style="height:36px;padding:0 16px;border:1px solid rgba(217,119,6,0.45);border-radius:999px;background:rgba(255,255,255,0.85);color:#92400E;font:700 13.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#FFF7ED;border-color:#D97706">Perlu tindak lanjut</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.reviewed }}">
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px">
+                        <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.dBg }};color:{{ r.dFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.decLabel }}</span>
+                        <span style="font-size:12.5px;color:#75604D;font-variant-numeric:tabular-nums">{{ r.by }}</span>
+                        <sc-if value="{{ r.hasNote }}"><span style="font-size:13.5px;line-height:1.4;color:#3D2A1C">“{{ r.note }}”</span></sc-if>
+                      </div>
+                      <button onClick="{{ r.menu }}" aria-label="Aksi lain" style="width:32px;height:32px;flex:none;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.85);cursor:pointer;display:grid;place-items:center" style-hover="background:#FFFFFF"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat"></span></button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.menuOpen }}">
+                    <div style="position:absolute;z-index:6;top:52px;right:20px;width:230px;padding:8px;box-sizing:border-box;border-radius:18px;background:rgba(255,253,249,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 20px 50px -16px rgba(74,42,16,0.3)">
+                      <button onClick="{{ r.change }}" style="width:100%;border:none;background:transparent;height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#221208;font:500 14px 'DM Sans',sans-serif;text-align:left" style-hover="background:rgba(242,121,15,0.1)"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/pencil.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/pencil.svg) center / contain no-repeat"></span>Ubah keputusan</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:56px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px"><span style="font:700 17px 'Plus Jakarta Sans',sans-serif">{{ noRowsTitle }}</span><span style="font-size:14.5px;color:#5B4636">{{ noRowsText }}</span></div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:64px 32px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+              <span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Tidak ada absen yang perlu ditinjau</span>
+              <span style="font-size:15px;color:#5B4636">Absen di luar lokasi kerja akan muncul di sini.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showNoLoc }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:64px 32px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+              <span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Lokasi kerja belum diatur</span>
+              <span style="font-size:15px;color:#5B4636">Tanpa lokasi kerja, absen tidak dicek lokasinya dan tidak ada yang perlu ditinjau.</span>
+              <a href="settings-locations.html" style="margin-top:8px;height:44px;padding:0 20px;border-radius:999px;background:#F2790F;color:#221208;font:700 14px/44px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none">Atur lokasi kerja</a>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showSkel }}" hint-placeholder-val="{{ false }}">
+            <div aria-busy="true" style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="height:44px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08)"></div>
+              <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;height:76px;padding:0 20px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite">
+                  <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.09)"></span><div style="flex:1;display:flex;flex-direction:column;gap:7px"><span style="width:{{ k.w }};height:11px;border-radius:999px;background:rgba(34,18,8,0.1)"></span><span style="width:40%;height:9px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div></div>
+                  <span style="width:70px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span>
+                  <span style="width:80px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span>
+                  <div style="display:flex;flex-direction:column;gap:7px"><span style="width:100px;height:22px;border-radius:999px;background:rgba(34,18,8,0.08)"></span><span style="width:75%;height:10px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px"><span style="width:90px;height:36px;border-radius:999px;background:rgba(34,18,8,0.07)"></span><span style="width:150px;height:36px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </main>
+      </div>
+
+      <sc-if value="{{ dlgOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:10;background:rgba(34,18,8,0.32);display:flex;justify-content:center;align-items:flex-start;padding-top:180px">
+          <div role="dialog" aria-modal="true" style="width:520px;padding:28px;box-sizing:border-box;border-radius:26px;background:rgba(255,253,249,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:18px">
+            <h3 style="margin:0;font:800 21px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.015em">{{ dlg.title }}</h3>
+            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ dlg.name }}</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ dlg.when }}</span></div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:{{ dlg.tBg }};color:{{ dlg.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ dlg.kindLabel }}</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ dlg.detail }}</span></div>
+            </div>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:700 13px 'DM Sans',sans-serif">Catatan<span style="color:{{ dlg.reqFg }};font-weight:400">{{ dlg.req }}</span></span>
+              <textarea onInput="{{ onNote }}" rows="3" placeholder="{{ dlg.ph }}" style="resize:vertical;padding:12px 14px;border-radius:14px;border:1px solid {{ dlg.taBorder }};background:#FFFFFF;font:400 15px/1.45 'DM Sans',sans-serif;color:#221208;outline:none" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)"></textarea>
+              <sc-if value="{{ dlg.err }}"><span style="font-size:12.5px;color:#B91C1C">Catatan wajib diisi untuk “Perlu tindak lanjut”.</span></sc-if>
+              <span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:10px;padding-top:4px">
+              <sc-if value="{{ dlg.showKoreksi }}"><a href="#" style="display:flex;align-items:center;gap:6px;font:700 14px 'DM Sans',sans-serif">Buka koreksi absensi<span style="width:15px;height:15px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-up-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-up-right.svg) center / contain no-repeat"></span></a></sc-if>
+              <div style="flex:1"></div>
+              <button onClick="{{ closeDlg }}" style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button>
+              <button onClick="{{ confirm }}" style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">{{ dlg.cta }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:48px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · 390px · daftar card</div>
+      <div data-screen-label="Tinjauan Mobile" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;inset:0;overflow:hidden">
+          <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+          <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#FAE0C8;top:520px;left:-130px"></div>
+        </div>
+        <div style="position:relative;height:100%;overflow-y:auto;padding:12px 14px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <header style="position:sticky;top:0;z-index:3;height:60px;flex:none;padding:0 8px 0 6px;border-radius:20px;background:rgba(255,251,245,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.18);display:flex;align-items:center;gap:6px">
+            <span style="width:44px;height:44px;display:grid;place-items:center"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></span>
+            <div style="flex:1;display:flex;flex-direction:column;padding:0 8px"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Pemilik</span></div>
+            <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">BS</span>
+          </header>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:4px 4px 0">
+            <h2 style="margin:0;font:800 24px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Tinjauan absensi</h2>
+            <p style="margin:0;font-size:14px;line-height:1.45;color:#5B4636">Absen bertanda tetap tercatat dan tidak mengubah gaji. Koreksi jam lewat menu <a href="#">Koreksi</a>.</p>
+          </div>
+          <div style="flex:none;display:grid;grid-template-columns:1.25fr 1fr 0.8fr;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+            <span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Perlu ditinjau (5)</span>
+            <span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Sudah ditinjau</span>
+            <span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Semua</span>
+          </div>
+          <div style="flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:space-between;font-size:14px">Semua jenis<span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+            <div style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:space-between;font-size:14px">24 Sep – 2 Okt<span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar.svg) center / contain no-repeat"></span></div>
+          </div>
+          <sc-for list="{{ mobileRows }}" as="r" hint-placeholder-count="3">
+            <section style="flex:none;padding:16px;border-radius:22px;background:rgba(255,253,249,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 10px 30px -14px rgba(74,42,16,0.18);display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:40px;height:40px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:13px;color:#75604D">{{ r.jab }}</span></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ r.date }}</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:10px;border-top:1px solid rgba(34,18,8,0.07)">
+                <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span>
+                <span style="font-size:13.5px;line-height:1.4;color:#3D2A1C">{{ r.detail }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:0.8fr 1.2fr;gap:8px">
+                <button style="height:44px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Diterima</button>
+                <button style="height:44px;border:1px solid rgba(217,119,6,0.45);border-radius:999px;background:#FFFFFF;color:#92400E;font:700 14px 'Plus Jakarta Sans',sans-serif">Perlu tindak lanjut</button>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · sudah ditinjau + sheet keputusan</div>
+      <div data-screen-label="Tinjauan Mobile Sheet" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+        <div style="position:relative;padding:92px 14px 0;display:flex;flex-direction:column;gap:14px">
+          <section style="padding:16px;border-radius:22px;background:rgba(255,253,249,0.92);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:40px;height:40px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">RW</span><div style="flex:1;display:flex;flex-direction:column"><span style="font:700 15px 'DM Sans',sans-serif">Rina Wulandari</span><span style="font-size:13px;color:#75604D">Kasir</span></div><div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:700 14px 'DM Sans',sans-serif">Masuk 08:02</span><span style="font-size:12.5px;color:#5B4636">29 Sep 2026</span></div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:10px;border-top:1px solid rgba(34,18,8,0.07)"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(21,128,61,0.12);color:#166534;font:700 12.5px/24px 'DM Sans',sans-serif">Diterima</span><span style="font-size:12.5px;color:#75604D">Budi Santoso · 2 Okt 10:15</span><span style="font-size:13.5px;color:#3D2A1C">“Antar pesanan katering ke kantor pelanggan”</span></div>
+          </section>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+        <div role="dialog" aria-modal="true" style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 28px;border-radius:28px 28px 0 0;background:#FFFDF9;box-shadow:0 -20px 50px -20px rgba(34,18,8,0.4);display:flex;flex-direction:column;gap:16px">
+          <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:rgba(34,18,8,0.18)"></span>
+          <h3 style="margin:0;font:800 20px/1.25 'Plus Jakarta Sans',sans-serif">Tandai perlu tindak lanjut?</h3>
+          <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font:700 14.5px 'DM Sans',sans-serif">Agus Pratama</span><span style="font:500 14px 'DM Sans',sans-serif">2 Okt · Masuk 08:11</span></div><div style="display:flex;align-items:center;gap:10px"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(34,18,8,0.07);color:#3D2A1C;font:700 12.5px/24px 'DM Sans',sans-serif">Tanpa lokasi</span><span style="font-size:13.5px;color:#3D2A1C">Izin lokasi ditolak</span></div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Catatan<span style="color:#B91C1C"> *</span></span><div style="height:84px;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;font-size:15px;line-height:1.45">Minta Agus konfirmasi jam masuk; izin lokasi perlu diaktifkan.</div><span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span></div>
+          <a href="#" style="font:700 14px 'DM Sans',sans-serif">Buka koreksi absensi ↗</a>
+          <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px"><button style="height:48px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:48px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Tandai</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:560px;display:flex;flex-direction:column;gap:32px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog keputusan · Diterima (catatan opsional)</div>
+        <div style="position:relative;padding:24px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+          <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 20px/1.25 'Plus Jakarta Sans',sans-serif">Terima absen Rina Wulandari?</h3>
+            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font:700 14.5px 'DM Sans',sans-serif">Rina Wulandari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">2 Okt 2026 · Masuk 07:58</span></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">320 m dari Kedai Pettarani (akurasi ±10 m)</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Catatan <span style="font-weight:400;color:#75604D">(opsional)</span></span><div style="height:76px;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;font-size:15px">Antar pesanan katering ke kantor pelanggan</div><span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px"><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Terima absen</button></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog keputusan · Perlu tindak lanjut (catatan wajib, error)</div>
+        <div style="position:relative;padding:24px;border-radius:28px;overflow:hidden;background:#FBF8F3">
+          <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+          <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 20px/1.25 'Plus Jakarta Sans',sans-serif">Tandai perlu tindak lanjut?</h3>
+            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font:700 14.5px 'DM Sans',sans-serif">Dewi Lestari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">30 Sep 2026 · Pulang 21:05</span></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">2,4 km dari Kedai Pettarani (akurasi ±15 m)</span></div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Catatan<span style="color:#B91C1C"> *</span></span><div style="height:76px;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #DC2626;background:#FFFFFF;font-size:15px;color:#8A7561">Tulis alasan atau langkah berikutnya</div><span style="font-size:12.5px;color:#B91C1C">Catatan wajib diisi untuk “Perlu tindak lanjut”.</span><span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><a href="#" style="font:700 14px 'DM Sans',sans-serif">Buka koreksi absensi ↗</a><div style="flex:1"></div><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Tandai</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · tidak ada yang perlu ditinjau</div>
+      <div style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3"><div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#F7D3B3;top:-150px;right:-90px"></div>
+        <div style="position:relative;padding:48px 24px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px"><span style="font:700 17px 'Plus Jakarta Sans',sans-serif">Tidak ada absen yang perlu ditinjau</span><span style="font-size:14.5px;color:#5B4636">Absen di luar lokasi kerja akan muncul di sini.</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · lokasi kerja belum diatur (pemilik/admin)</div>
+      <div style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3"><div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#EADCCB;top:-150px;left:-90px"></div>
+        <div style="position:relative;padding:40px 24px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px"><span style="font:700 17px 'Plus Jakarta Sans',sans-serif">Lokasi kerja belum diatur</span><span style="font-size:14.5px;color:#5B4636">Tanpa lokasi kerja, absen tidak dicek lokasinya.</span><a href="settings-locations.html" style="margin-top:8px;height:44px;padding:0 20px;border-radius:999px;background:#F2790F;color:#221208;font:700 14px/44px 'Plus Jakarta Sans',sans-serif;text-decoration:none">Atur lokasi kerja</a></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">State · skeleton baris</div>
+      <div style="padding:28px;border-radius:28px;background:#FBF8F3">
+        <div aria-busy="true" style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75)">
+          <sc-for list="{{ skelSmall }}" as="k" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;height:72px;padding:0 18px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite"><span style="width:36px;height:36px;flex:none;border-radius:50%;background:rgba(34,18,8,0.09)"></span><div style="flex:1;display:flex;flex-direction:column;gap:7px"><span style="width:{{ k.w }};height:11px;border-radius:999px;background:rgba(34,18,8,0.1)"></span><span style="width:110px;height:20px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div><span style="width:84px;height:36px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Tampilan atasan · Rudi Hartono — hanya bawahan langsung, tanpa tautan koreksi</div>
+    <div data-screen-label="Tinjauan Atasan" style="position:relative;width:1100px;padding:28px;box-sizing:border-box;border-radius:28px;overflow:hidden;background:#FBF8F3;display:flex;flex-direction:column;gap:16px">
+      <div style="position:absolute;width:420px;height:420px;border-radius:50%;background:#F7D3B3;top:-200px;right:-120px"></div>
+      <div style="position:relative;display:flex;justify-content:space-between;align-items:flex-end;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:6px"><h2 style="margin:0;font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Tinjauan absensi</h2><span style="font-size:14.5px;color:#5B4636">Absen bertanda tetap tercatat dan tidak mengubah gaji. Bawahan langsung Anda saja.</span></div>
+        <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><span style="height:36px;padding:0 16px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 14px/36px 'DM Sans',sans-serif">Perlu ditinjau (3)</span><span style="height:36px;padding:0 16px;font:500 14px/36px 'DM Sans',sans-serif;color:#5B4636">Sudah ditinjau</span><span style="height:36px;padding:0 16px;font:500 14px/36px 'DM Sans',sans-serif;color:#5B4636">Semua</span></div>
+      </div>
+      <div style="position:relative;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+        <sc-for list="{{ atasanRows }}" as="r" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 100px 108px minmax(0,2fr) 280px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span><div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div></div>
+            <span style="font-size:14px">{{ r.date }}</span>
+            <span style="font:500 14px 'DM Sans',sans-serif">{{ r.ev }}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px"><span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span><span style="font-size:13.5px;color:#3D2A1C">{{ r.detail }}</span></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><button style="height:36px;padding:0 16px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 13.5px 'Plus Jakarta Sans',sans-serif">Diterima</button><button style="height:36px;padding:0 16px;border:1px solid rgba(217,119,6,0.45);border-radius:999px;background:#FFFFFF;color:#92400E;font:700 13.5px 'Plus Jakarta Sans',sans-serif">Perlu tindak lanjut</button></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tampilan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Berisi&quot;,&quot;Kosong&quot;,&quot;Belum ada lokasi&quot;,&quot;Memuat&quot;],&quot;default&quot;:&quot;Berisi&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { seg: 'pending', kind: '', dec: {}, menu: null, dlg: null, note: '', err: false };
+  base() {
+    return [
+      { id: 1, ini: 'RW', name: 'Rina Wulandari', jab: 'Kasir', date: '2 Okt 2026', ev: 'Masuk 07:58', kind: 'out', detail: '320 m dari Kedai Pettarani (akurasi ±10 m)', sub: 1 },
+      { id: 2, ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '2 Okt 2026', ev: 'Masuk 08:11', kind: 'none', detail: 'Izin lokasi ditolak', sub: 1 },
+      { id: 3, ini: 'HW', name: 'Hendra Wijaya', jab: 'Roaster', date: '1 Okt 2026', ev: 'Pulang 17:40', kind: 'out', detail: '1,2 km dari Gudang Roasting Tamalanrea (akurasi ±8 m)' },
+      { id: 4, ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '1 Okt 2026', ev: 'Masuk 08:00', kind: 'weak', detail: 'Akurasi ±450 m, terdekat Kedai Pettarani' },
+      { id: 5, ini: 'DL', name: 'Dewi Lestari', jab: 'Barista', date: '30 Sep 2026', ev: 'Pulang 21:05', kind: 'out', detail: '2,4 km dari Kedai Pettarani (akurasi ±15 m)', sub: 1 },
+      { id: 6, ini: 'RW', name: 'Rina Wulandari', jab: 'Kasir', date: '29 Sep 2026', ev: 'Masuk 08:02', kind: 'out', detail: '540 m dari Kedai Pettarani (akurasi ±12 m)', d: { t: 'ok', by: 'Budi Santoso · 2 Okt 10:15', note: 'Antar pesanan katering ke kantor pelanggan' } },
+      { id: 7, ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '26 Sep 2026', ev: 'Pulang 16:20', kind: 'none', detail: 'Izin lokasi ditolak', d: { t: 'fu', by: 'Budi Santoso · 29 Sep 09:40', note: 'Pulang sebelum jadwal tanpa izin. Dicek lewat koreksi.' } },
+      { id: 8, ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '25 Sep 2026', ev: 'Masuk 07:55', kind: 'weak', detail: 'Akurasi ±300 m, terdekat Kedai Pettarani', d: { t: 'ok', by: 'Rudi Hartono · 25 Sep 11:02', note: '' } },
+    ];
+  }
+  renderVals() {
+    const st = this.state;
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const D = "'DM Sans',sans-serif";
+    const K = { out: ['Di luar lokasi', 'rgba(217,119,6,0.14)', '#92400E'], weak: ['Lokasi tidak akurat', 'rgba(217,119,6,0.14)', '#92400E'], none: ['Tanpa lokasi', 'rgba(34,18,8,0.07)', '#3D2A1C'] };
+    const DEC = { ok: ['Diterima', 'rgba(21,128,61,0.12)', '#166534'], fu: ['Perlu tindak lanjut', 'rgba(217,119,6,0.14)', '#92400E'] };
+    const line = '1px solid rgba(34,18,8,0.07)';
+    const all = this.base().map(r => {
+      const d = st.dec[r.id] || r.d;
+      const k = K[r.kind];
+      return { ...r, d, kindLabel: k[0], tBg: k[1], tFg: k[2] };
+    });
+    const open = (r, t) => this.setState({ dlg: { id: r.id, t }, note: '', err: false, menu: null });
+    const decorate = (list) => list.map((r, i) => {
+      const dd = r.d ? DEC[r.d.t] : null;
+      return { ...r, border: i ? line : 'none', pending: !r.d, reviewed: !!r.d,
+        decLabel: dd ? dd[0] : '', dBg: dd ? dd[1] : '', dFg: dd ? dd[2] : '', by: r.d ? r.d.by : '', note: r.d ? r.d.note : '', hasNote: !!(r.d && r.d.note),
+        accept: () => open(r, 'ok'), follow: () => open(r, 'fu'),
+        menuOpen: st.menu === r.id, menu: () => this.setState(s => ({ menu: s.menu === r.id ? null : r.id })),
+        change: () => open(r, r.d && r.d.t === 'ok' ? 'fu' : 'ok') };
+    });
+    const pendingCount = all.filter(r => !r.d).length;
+    let list = all.filter(r => !st.kind || r.kind === st.kind);
+    if (st.seg === 'pending') list = list.filter(r => !r.d);
+    if (st.seg === 'done') list = list.filter(r => r.d);
+    const rows = decorate(list);
+    const segs = [['pending', `Perlu ditinjau (${pendingCount})`], ['done', 'Sudah ditinjau'], ['all', 'Semua']].map(([k, label]) => { const on = st.seg === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => this.setState({ seg: k, menu: null }) }; });
+    const sub = (label, on, count) => ({ label, bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#3D2A1C', font: `${on ? 700 : 500} 14px ${D}`, count: count || '', hasCount: !!count });
+    const nav = [['Dashboard','layout-dashboard'],['Karyawan','users'],['Organisasi','network'],['Absensi','calendar-check','',1,[sub('Rekap'),sub('Koreksi absensi'),sub('Pengajuan izin','', '2'),sub('Tinjauan',1, pendingCount ? String(pendingCount) : '')]],['KPI','target','7',1],['Payroll','wallet','',1],['Kepatuhan','shield-check'],['Pengaturan','settings','',1]]
+      .map(([label, ic, count, subs, open]) => ({ label, mask: m(ic), font: `${open ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count, hasSubs: !!subs, chev: m(open ? 'chevron-up' : 'chevron-down'), open: !!open, subs: open || [] }));
+    const mode = this.props.tampilan || 'Berisi';
+    const dr = st.dlg && all.find(r => r.id === st.dlg.id);
+    const fu = st.dlg && st.dlg.t === 'fu';
+    const dlg = dr ? { title: fu ? 'Tandai perlu tindak lanjut?' : `Terima absen ${dr.name}?`, name: dr.name, when: `${dr.date} · ${dr.ev}`, kindLabel: dr.kindLabel, tBg: dr.tBg, tFg: dr.tFg, detail: dr.detail,
+      req: fu ? ' *' : ' (opsional)', reqFg: fu ? '#B91C1C' : '#75604D', ph: fu ? 'Tulis alasan atau langkah berikutnya' : 'mis. Antar pesanan ke pelanggan',
+      taBorder: st.err ? '#DC2626' : 'rgba(34,18,8,0.14)', err: st.err, showKoreksi: fu, cta: fu ? 'Tandai' : 'Terima absen' } : {};
+    const pendingRows = decorate(all.filter(r => !r.d));
+    return {
+      nav, segs, rows, lastCol: st.seg === 'pending' ? '' : 'Keputusan',
+      showTable: mode === 'Berisi', noRows: mode === 'Berisi' && !rows.length,
+      noRowsTitle: st.seg === 'pending' && !st.kind ? 'Tidak ada absen yang perlu ditinjau' : 'Tidak ada absen yang cocok',
+      noRowsText: st.seg === 'pending' && !st.kind ? 'Absen di luar lokasi kerja akan muncul di sini.' : 'Coba ubah filter jenis tanda.',
+      showEmpty: mode === 'Kosong', showNoLoc: mode === 'Belum ada lokasi', showSkel: mode === 'Memuat',
+      skel: [0,1,2,3,4].map(i => ({ w: ['55%','40%','62%','48%','35%'][i], border: i ? line : 'none' })),
+      skelSmall: [0,1,2].map(i => ({ w: ['50%','38%','60%'][i], border: i ? line : 'none' })),
+      onKind: e => this.setState({ kind: e.target.value }),
+      dlgOpen: !!dr, dlg,
+      onNote: e => this.setState({ note: e.target.value, err: false }),
+      closeDlg: () => this.setState({ dlg: null }),
+      confirm: () => {
+        if (fu && !st.note.trim()) return this.setState({ err: true });
+        this.setState(s => ({ dec: { ...s.dec, [s.dlg.id]: { t: s.dlg.t, by: 'Budi Santoso · 2 Okt 10:15', note: s.note.trim() } }, dlg: null }));
+      },
+      mobileRows: pendingRows.slice(0, 3),
+      atasanRows: decorate(this.base().filter(r => r.sub).map(r => { const k = K[r.kind]; return { ...r, kindLabel: k[0], tBg: k[1], tFg: k[2] }; })),
+    };
+  }
+}
+</script>
+</body>
+</html>

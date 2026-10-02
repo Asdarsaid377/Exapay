@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { EmployeeAttendanceTab } from "@/components/employees/EmployeeAttendanceTab";
+import { EmployeeAttendanceSettingsSection } from "@/components/employees/EmployeeAttendanceSettingsSection";
 import { EmployeeDetailView } from "@/components/employees/EmployeeDetailView";
 import { EmployeeKpiTab } from "@/components/employees/EmployeeKpiTab";
 import { fetchEmployeeAttendanceDays } from "@/lib/api/attendanceRecap";
@@ -15,6 +16,7 @@ import { fetchEmployee, fetchEmployeeFormOptions } from "@/lib/api/employees";
 import { fetchEmployeeKpiReviews } from "@/lib/api/kpiReviews";
 import { fetchEmployeeKpiScore } from "@/lib/api/kpiScores";
 import { fetchEmployeeSalary } from "@/lib/api/salary";
+import { fetchEmployeeAttendanceSettings } from "@/lib/api/workLocations";
 import { periodQueryFrom } from "@/lib/attendanceRecapLabels";
 import { firstNameOf } from "@/lib/datetime";
 import { EMPLOYEE_DETAIL_TABS, type EmployeeDetailTab } from "@/lib/employeeLabels";
@@ -55,7 +57,12 @@ export default async function EmployeeDetailPage({ params, searchParams }: Props
   const [options, salary] = employee.canManage ? await Promise.all([fetchEmployeeFormOptions(employee.id), fetchEmployeeSalary(employee.id)]) : [null, null];
 
   let tabContent: ReactNode = null;
-  if (tab === "kpi") {
+  let attendanceSection: ReactNode = null;
+  if (tab === "data") {
+    // Pengaturan absen (feature 44): gagal dimuat → section tidak ditampilkan (data lain tetap terbaca)
+    const settings = await fetchEmployeeAttendanceSettings(employee.id);
+    if (settings.ok) attendanceSection = <EmployeeAttendanceSettingsSection key={employee.id} employeeId={employee.id} settings={settings.data} />;
+  } else if (tab === "kpi") {
     const month = attendanceMonthSchema.safeParse(typeof raw.month === "string" ? raw.month : undefined);
     const [score, reviews] = await Promise.all([fetchEmployeeKpiScore(employee.id, month.success ? month.data : null), fetchEmployeeKpiReviews(employee.id)]);
     tabContent = <EmployeeKpiTab employeeId={employee.id} firstName={firstNameOf(employee.fullName)} score={score} reviews={reviews} />;
@@ -72,6 +79,7 @@ export default async function EmployeeDetailPage({ params, searchParams }: Props
       salary={salary ? { overview: salary.ok ? salary.data : null, error: salary.ok ? null : salary.error } : null}
       tab={tab}
       tabContent={tabContent}
+      attendanceSection={attendanceSection}
     />
   );
 }

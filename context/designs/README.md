@@ -27,8 +27,13 @@ _Diisi Claude Code setiap kali membaca/menyinkronkan link. Snapshot di repo mena
 | Karyawan — tambah `/employees/new` (desktop, mobile + action bar, error, field bersyarat, combobox bank, loading) | — (dari export zip) | `employees-new.html` | 2026-09-30 |
 | Karyawan — detail `/employees/[id]` tab Data (tersamar/terbuka, mode ubah, dialog nonaktifkan, nonaktif, tampilan atasan, mobile) | — (dari export zip) | `employees-detail.html` | 2026-09-30 |
 | Landing page `/` — desktop 1440 + mobile 390, menu mobile, state kalkulator (3/15/50), skeleton harga, FAQ, hover, token landing (`@theme`) | — (dari export zip "Exapay dashboard dan komponen", 2026-10-02) | `landing.html` | 2026-10-02 |
+| Lokasi kerja `/settings/locations` — tabel/card, dialog tambah/ubah (5 state "Pakai lokasi saya", error), hapus, kosong, skeleton | — (dari export zip, 2026-10-02) | `settings-locations.html` | 2026-10-02 |
+| Pengaturan absen per karyawan (section di `/employees/[id]` tab Data) — baca/ubah, error, tanpa lokasi, atasan | — (dari export zip) | `employees-attendance-settings.html` | 2026-10-02 |
+| Tinjauan absensi `/attendance/review` — tabel, filter, dialog keputusan, sudah ditinjau, kosong, tanpa lokasi, atasan, mobile | — (dari export zip) | `attendance-review.html` | 2026-10-02 |
+| Portal `/me` kartu absen + keterangan lokasi (7 state) | — (dari export zip) | `me-attendance-location.html` | 2026-10-02 |
+| Komponen baru feature 44 (LocationRow, CoordinateField, UnitNumberField, AttendanceFlagBadge, ReviewDecisionBadge/Dialog, CheckInLocationNote, AttendanceSettingsSection) | — (dari export zip) | `geofence-components.html` | 2026-10-02 |
 
-Prompt: `claude-design-prompt.md` berisi prompt terakhir (landing page, feature 43 — termasuk "Revisi 1" yang diterapkan langsung di kode, tidak digenerate ulang); prompt glassmorphism ada di riwayat git. Snapshot adalah source Claude Design apa adanya — hanya tautan antar-file yang diganti ke nama baru. `support.js` + `image-slot.js` adalah runtime Claude Design agar snapshot bisa dibuka di browser (butuh internet: font Google, ikon lucide-static & React dari unpkg); bukan kode aplikasi.
+Prompt: `claude-design-prompt.md` berisi prompt terakhir (lokasi kerja & tinjauan absensi, feature 44); prompt sebelumnya (landing, glassmorphism, Karyawan) ada di riwayat git. Snapshot adalah source Claude Design apa adanya — hanya tautan antar-file yang diganti ke nama baru. `support.js` + `image-slot.js` adalah runtime Claude Design agar snapshot bisa dibuka di browser (butuh internet: font Google, ikon lucide-static & React dari unpkg); bukan kode aplikasi.
 
 **Cara membaca snapshot:** markup + inline style = tampilan; `<script type="text/x-dc">` di bawah = data contoh & state (daftar menu, isi kartu, varian). `{{ ... }}` diisi dari script tersebut.
 

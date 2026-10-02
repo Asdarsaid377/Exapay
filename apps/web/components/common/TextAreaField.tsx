@@ -5,10 +5,12 @@ type Props = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id"> & {
   label: string;
   error?: string;
   hint?: string;
+  // Tanda wajib diisi (* merah) setelah label
+  requiredMark?: boolean;
 };
 
 // Teks multi-baris bergaya TextField (ui-rules "Form Inputs"); tinggi awal 3 baris, bisa diperbesar vertikal
-export function TextAreaField({ id, label, error, hint, className, rows = 3, ...rest }: Props) {
+export function TextAreaField({ id, label, error, hint, requiredMark = false, className, rows = 3, ...rest }: Props) {
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   const classes = [
     "min-h-24 w-full resize-y rounded-field border bg-control px-3.5 py-2.5 text-body text-text-primary placeholder:text-text-muted transition-[border-color,box-shadow,background-color]",
@@ -22,6 +24,7 @@ export function TextAreaField({ id, label, error, hint, className, rows = 3, ...
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-[13px] font-bold text-text-primary">
         {label}
+        {requiredMark ? <span className="text-danger-text"> *</span> : null}
       </label>
       <textarea id={id} rows={rows} aria-invalid={error ? true : undefined} aria-describedby={describedBy} className={classes} {...rest} />
       {error ? (

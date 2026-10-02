@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}@keyframes exaSpin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:40px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Portal /me — kartu absen dengan lokasi</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:900px;text-wrap:pretty">Dewi Lestari · Barista · Kopi Nusantara. Absen selalu diterima; keterangan lokasi tampil di kartu sampai absen berikutnya. Frame 1 interaktif.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="me.html">← Portal karyawan</a>
+      <a href="attendance-review.html">Tinjauan absensi →</a>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 32px">
+    <sc-for list="{{ frames }}" as="f" hint-placeholder-count="7">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ f.caption }}</div>
+        <div data-screen-label="{{ f.caption }}" style="position:relative;width:390px;height:720px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+          <div style="position:absolute;inset:0;overflow:hidden">
+            <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+            <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:#EADCCB;top:200px;left:-130px"></div>
+            <div style="position:absolute;width:320px;height:200px;border-radius:44px;background:#F6B27A;top:600px;left:-40px"></div>
+          </div>
+          <div style="position:relative;height:100%;box-sizing:border-box;padding:12px 14px 100px;display:flex;flex-direction:column;gap:14px">
+            <header style="flex:none;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.65);box-shadow:0 10px 30px -14px rgba(74,42,16,0.2);display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;flex-direction:column"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Dewi Lestari · Barista</span></div>
+              <span style="width:44px;height:44px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">DL</span>
+            </header>
+
+            <section style="flex:none;padding:20px;border-radius:24px;background:rgba(255,253,249,0.8);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 18px 40px -16px rgba(74,42,16,0.24);display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;color:#5B4636">Jam server · WITA</span><span style="font-size:13.5px;color:#5B4636">Shift pagi</span></div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font:800 68px/0.95 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">{{ f.time }}</span>
+                <span style="font:700 15px 'DM Sans',sans-serif">Jumat, 2 Oktober 2026</span>
+                <span style="font-size:14px;color:#5B4636">Jadwal 08:00–17:00</span>
+              </div>
+
+              <sc-if value="{{ f.hasDone }}">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ f.done }}" as="d">
+                    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(21,128,61,0.1)">
+                      <span style="width:18px;height:18px;flex:none;background:#15803D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat"></span>
+                      <span style="font:700 14.5px 'DM Sans',sans-serif;color:#166534;font-variant-numeric:tabular-nums">{{ d.text }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ f.hasNote }}">
+                <div role="status" style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:{{ f.noteBg }};border:1px solid {{ f.noteBd }}">
+                  <span style="width:18px;height:18px;flex:none;margin-top:1px;background:{{ f.noteIc }};-webkit-mask:{{ f.noteIcon }};mask:{{ f.noteIcon }}"></span>
+                  <span style="font-size:14px;line-height:1.45;color:#221208;text-wrap:pretty">{{ f.note }}</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ f.hasBtn }}">
+                <button onClick="{{ f.press }}" disabled="{{ f.busy }}" style="height:58px;border:none;border-radius:999px;background:{{ f.btnBg }};color:{{ f.btnFg }};opacity:{{ f.btnOp }};cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font:800 17px 'Plus Jakarta Sans',sans-serif;transition:background .15s,transform .1s" style-active="transform:scale(0.98)">
+                  <sc-if value="{{ f.busy }}"><span style="width:18px;height:18px;box-sizing:border-box;border-radius:50%;border:2.5px solid rgba(34,18,8,0.25);border-top-color:#221208;animation:exaSpin .8s linear infinite"></span></sc-if>
+                  <sc-if value="{{ f.idle }}"><span style="width:20px;height:20px;background:currentColor;-webkit-mask:{{ f.btnIcon }};mask:{{ f.btnIcon }}"></span></sc-if>
+                  {{ f.btnLabel }}
+                </button>
+              </sc-if>
+
+              <sc-if value="{{ f.hasConsent }}">
+                <span style="font-size:13px;line-height:1.45;color:#5B4636;text-align:center;text-wrap:pretty">Saat absen, Exapay membaca lokasi Anda untuk mencatat apakah Anda di area kerja.</span>
+              </sc-if>
+            </section>
+
+            <section style="flex:none;padding:18px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;justify-content:space-between;align-items:baseline">
+              <h2 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Tugas hari ini</h2>
+              <span style="font-size:13px;color:#5B4636">3 tugas</span>
+            </section>
+          </div>
+
+          <nav style="position:absolute;left:12px;right:12px;bottom:12px;height:72px;box-sizing:border-box;padding:6px;border-radius:24px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.7);box-shadow:0 14px 34px -12px rgba(74,42,16,0.3);display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+            <sc-for list="{{ tabs }}" as="b" hint-placeholder-count="5">
+              <span style="border-radius:18px;background:{{ b.bg }};color:{{ b.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:{{ b.font }}"><span style="width:22px;height:22px;background:currentColor;-webkit-mask:{{ b.mask }};mask:{{ b.mask }}"></span>{{ b.label }}</span>
+            </sc-for>
+          </nav>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { live: 'before' };
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const W = { bg: 'rgba(217,119,6,0.1)', bd: 'rgba(217,119,6,0.3)', ic: '#B45309', icon: m('triangle-alert') };
+    const N = { bg: 'rgba(34,18,8,0.04)', bd: 'rgba(34,18,8,0.14)', ic: '#5B4636', icon: m('map-pin-off') };
+    const notes = {
+      out: ['Anda tercatat di luar area kerja (320 m dari Kedai Pettarani). Absen tetap diterima dan akan ditinjau atasan.', W],
+      none: ['Lokasi tidak terbaca. Absen tetap diterima dan akan ditinjau. Izinkan lokasi di pengaturan browser untuk absen berikutnya.', N],
+      weak: ['Sinyal lokasi lemah (akurasi ±450 m). Absen tetap diterima dan akan ditinjau.', W],
+      outPulang: ['Absen pulang tercatat di luar area kerja (2,4 km dari Kedai Pettarani). Absen tetap diterima dan akan ditinjau atasan.', W],
+    };
+    const S = {
+      before: { time: '07:57', btn: 'in', consent: true },
+      loading: { time: '07:58', btn: 'in', busy: true },
+      ok: { time: '07:58', done: ['Masuk 07:58 · Tepat waktu'], btn: 'out' },
+      out: { time: '07:58', done: ['Masuk 07:58 · Tepat waktu'], note: 'out', btn: 'out' },
+      none: { time: '08:11', done: ['Masuk 08:11 · Terlambat 11 menit'], note: 'none', btn: 'out' },
+      weak: { time: '08:00', done: ['Masuk 08:00 · Tepat waktu'], note: 'weak', btn: 'out' },
+      pulang: { time: '21:06', done: ['Masuk 07:58 · Tepat waktu', 'Pulang 21:05'], note: 'outPulang' },
+    };
+    const build = (caption, key, interactive) => {
+      const s = S[key];
+      const n = s.note ? notes[s.note] : null;
+      const isIn = s.btn === 'in';
+      return {
+        caption, time: s.time, done: (s.done || []).map(text => ({ text })), hasDone: !!s.done,
+        hasNote: !!n, note: n ? n[0] : '', noteBg: n ? n[1].bg : '', noteBd: n ? n[1].bd : '', noteIc: n ? n[1].ic : '', noteIcon: n ? n[1].icon : '',
+        hasBtn: !!s.btn, busy: !!s.busy, idle: !s.busy, btnOp: s.busy ? 0.85 : 1,
+        btnBg: isIn ? '#F2790F' : '#221208', btnFg: isIn ? '#221208' : '#FBF8F3', btnIcon: m(isIn ? 'log-in' : 'log-out'),
+        btnLabel: s.busy ? 'Mengambil lokasi…' : isIn ? 'Absen Masuk' : 'Absen Pulang',
+        hasConsent: !!s.consent,
+        press: () => {
+          if (!interactive) return;
+          if (this.state.live === 'before') { this.setState({ live: 'loading' }); this._t = setTimeout(() => this.setState({ live: 'out' }), 1600); }
+          else if (this.state.live !== 'loading') this.setState({ live: 'before' });
+        },
+      };
+    };
+    const frames = [
+      build('1 · Sebelum absen, pertama kali (interaktif)', this.state.live, true),
+      build('2 · Mengambil lokasi…', 'loading'),
+      build('3 · Berhasil, di lokasi', 'ok'),
+      build('4 · Berhasil, di luar lokasi', 'out'),
+      build('5 · Berhasil, tanpa lokasi (izin ditolak)', 'none'),
+      build('6 · Berhasil, lokasi tidak akurat', 'weak'),
+      build('7 · Setelah absen pulang — keterangan untuk pulang', 'pulang'),
+    ];
+    const tabs = [['Beranda', 'house', true], ['Tugas', 'list-checks'], ['Absensi', 'calendar-days'], ['Slip', 'receipt'], ['Profil', 'user']]
+      .map(([label, icon, on]) => ({ label, mask: m(icon), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#5B4636', font: on ? "700 12px 'DM Sans',sans-serif" : "500 12px 'DM Sans',sans-serif" }));
+    return { frames, tabs };
+  }
+}
+</script>
+</body>
+</html>

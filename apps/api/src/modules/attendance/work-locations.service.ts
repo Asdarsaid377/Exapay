@@ -210,7 +210,10 @@ export class WorkLocationsService {
   }
 
   private async settingsOf(tx: Transaction, employeeId: string, mode: EmployeeLocationMode, canEdit: boolean): Promise<EmployeeAttendanceSettings> {
-    const locations = await tx.select({ id: workLocations.id, name: workLocations.name }).from(workLocations).orderBy(asc(workLocations.name));
+    const locations = await tx
+      .select({ id: workLocations.id, name: workLocations.name, radiusM: workLocations.radiusM })
+      .from(workLocations)
+      .orderBy(asc(workLocations.name));
     return { locationMode: mode, locationIds: mode === "selected" ? await this.selectedIds(tx, employeeId) : [], locations, canEdit };
   }
 

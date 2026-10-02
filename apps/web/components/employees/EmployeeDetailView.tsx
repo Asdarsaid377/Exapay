@@ -30,6 +30,8 @@ type Props = {
   tab: EmployeeDetailTab;
   // Isi tab KPI / Absensi dirender server (hanya tab aktif yang dimuat datanya)
   tabContent: ReactNode;
+  // Section "Pengaturan absen" di tab Data (feature 44)
+  attendanceSection?: ReactNode;
 };
 
 type Tab = EmployeeDetailTab;
@@ -39,7 +41,7 @@ const FORM_ID = "employee-edit";
 // Detail karyawan (design employees-detail): header + tab Data/Gaji/KPI/Absensi. Owner/admin: Ubah (form di tempat)
 // dan Nonaktifkan / Aktifkan kembali. Atasan: hanya baca, tanpa data pajak & rekening, tanpa tab Gaji (feature 28).
 // Tab berupa tautan ?tab= (feature 37b); tab Data tanpa parameter.
-export function EmployeeDetailView({ employee, options, salary, tab, tabContent }: Props) {
+export function EmployeeDetailView({ employee, options, salary, tab, tabContent, attendanceSection }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -192,7 +194,7 @@ export function EmployeeDetailView({ employee, options, salary, tab, tabContent 
           </div>
           <div id="employee-tabpanel" role="tabpanel" aria-labelledby={`employee-tab-${tab}`}>
             {tab === "data" ? (
-              <EmployeeDataSections employee={employee} />
+              <EmployeeDataSections employee={employee} attendanceSection={attendanceSection} />
             ) : tab === "salary" && salary ? (
               <EmployeeSalaryTab employeeId={employee.id} firstName={firstName} overview={salary.overview} error={salary.error} />
             ) : (

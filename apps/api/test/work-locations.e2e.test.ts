@@ -330,7 +330,7 @@ describe("status geofence saat absen", () => {
 
     const mine = await get(atasan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`);
     expect(mine.status).toBe(200);
-    expect(mine.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [{ id: kedaiId, name: "Kedai Pettarani" }], canEdit: false });
+    expect(mine.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [{ id: kedaiId, name: "Kedai Pettarani", radiusM: 100 }], canEdit: false });
     expect((await get(atasan, `/employees/${ws.employeeIds.other}/attendance-settings`)).status).toBe(404);
     expect((await put(atasan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`, { locationMode: "exempt" })).status).toBe(403);
     expect((await get(karyawan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`)).status).toBe(403);

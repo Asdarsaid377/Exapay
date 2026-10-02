@@ -79,7 +79,7 @@ export const employeeAttendanceSettingsSchema = z.object({
   // Hanya terisi untuk mode selected
   locationIds: z.array(z.string()),
   // Semua lokasi kerja usaha (pilihan checkbox + nama untuk tampilan baca)
-  locations: z.array(z.object({ id: z.string(), name: z.string() })),
+  locations: z.array(z.object({ id: z.string(), name: z.string(), radiusM: z.number().int() })),
   // owner/admin; atasan hanya baca
   canEdit: z.boolean(),
 });

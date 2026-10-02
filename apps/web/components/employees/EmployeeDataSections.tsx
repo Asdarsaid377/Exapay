@@ -3,7 +3,7 @@
 import { bankName, type EmployeeDetail, formatBankAccount, formatNik, formatNpwp, type RevealedSensitive, type SensitiveSection } from "@exapay/shared";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { revealSensitive } from "@/actions/employees";
 import { Badge } from "@/components/common/Badge";
@@ -16,6 +16,8 @@ import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_STATUS_TONES, GENDER_LABELS, PTKP_
 
 type Props = {
   employee: EmployeeDetail;
+  // Section "Pengaturan absen" (feature 44) — dirender server, ditaruh setelah Pekerjaan sesuai design
+  attendanceSection?: ReactNode;
 };
 
 const EMPTY = "—";
@@ -48,7 +50,7 @@ function RevealControl({
 
 // Tab Data detail karyawan: section baca per kelompok. Data pajak & rekening tersamar; "Tampilkan" mengambil nilai penuh
 // dari API (tercatat di audit log) dan hanya disimpan di state halaman ini. Atasan tidak menerima section sensitif.
-export function EmployeeDataSections({ employee }: Props) {
+export function EmployeeDataSections({ employee, attendanceSection }: Props) {
   const [revealed, setRevealed] = useState<Partial<Record<SensitiveSection, RevealedSensitive>>>({});
   const [open, setOpen] = useState<Partial<Record<SensitiveSection, boolean>>>({});
   const [loading, setLoading] = useState<SensitiveSection | null>(null);
@@ -139,6 +141,8 @@ export function EmployeeDataSections({ employee }: Props) {
           ]}
         />
       </FormSection>
+
+      {attendanceSection}
 
       {c ? (
         <FormSection

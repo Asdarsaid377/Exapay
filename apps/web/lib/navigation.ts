@@ -40,6 +40,8 @@ export const STAFF_MENU: readonly NavSection[] = [
     children: [
       { label: "Rekap", href: "/attendance", roles: ALL },
       { label: "Pengajuan izin", href: "/attendance/requests", roles: ALL },
+      // Absen bertanda lokasi (feature 44) — atasan untuk bawahan langsung
+      { label: "Tinjauan", href: "/attendance/review", roles: ALL },
       { label: "Koreksi", href: "/attendance/corrections", roles: MANAGE },
     ],
   },
@@ -77,6 +79,7 @@ export const STAFF_MENU: readonly NavSection[] = [
       { label: "Pengguna", href: "/settings/users", roles: MANAGE },
       { label: "Komponen gaji", href: "/settings/salary-components", roles: MANAGE },
       { label: "Absensi", href: "/settings/attendance", roles: MANAGE },
+      { label: "Lokasi kerja", href: "/settings/locations", roles: MANAGE },
       { label: "Siklus KPI", href: "/settings/kpi", roles: MANAGE },
       // Langganan & tagihan khusus owner (feature 40)
       { label: "Langganan", href: "/settings/billing", roles: ["owner"] },

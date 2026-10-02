@@ -1,12 +1,13 @@
 "use client";
 
-import { type AttendanceRecord, type AttendanceToday, timeZoneLabel } from "@exapay/shared";
-import { CircleCheck, Clock, LogIn, LogOut, MapPin } from "lucide-react";
+import { type AttendanceLocation, type AttendanceRecord, type AttendanceToday, timeZoneLabel } from "@exapay/shared";
+import { CircleCheck, Clock, LogIn, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { checkIn, checkOut } from "@/actions/attendance";
 import { type AttendanceRowTone, AttendanceStatusRow } from "@/components/attendance/AttendanceStatusRow";
+import { CheckInLocationNote } from "@/components/attendance/CheckInLocationNote";
 import { Button } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
 import { attendanceStatusLabel, formatClockTime } from "@/lib/attendanceLabels";
@@ -24,7 +25,9 @@ const ACCESS_MESSAGES = {
   inactive: "Data karyawan Anda tidak aktif hari ini, jadi belum bisa absen. Hubungi admin usaha.",
 } as const;
 
-// Kartu absen portal (snapshot context/designs/me.html — "Sebelum absen" / "Sesudah absen masuk"). Kaca: salah satu dari 3 lapisan blur portal.
+// Kartu absen portal (snapshot context/designs/me.html — "Sebelum absen" / "Sesudah absen masuk"; keterangan lokasi
+// me-attendance-location.html, feature 44). Kaca: salah satu dari 3 lapisan blur portal.
+// GPS hanya diminta bila absen dicek ke lokasi kerja (today.locationCheck) — usaha tanpa lokasi / karyawan dikecualikan tidak dimintai izin.
 // Jam tampil = jam server (selisih jam perangkat dikoreksi); jam yang tercatat tetap ditentukan API saat tombol ditekan.
 export function AttendanceCard({ today }: Props) {
   const router = useRouter();
@@ -32,7 +35,6 @@ export function AttendanceCard({ today }: Props) {
   const [now, setNow] = useState(() => new Date(today.serverTime));
   const [step, setStep] = useState<Step | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [locationMissed, setLocationMissed] = useState(false);
 
   // Selisih jam perangkat dengan jam server dihitung ulang setiap data server baru (mis. setelah absen)
   useEffect(() => {
@@ -55,16 +57,17 @@ export function AttendanceCard({ today }: Props) {
 
   async function clock(kind: "in" | "out"): Promise<void> {
     setError(null);
-    setStep("locating");
-    const location = await currentLocation();
+    let location: AttendanceLocation | null = null;
+    if (today.locationCheck) {
+      setStep("locating");
+      location = await currentLocation();
+    }
     setStep("saving");
     const outcome = await (kind === "in" ? checkIn(location) : checkOut(location));
     setStep(null);
     if (outcome.kind === "error") {
       setError(outcome.message);
-      return;
     }
-    setLocationMissed(location === null);
   }
 
   const record = today.record;
@@ -104,14 +107,29 @@ export function AttendanceCard({ today }: Props) {
               Pulang {formatClockTime(record.checkOutAt, today.timeZone)}
             </AttendanceStatusRow>
           ) : null}
+          {/* Keterangan absen terakhir — tetap tampil sampai absen berikutnya */}
+          {record ? (
+            record.checkOutAt ? (
+              <CheckInLocationNote event="check_out" geofence={record.checkOutGeofence} />
+            ) : (
+              <CheckInLocationNote event="check_in" geofence={record.checkInGeofence} />
+            )
+          ) : null}
 
           {error ? <FormAlert tone="danger">{error}</FormAlert> : null}
 
           {!record ? (
-            <Button size="lg" fullWidth loading={busy} onClick={() => void clock("in")}>
-              {busy ? null : <LogIn aria-hidden className="size-5" />}
-              {busy ? busyLabel : "Absen Masuk"}
-            </Button>
+            <>
+              <Button size="lg" fullWidth loading={busy} onClick={() => void clock("in")}>
+                {busy ? null : <LogIn aria-hidden className="size-5" />}
+                {busy ? busyLabel : "Absen Masuk"}
+              </Button>
+              {today.locationCheck ? (
+                <p className="text-center text-[13px] text-pretty text-text-secondary">
+                  Saat absen, Exapay membaca lokasi Anda untuk mencatat apakah Anda di area kerja.
+                </p>
+              ) : null}
+            </>
           ) : !record.checkOutAt ? (
             <Button variant="dark" size="lg" fullWidth loading={busy} onClick={() => void clock("out")}>
               {busy ? null : <LogOut aria-hidden className="size-5" />}
@@ -123,12 +141,6 @@ export function AttendanceCard({ today }: Props) {
         </div>
       )}
 
-      {today.access === "ok" ? (
-        <p className="flex items-center justify-center gap-1.5 text-center text-[13px] text-text-secondary" role="status">
-          <MapPin aria-hidden className="size-3.5 shrink-0" />
-          {locationMissed ? "Lokasi tidak tercatat (izin lokasi tidak aktif) — absen tetap tersimpan" : "Lokasi dicatat saat absen"}
-        </p>
-      ) : null}
     </section>
   );
 }
