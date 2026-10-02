@@ -2,13 +2,17 @@ import {
   ABSENCE_DEDUCTION_MODES,
   AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
+  ATTENDANCE_EVENTS,
+  ATTENDANCE_REVIEW_DECISIONS,
   BILLING_DECISION_SOURCES,
   BILLING_INVOICE_STATUSES,
   BPJS_PROGRAMS,
   COMPLIANCE_DEADLINE_KINDS,
   COMPLIANCE_REMINDER_KINDS,
   DEFAULT_AI_SUMMARY_MONTHLY_QUOTA,
+  EMPLOYEE_LOCATION_MODES,
   EMPLOYMENT_STATUSES,
+  GEOFENCE_STATUSES,
   GENDERS,
   KPI_INDICATOR_TYPES,
   KPI_PREDICATES,
@@ -401,6 +405,7 @@ export const kpiIndicators = pgTable(
 export const employmentStatus = pgEnum("employment_status", EMPLOYMENT_STATUSES);
 export const employeeGender = pgEnum("employee_gender", GENDERS);
 export const ptkpStatus = pgEnum("ptkp_status", PTKP_STATUSES);
+export const employeeLocationMode = pgEnum("employee_location_mode", EMPLOYEE_LOCATION_MODES);
 
 // Karyawan (feature 11). Semua relasi memakai FK komposit (tenant_id, …) — pemeriksaan FK tidak melewati RLS,
 // jadi tanpa ini karyawan bisa menunjuk departemen/atasan milik tenant lain.
@@ -439,6 +444,8 @@ export const employees = pgTable(
     bankAccountHolder: text("bank_account_holder"),
     endDate: date("end_date", { mode: "string" }),
     endReason: text("end_reason"),
+    // Pengecekan lokasi absen (feature 44): all = semua lokasi kerja, selected = employee_work_locations, exempt = tidak dicek
+    locationMode: employeeLocationMode("location_mode").notNull().default("all"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -542,6 +549,8 @@ export const companyHolidays = pgTable(
 // jadi perubahan jadwal kemudian tidak mengubah status telat hari yang sudah lewat. Koreksi owner/admin (feature 16) mengubah
 // jam di baris ini (atau membuat baris untuk hari tanpa absen) + riwayat di attendance_corrections + audit log.
 // Lokasi GPS opsional: dicatat bila browser memberi izin, tidak memblokir absen.
+export const attendanceGeofenceStatus = pgEnum("attendance_geofence_status", GEOFENCE_STATUSES);
+
 export const attendanceRecords = pgTable(
   "attendance_records",
   {
@@ -565,6 +574,13 @@ export const attendanceRecords = pgTable(
     checkOutLatitude: doublePrecision("check_out_latitude"),
     checkOutLongitude: doublePrecision("check_out_longitude"),
     checkOutAccuracy: doublePrecision("check_out_accuracy"),
+    // Geofence (feature 44) — snapshot saat absen; null = tidak dicek. Jarak ke pusat lokasi terdekat + nama lokasi saat itu
+    checkInGeofence: attendanceGeofenceStatus("check_in_geofence"),
+    checkInDistanceM: integer("check_in_distance_m"),
+    checkInLocationName: text("check_in_location_name"),
+    checkOutGeofence: attendanceGeofenceStatus("check_out_geofence"),
+    checkOutDistanceM: integer("check_out_distance_m"),
+    checkOutLocationName: text("check_out_location_name"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -592,6 +608,20 @@ export const attendanceRecords = pgTable(
       "attendance_records_check_out_location_needs_time",
       sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutLatitude} IS NULL`,
     ),
+    // Tanpa status → tanpa jarak/nama; no_location → tanpa jarak/nama; status lain → jarak & nama terisi
+    check(
+      "attendance_records_check_in_geofence",
+      sql`CASE WHEN ${t.checkInGeofence} IS NULL OR ${t.checkInGeofence} = 'no_location' THEN ${t.checkInDistanceM} IS NULL AND ${t.checkInLocationName} IS NULL ELSE ${t.checkInDistanceM} IS NOT NULL AND ${t.checkInDistanceM} >= 0 AND ${t.checkInLocationName} IS NOT NULL END`,
+    ),
+    check(
+      "attendance_records_check_out_geofence",
+      sql`CASE WHEN ${t.checkOutGeofence} IS NULL OR ${t.checkOutGeofence} = 'no_location' THEN ${t.checkOutDistanceM} IS NULL AND ${t.checkOutLocationName} IS NULL ELSE ${t.checkOutDistanceM} IS NOT NULL AND ${t.checkOutDistanceM} >= 0 AND ${t.checkOutLocationName} IS NOT NULL END`,
+    ),
+    check("attendance_records_check_out_geofence_needs_time", sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutGeofence} IS NULL`),
+    // Antrean tinjauan: absen bertanda per tenant per tanggal
+    index("attendance_records_tenant_flagged_idx")
+      .on(t.tenantId, t.workDate)
+      .where(sql`${t.checkInGeofence} IN ('outside', 'inaccurate', 'no_location') OR ${t.checkOutGeofence} IN ('outside', 'inaccurate', 'no_location')`),
   ],
 );
 
@@ -633,6 +663,93 @@ export const attendanceCorrections = pgTable(
     ),
     check("attendance_corrections_reason", sql`length(${t.reason}) > 0`),
     check("attendance_corrections_before_pair", sql`${t.beforeCheckInAt} IS NOT NULL OR (${t.beforeCheckOutAt} IS NULL AND ${t.beforeLateMinutes} IS NULL)`),
+  ],
+);
+
+// Lokasi kerja usaha (feature 44): titik pusat + radius. Absen dicek ke lokasi terdekat; status disimpan sebagai snapshot
+// di attendance_records, jadi mengubah/menghapus lokasi tidak mengubah absen lama.
+export const workLocations = pgTable(
+  "work_locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    address: text("address"),
+    latitude: doublePrecision("latitude").notNull(),
+    longitude: doublePrecision("longitude").notNull(),
+    radiusM: integer("radius_m").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("work_locations_tenant_id_id_key").on(t.tenantId, t.id),
+    uniqueIndex("work_locations_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    check("work_locations_name", sql`length(${t.name}) BETWEEN 1 AND 80`),
+    check("work_locations_latitude", sql`${t.latitude} BETWEEN -90 AND 90`),
+    check("work_locations_longitude", sql`${t.longitude} BETWEEN -180 AND 180`),
+    check("work_locations_radius", sql`${t.radiusM} BETWEEN 25 AND 1000`),
+  ],
+);
+
+// Lokasi terpilih untuk karyawan mode "selected" (feature 44). Lokasi dihapus → barisnya ikut terhapus.
+export const employeeWorkLocations = pgTable(
+  "employee_work_locations",
+  {
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    workLocationId: uuid("work_location_id").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    primaryKey({ name: "employee_work_locations_pkey", columns: [t.tenantId, t.employeeId, t.workLocationId] }),
+    index("employee_work_locations_tenant_location_idx").on(t.tenantId, t.workLocationId),
+    foreignKey({ name: "employee_work_locations_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    foreignKey({
+      name: "employee_work_locations_location_fk",
+      columns: [t.tenantId, t.workLocationId],
+      foreignColumns: [workLocations.tenantId, workLocations.id],
+    }).onDelete("cascade"),
+  ],
+);
+
+export const attendanceEvent = pgEnum("attendance_event", ATTENDANCE_EVENTS);
+export const attendanceReviewDecision = pgEnum("attendance_review_decision", ATTENDANCE_REVIEW_DECISIONS);
+
+// Keputusan tinjauan absen bertanda (feature 44): satu baris per absen masuk/pulang, boleh diubah (keputusan terakhir menang,
+// riwayat di audit log). Tidak mengubah jam/gaji — koreksi tetap lewat attendance_corrections. Nama peninjau di-snapshot.
+export const attendanceReviews = pgTable(
+  "attendance_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    attendanceRecordId: uuid("attendance_record_id").notNull(),
+    event: attendanceEvent("event").notNull(),
+    decision: attendanceReviewDecision("decision").notNull(),
+    note: text("note"),
+    reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    reviewedByName: text("reviewed_by_name"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("attendance_reviews_tenant_record_event_key").on(t.tenantId, t.attendanceRecordId, t.event),
+    foreignKey({
+      name: "attendance_reviews_record_fk",
+      columns: [t.tenantId, t.attendanceRecordId],
+      foreignColumns: [attendanceRecords.tenantId, attendanceRecords.id],
+    }).onDelete("restrict"),
+    check("attendance_reviews_note", sql`${t.note} IS NULL OR length(${t.note}) BETWEEN 1 AND 500`),
+    check("attendance_reviews_follow_up_note", sql`${t.decision} <> 'follow_up' OR ${t.note} IS NOT NULL`),
   ],
 );
 

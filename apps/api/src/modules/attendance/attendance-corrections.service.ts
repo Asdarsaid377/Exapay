@@ -140,9 +140,13 @@ export class AttendanceCorrectionsService {
               checkInAt,
               lateMinutes: late,
               checkOutAt,
-              // Lokasi GPS milik ketukan asli — tidak berlaku lagi untuk jam yang diubah
-              ...(checkInChanged ? { checkInLatitude: null, checkInLongitude: null, checkInAccuracy: null } : {}),
-              ...(checkOutChanged ? { checkOutLatitude: null, checkOutLongitude: null, checkOutAccuracy: null } : {}),
+              // Lokasi GPS & status geofence milik ketukan asli — tidak berlaku lagi untuk jam yang diubah (tanda hilang dari antrean tinjauan)
+              ...(checkInChanged
+                ? { checkInLatitude: null, checkInLongitude: null, checkInAccuracy: null, checkInGeofence: null, checkInDistanceM: null, checkInLocationName: null }
+                : {}),
+              ...(checkOutChanged
+                ? { checkOutLatitude: null, checkOutLongitude: null, checkOutAccuracy: null, checkOutGeofence: null, checkOutDistanceM: null, checkOutLocationName: null }
+                : {}),
             })
             .where(eq(attendanceRecords.id, existing.id));
           recordId = existing.id;

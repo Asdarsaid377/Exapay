@@ -100,6 +100,7 @@ describe("role runtime app_user", () => {
       "attendance_corrections",
       "attendance_deduction_rules",
       "attendance_records",
+      "attendance_reviews",
       "audit_logs",
       "billing_confirmation_tokens",
       "billing_invoices",
@@ -112,6 +113,7 @@ describe("role runtime app_user", () => {
       "email_verification_tokens",
       "employee_salaries",
       "employee_salary_items",
+      "employee_work_locations",
       "employees",
       "invitations",
       "kpi_indicators",
@@ -144,6 +146,7 @@ describe("role runtime app_user", () => {
       "tenant_subscriptions",
       "tenants",
       "users",
+      "work_locations",
       "work_schedule_days",
     ]);
     for (const row of rows) {

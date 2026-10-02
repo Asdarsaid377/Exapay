@@ -5,6 +5,8 @@ import {
   type AttendanceLocation,
   type AttendanceRecord,
   DEFAULT_TENANT_TIME_ZONE,
+  type GeofenceResult,
+  type GeofenceStatus,
 } from "@exapay/shared";
 import { ConflictException, ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { and, asc, between, eq, isNull } from "drizzle-orm";
@@ -14,7 +16,9 @@ import { DRIZZLE } from "../../database/database.module.js";
 import { isUniqueViolation } from "../../database/errors.js";
 import { type Database, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { lateMinutes, localClock, monthRange } from "./attendance-clock.js";
+import { evaluateGeofence } from "./geofence.js";
 import { type WorkDayInfo, WorkCalendarService } from "./work-calendar.service.js";
+import { WorkLocationsService } from "./work-locations.service.js";
 
 export type AttendanceTodayResult = {
   access: AttendanceAccess;
@@ -22,6 +26,7 @@ export type AttendanceTodayResult = {
   timeZone: string;
   date: string;
   day: WorkDayInfo;
+  locationCheck: boolean;
   record: AttendanceRecord | null;
 };
 
@@ -39,7 +44,15 @@ const recordColumns = {
   scheduledEnd: attendanceRecords.scheduledEnd,
   lateMinutes: attendanceRecords.lateMinutes,
   checkInLatitude: attendanceRecords.checkInLatitude,
+  checkInAccuracy: attendanceRecords.checkInAccuracy,
+  checkInGeofence: attendanceRecords.checkInGeofence,
+  checkInDistanceM: attendanceRecords.checkInDistanceM,
+  checkInLocationName: attendanceRecords.checkInLocationName,
   checkOutLatitude: attendanceRecords.checkOutLatitude,
+  checkOutAccuracy: attendanceRecords.checkOutAccuracy,
+  checkOutGeofence: attendanceRecords.checkOutGeofence,
+  checkOutDistanceM: attendanceRecords.checkOutDistanceM,
+  checkOutLocationName: attendanceRecords.checkOutLocationName,
 };
 
 type RecordRow = {
@@ -51,8 +64,20 @@ type RecordRow = {
   scheduledEnd: string | null;
   lateMinutes: number;
   checkInLatitude: number | null;
+  checkInAccuracy: number | null;
+  checkInGeofence: GeofenceStatus | null;
+  checkInDistanceM: number | null;
+  checkInLocationName: string | null;
   checkOutLatitude: number | null;
+  checkOutAccuracy: number | null;
+  checkOutGeofence: GeofenceStatus | null;
+  checkOutDistanceM: number | null;
+  checkOutLocationName: string | null;
 };
+
+function geofenceOf(status: GeofenceStatus | null, distanceM: number | null, locationName: string | null, accuracyM: number | null): GeofenceResult | null {
+  return status === null ? null : { status, distanceM, locationName, accuracyM };
+}
 
 function toRecord(row: RecordRow): AttendanceRecord {
   return {
@@ -67,6 +92,8 @@ function toRecord(row: RecordRow): AttendanceRecord {
     status: row.scheduledStart === null ? "off_day" : row.lateMinutes > 0 ? "late" : "on_time",
     checkInLocated: row.checkInLatitude !== null,
     checkOutLocated: row.checkOutLatitude !== null,
+    checkInGeofence: geofenceOf(row.checkInGeofence, row.checkInDistanceM, row.checkInLocationName, row.checkInAccuracy),
+    checkOutGeofence: geofenceOf(row.checkOutGeofence, row.checkOutDistanceM, row.checkOutLocationName, row.checkOutAccuracy),
   };
 }
 
@@ -77,6 +104,7 @@ export class AttendanceService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly workCalendar: WorkCalendarService,
+    private readonly workLocations: WorkLocationsService,
   ) {}
 
   async today(user: AuthUser): Promise<AttendanceTodayResult> {
@@ -88,12 +116,14 @@ export class AttendanceService {
       const employee = await this.ownEmployee(tx, user.userId);
       const day = await this.workCalendar.dayInfo(tx, clock.date);
       const record = employee ? await this.findRecord(tx, employee.id, clock.date) : null;
+      const sites = employee ? await this.workLocations.sitesFor(tx, employee.id) : [];
       return {
         access: this.accessOf(employee, clock.date),
         serverTime: now.toISOString(),
         timeZone,
         date: clock.date,
         day,
+        locationCheck: sites.length > 0,
         record: record ? toRecord(record) : null,
       };
     });
@@ -108,6 +138,8 @@ export class AttendanceService {
         const clock = localClock(now, timeZone);
         const employee = await this.requireEmployee(tx, user.userId, clock.date);
         const day = await this.workCalendar.dayInfo(tx, clock.date);
+        // Absen selalu diterima; status lokasi hanya tanda untuk ditinjau (snapshot saat ini)
+        const geofence = evaluateGeofence(location, await this.workLocations.sitesFor(tx, employee.id));
 
         const [row] = await tx
           .insert(attendanceRecords)
@@ -123,6 +155,9 @@ export class AttendanceService {
             checkInLatitude: location?.latitude ?? null,
             checkInLongitude: location?.longitude ?? null,
             checkInAccuracy: location?.accuracy ?? null,
+            checkInGeofence: geofence?.status ?? null,
+            checkInDistanceM: geofence?.distanceM ?? null,
+            checkInLocationName: geofence?.locationName ?? null,
           })
           .returning(recordColumns);
         if (!row) throw new Error("[attendance/checkIn] insert tidak mengembalikan baris");
@@ -142,6 +177,7 @@ export class AttendanceService {
       const timeZone = await this.tenantTimeZone(tx, ctx.tenantId);
       const clock = localClock(now, timeZone);
       const employee = await this.requireEmployee(tx, user.userId, clock.date);
+      const geofence = evaluateGeofence(location, await this.workLocations.sitesFor(tx, employee.id));
 
       const [row] = await tx
         .update(attendanceRecords)
@@ -150,6 +186,9 @@ export class AttendanceService {
           checkOutLatitude: location?.latitude ?? null,
           checkOutLongitude: location?.longitude ?? null,
           checkOutAccuracy: location?.accuracy ?? null,
+          checkOutGeofence: geofence?.status ?? null,
+          checkOutDistanceM: geofence?.distanceM ?? null,
+          checkOutLocationName: geofence?.locationName ?? null,
         })
         .where(
           and(eq(attendanceRecords.employeeId, employee.id), eq(attendanceRecords.workDate, clock.date), isNull(attendanceRecords.checkOutAt)),

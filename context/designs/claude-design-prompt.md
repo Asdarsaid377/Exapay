@@ -1,108 +1,128 @@
-# Prompt Claude Design — Landing Page Marketing `/`
+# Prompt Claude Design — Lokasi Kerja & Tinjauan Absensi (Geofence)
 
-_Disusun 2026-10-02 untuk feature 43. Salin seluruh isi di bawah garis ke Claude Design **di project/percakapan yang sama dengan desain glassmorphism sebelumnya** (agar token & komponen dipakai ulang), lalu kirim link hasilnya ke Claude Code (lihat `../ui-workflow.md` "Jalur Claude Design"). Prompt sebelumnya (halaman Karyawan) ada di riwayat git._
+_Disusun 2026-10-02 untuk feature 44. Salin seluruh isi di bawah garis ke Claude Design **di project/percakapan yang sama dengan desain glassmorphism sebelumnya** (agar token & komponen dipakai ulang), lalu kirim link hasilnya ke Claude Code (lihat `../ui-workflow.md` "Jalur Claude Design"). Prompt sebelumnya (landing page, feature 43) ada di riwayat git._
 
 ---
 
-# Brief Desain UI — Exapay: Landing Page Marketing
+# Brief Desain UI — Exapay: Lokasi Kerja & Tinjauan Absensi
 
 ## 1. Konteks
-Lanjutan dari desain **Exapay tema Glassmorphism** yang sudah disetujui (Dashboard owner, Portal `/me`, Design token, halaman Karyawan). **Pakai ulang persis** token, logo ("e" + "exapay"), card kaca, tombol pill, input, badge, dan latar krem dengan bentuk warna flat dari desain itu. Gaya baru hanya untuk pola khas landing page (hero, section marketing, tabel harga, FAQ, footer).
+Lanjutan dari desain **Exapay tema Glassmorphism** yang sudah disetujui (Dashboard owner, Portal `/me`, Design token, halaman Karyawan). **Pakai ulang persis** token, sidebar, header (tenant switcher + avatar), card kaca, tombol pill, input, badge, segmented control, tab bar, data-table kaca, filter bar, form-section 2 kolom, read-field, banner, dialog, dan kartu absen portal dari desain itu. Gaya baru hanya untuk pola yang belum ada (lihat bagian 5).
 
-Exapay: SaaS yang **membantu tugas HRD di UMKM Indonesia dengan karyawan < 50 orang** yang belum punya orang HR. Exapay bukan pengganti HRD: sistem menghitung, memandu, dan mengingatkan — keputusan tetap di tangan pemilik/atasan. Semua teks **Bahasa Indonesia**, nada lugas dan membumi untuk pemilik usaha (bukan bahasa korporat). Tanggal contoh `2 Okt 2026`.
+Exapay: SaaS yang membantu tugas HRD di **UMKM Indonesia, karyawan < 50 orang**, tanpa staf HR. Semua teks **Bahasa Indonesia**, nada lugas untuk pemilik usaha. Tanggal contoh `2 Okt 2026`, zona waktu **WITA**.
 
 Ringkasan token: aksen oranye `#F2790F` (hover `#D9600A`, teks aksen `#B34C08`), latar krem `#FBF8F3` dengan bentuk warna flat lembut, teks `#221208` / `#5B4636` / `#8A7561`, sukses `#15803D`, peringatan `#D97706`, bahaya `#DC2626`, info `#2563EB`. Font Plus Jakarta Sans (judul) + DM Sans (teks). Card kaca radius 22px, field 14px, tombol pill; **teks tombol primer `#221208`** (bukan putih).
 
-## 2. Pengunjung
-Pemilik UMKM (kedai kopi, toko roti, bengkel, toko retail, klinik kecil, agensi) 5–50 karyawan yang saat ini menghitung gaji, BPJS, dan PPh 21 di Excel, koordinasi tugas lewat WhatsApp, dan mencatat absensi manual. Banyak yang membuka dari HP. Tujuan halaman: memahami apa yang dikerjakan Exapay, melihat harga yang jelas, lalu klik **"Coba gratis 30 hari"**.
+## 2. Fitur yang Didesain
+**Absen berbasis lokasi dengan peringatan (geofence), bukan pemblokiran.** Pemilik menyimpan satu atau beberapa lokasi kerja (koordinat + radius). Saat karyawan absen masuk/pulang dari HP, aplikasi membaca GPS dan menghitung jarak ke lokasi terdekat:
 
-## 3. Batasan (WAJIB — preferensi user)
+- **Di lokasi**: tidak ada tanda.
+- **Di luar lokasi**: tanda + jarak, mis. "320 m dari Kedai Pettarani".
+- **Lokasi tidak akurat**: akurasi GPS lebih besar dari radius, mis. "akurasi ±450 m".
+- **Tanpa lokasi**: karyawan menolak izin lokasi / GPS mati.
+
+**Absen selalu diterima**, apa pun statusnya. Tanda **tidak mengubah gaji otomatis**. Absen bertanda masuk ke **antrean tinjauan**. Di sana pemilik/admin (atau atasan untuk bawahan langsungnya) memutuskan **"Diterima"** atau **"Perlu tindak lanjut"** dengan catatan opsional. Jika memang perlu koreksi, prosesnya tetap lewat menu Koreksi absensi yang sudah ada.
+
+Karyawan lapangan (kurir, sales) bisa **dikecualikan**. Usaha tanpa lokasi kerja sama sekali tidak terpengaruh: tidak ada pengecekan dan **tidak ada permintaan izin lokasi**.
+
+**Tanpa peta pihak ketiga** (tanpa Google Maps/Leaflet/tile peta). Lokasi cukup ditampilkan sebagai nama, koordinat, radius, dan jarak dalam teks/angka.
+
+## 3. Peran
+- **Pemilik & Admin:** kelola lokasi kerja, atur lokasi per karyawan, tinjau semua absen bertanda.
+- **Atasan:** hanya meninjau absen bertanda milik **bawahan langsung**. Tidak bisa mengelola lokasi; pengaturan absen karyawan hanya bisa dibaca.
+- **Karyawan:** di portal hanya melihat keterangan setelah absen.
+
+## 4. Batasan (WAJIB — preferensi user)
 - Tanpa gradient warna-warni (termasuk mesh), tanpa glow/pendar. Blur hanya untuk panel kaca.
-- **Tanpa badge/pill ber-titik (dot) di atas judul hero** (contoh yang ditolak: pill "• Asisten HRD untuk UMKM"). Tagline cukup teks biasa atau tidak ada.
-- **Tanpa deretan ikon dalam kotak/lingkaran sebagai hiasan daftar fitur.** Fitur ditulis sebagai teks + cuplikan UI nyata. Ikon hanya untuk aksi/status/navigasi.
-- Tanpa eyebrow label warna-warni, titik dekoratif, atau ilustrasi 3D/blob generik.
-- **Tanpa bukti sosial palsu:** jangan buat testimoni, logo klien, rating bintang, atau angka "dipakai 1.000+ usaha" — produk baru diluncurkan. Kepercayaan dibangun lewat penjelasan yang konkret (aturan PMK 168/2023, BPJS, UMK per kota, audit log, data terenkripsi).
-- Maksimal 2 level radius bersarang. Satu font weight per elemen. Kontras teks di atas kaca WCAG AA. Angka/harga di permukaan paling solid.
-- Harus cepat dimuat (target Lighthouse ≥ 90): hindari efek berat; gambar seminimal mungkin. Cuplikan UI boleh dibuat sebagai komponen HTML/CSS (versi mini dari dashboard/portal yang sudah ada), bukan screenshot.
+- **Tanpa badge/pill ber-titik (dot)**, tanpa eyebrow label warna-warni, tanpa titik dekoratif.
+- **Tanpa ikon hiasan dalam kotak/lingkaran per baris.** Ikon hanya untuk aksi, status, atau navigasi; satu ikon per konteks. Ikon pin peta sebagai hiasan di setiap kartu lokasi **tidak boleh**.
+- Tanpa ilustrasi peta palsu / gambar peta dekoratif.
+- Maksimal 2 level radius bersarang. Satu font weight per elemen. Kontras teks di atas kaca WCAG AA. Angka penting (jarak, koordinat, jam) di permukaan paling solid.
 - Hanya efek yang bisa dibuat dengan CSS standar.
 
-## 4. Yang Didesain Sekarang
-Satu halaman panjang, **desktop 1440px + mobile 390px**, plus state yang disebut di bawah.
+## 5. Yang Didesain Sekarang
+Usaha **Kopi Nusantara** (Kota Makassar), pengguna **Budi Santoso** (Pemilik). Desktop 1440px + mobile 390px untuk setiap halaman, plus state yang disebut.
 
-### Header (sticky)
-Logo exapay kiri. Tautan anchor: Fitur · Cara kerja · Harga · FAQ. Kanan: tautan **"Masuk"** (ke `/login`) + tombol primer **"Coba gratis"** (ke `/signup`). Mobile: logo + tombol "Coba gratis" + menu (sheet/drawer berisi anchor + Masuk).
+### Halaman 1 — Lokasi Kerja `/settings/locations`
+Menu sidebar **Pengaturan › Lokasi kerja** aktif (child baru di grup Pengaturan, setelah "Absensi").
 
-### 1. Hero
-- Judul (contoh, boleh disempurnakan): **"Gaji, absensi, dan kinerja karyawan beres tanpa Excel."**
-- Sub-judul: "Exapay menghitung gaji lengkap dengan BPJS dan PPh 21 TER, mencatat absensi dari HP karyawan, dan mengubah tugas harian jadi skor kinerja yang bisa dijelaskan. Untuk UMKM yang belum punya HRD."
-- CTA primer **"Coba gratis 30 hari"** + sekunder **"Lihat harga"** (anchor). Baris kecil di bawah: "Tanpa kartu kredit · Data tetap milik Anda".
-- Visual kanan (desktop) / bawah (mobile): komposisi cuplikan UI nyata dari desain sebelumnya — mis. kartu ringkasan payroll Oktober 2026 (Total gaji bersih Rp 48.215.400, 15 karyawan, status Draf) bertumpuk dengan kartu portal karyawan di frame HP (tombol "Absen masuk", tugas hari ini). Gunakan data usaha contoh **Kopi Nusantara**.
+- Judul "Lokasi kerja" + sub-judul: "Absen di luar lokasi tetap diterima, tetapi diberi tanda untuk ditinjau." Aksi kanan: tombol primer **"Tambah lokasi"**.
+- Daftar lokasi (card kaca per lokasi, atau tabel kaca). Isi per lokasi: **nama**, alamat/catatan (opsional, teks redup), koordinat `-5.15672, 119.43628` (font angka tabular), **radius 100 m**, dan aksi **Ubah** + menu "⋯" berisi **Hapus**.
+  - Kedai Pettarani: Jl. A. P. Pettarani No. 18; `-5.15672, 119.43628`; radius 100 m
+  - Gudang Roasting Tamalanrea: Jl. Perintis Kemerdekaan Km 10; `-5.13241, 119.48810`; radius 150 m
+- Ringkasan kecil di bawah daftar: "16 karyawan dicek di semua lokasi · 1 hanya Gudang Roasting · 2 dikecualikan". Beri tautan ke daftar karyawan.
+- Catatan bantuan (teks biasa atau banner info): "Tips: tekan 'Pakai lokasi saya sekarang' saat Anda berada di tempat usaha. Radius 100 m cocok untuk satu bangunan; besarkan jika sinyal GPS di lokasi sering meleset."
+- **Empty state:** "Belum ada lokasi kerja" + penjelasan "Tanpa lokasi kerja, absen tidak dicek lokasinya." + tombol "Tambah lokasi".
+- **Skeleton** daftar.
 
-### 2. Masalah yang diselesaikan
-Judul mis. "Masih begini di usaha Anda?". 4 poin berpasangan **sebelum → dengan Exapay**, ditulis sebagai teks (tanpa ikon hiasan):
-- Gaji, BPJS & PPh 21 dihitung manual di Excel, aturannya sering berubah → dihitung otomatis dengan aturan yang berlaku per tanggal
-- Tugas dikoordinasi lewat WhatsApp, tidak ada data siapa yang kinerjanya bagus → tugas harian tercatat & diverifikasi atasan, jadi skor yang bisa dijelaskan
-- Absensi manual, potongan gaji tidak konsisten → absen dari HP, potongan mengikuti aturan yang Anda tetapkan, lengkap dengan penjelasan
-- Tenggat setor BPJS/PPh 21, kontrak habis, masa percobaan terlupa → pengingat di dashboard & email H-7 dan H-1
+**Dialog Tambah/Ubah lokasi** (sheet dari bawah di mobile):
+- Nama lokasi* (mis. "Kedai Pettarani")
+- Alamat / catatan (opsional)
+- **Koordinat***: satu field teks yang menerima tempelan "lat, long" (mis. `-5.15672, 119.43628`), dengan keterangan "Bisa ditempel dari aplikasi peta". Tombol sekunder **"Pakai lokasi saya sekarang"** (ikon crosshair). Tunjukkan state-nya:
+  1. Normal
+  2. Mencari lokasi… (spinner, tombol nonaktif)
+  3. Berhasil: koordinat terisi + teks kecil "Akurasi ±12 m"
+  4. Akurasi buruk: koordinat terisi + peringatan "Akurasi ±85 m — coba lagi di luar ruangan atau dekat jendela"
+  5. Gagal: "Izin lokasi ditolak browser. Izinkan lokasi atau isi koordinat manual."
+- **Radius (meter)***: input angka + satuan "m", default 100, rentang 25–1.000. Keterangan "Absen lebih jauh dari radius ini diberi tanda."
+- Error validasi: "Format koordinat: lintang, bujur — contoh -5.15672, 119.43628"; "Radius 25–1.000 m".
+- Tombol Simpan (primer, ada state loading) + Batal.
 
-### 3. Fitur utama
-5 blok, selang-seling teks + cuplikan UI kecil (desktop), bertumpuk di mobile. Setiap blok: judul, 1–2 kalimat, 3 poin teks.
-1. **Payroll & PPh 21 TER** — komponen gaji, BPJS Kesehatan & Ketenagakerjaan dengan batas upah, PPh 21 TER bulanan + perhitungan ulang Desember, draf → review → final terkunci, slip gaji PDF terkirim ke email, ekspor Excel untuk transfer bank. Cuplikan: baris rincian slip (Gaji pokok, Tunjangan, BPJS, PPh 21, Gaji bersih).
-2. **Absensi dari HP** — absen masuk/pulang dengan waktu server, izin/sakit/cuti dengan persetujuan atasan, aturan potongan alpa/telat sesuai kebijakan usaha. Cuplikan: kartu absen portal.
-3. **Tugas harian → KPI** _(pembeda utama, beri penekanan visual lebih)_ — karyawan mencatat realisasi indikator, atasan memverifikasi, skor 0–100 dihitung dengan rumus terbuka; ringkasan kinerja dibantu AI **yang selalu ditinjau atasan sebelum final**. Cuplikan: skor 86 "Baik" + 3 indikator dengan progress bar.
-4. **Kepatuhan** — kalender setor BPJS & PPh 21, kontrak habis, masa percobaan, peringatan gaji pokok di bawah UMK kota Anda. Cuplikan: daftar pengingat bertanggal.
-5. **Portal karyawan** — aplikasi web yang bisa dipasang di HP (PWA): absen, catat tugas, ajukan izin, lihat slip & skor sendiri.
+**Dialog Hapus:** "Hapus lokasi Gudang Roasting Tamalanrea?" + teks "Absen yang sudah tercatat tidak berubah. 1 karyawan yang hanya dicek di lokasi ini akan dicek di semua lokasi." + tombol bahaya "Hapus" + Batal.
 
-### 4. Cara kerja
-3 langkah bernomor (angka sebagai tipografi besar, bukan lingkaran ikon):
-1. Daftar & isi profil usaha (kota untuk UMK, tanggal gajian) — aturan BPJS, PPh 21, jadwal kerja & template KPI bawaan langsung siap
-2. Tambah karyawan atau impor dari Excel, lalu undang mereka ke portal
-3. Setiap bulan: tinjau draf gaji yang sudah dihitung, finalisasi, slip terkirim otomatis
+### Halaman 2 — Pengaturan absen per karyawan (section di detail karyawan `/employees/[id]`, tab Data)
+Tambahkan **section baru "Pengaturan absen"** di tab Data detail karyawan, memakai pola form-section 2 kolom dan read-field yang sudah ada. Taruh setelah section Pekerjaan. Section ini nanti juga menampung "Wajib selfie" dan "Mode jadwal" (fitur berikutnya, **jangan didesain sekarang**). Layout harus siap untuk beberapa baris pengaturan.
 
-### 5. Harga
-- Satu paket, sederhana: **Rp10.000 per karyawan aktif per bulan**, minimum ditagih 5 karyawan (Rp50.000/bulan). Semua fitur termasuk. Trial gratis 30 hari. Bayar via QRIS (semua e-wallet & m-banking). _(Angka ini akan diambil dari database — tandai di desain sebagai data dinamis.)_
-- Daftar "Sudah termasuk" sebagai teks: semua modul, pengguna owner/admin/atasan tanpa batas, portal karyawan, slip PDF & email, ekspor Excel, pembaruan aturan BPJS/PPh 21/UMK.
-- **Kalkulator estimasi:** input jumlah karyawan (stepper − / angka / + dan/atau slider 1–50) → "Estimasi tagihan per bulan: **Rp150.000**" untuk 15 karyawan; jika < 5, tampilkan catatan "minimum ditagih 5 karyawan". CTA "Coba gratis 30 hari".
-- Catatan kecil penjelas: "Tidak bayar setelah trial? Data tidak dihapus — akun menjadi baca-saja sampai tagihan dibayar."
-- State: kalkulator di 3 karyawan (kena minimum), 15 karyawan, 50 karyawan; dan **skeleton** kartu harga (harga sedang dimuat).
+- **Tampilan baca:** baris "Lokasi absen" dengan nilai salah satu dari:
+  - "Semua lokasi kerja (2)"
+  - "Lokasi tertentu: Gudang Roasting Tamalanrea"
+  - "Dikecualikan — absen dari mana saja tanpa tanda"
+  - Bila usaha belum punya lokasi: "Belum ada lokasi kerja" + tautan "Atur lokasi kerja"
 
-### 6. FAQ (accordion, 1 terbuka)
-- Apakah perhitungan PPh 21 sudah sesuai aturan terbaru? (TER PMK 168/2023, true-up Desember, data regulasi berlaku-tanggal)
-- Apakah data karyawan aman? (NIK/NPWP/rekening terenkripsi & ditampilkan tersamar, akses per peran, setiap perubahan tercatat)
-- Apakah Exapay mentransfer gaji? (Tidak — ekspor file untuk transfer bank)
-- Apa yang terjadi setelah trial 30 hari?
-- Bagaimana cara bayar? (QRIS, dikonfirmasi maksimal 1×24 jam)
-- Apakah AI menentukan nilai karyawan? (Tidak — skor dari rumus, AI hanya membantu menulis ringkasan yang wajib ditinjau atasan)
-- Bisa dipakai karyawan lewat HP?
+  Tombol **Ubah** kecil per section (pemilik/admin).
+- **Mode ubah:** segmented control **Semua lokasi | Lokasi tertentu | Dikecualikan**. Untuk "Lokasi tertentu", tampilkan daftar checkbox lokasi (minimal satu dipilih; error "Pilih minimal satu lokasi"). Untuk "Dikecualikan", keterangan "Cocok untuk karyawan lapangan seperti kurir atau sales." Tombol Simpan + Batal.
+- Contoh: **Fajar Nugroho** (Kurir · Logistik) dikecualikan; **Hendra Wijaya** (Roaster · Produksi) lokasi tertentu = Gudang Roasting; **Dewi Lestari** semua lokasi.
+- **Tampilan atasan:** hanya baca, tanpa tombol Ubah.
 
-### 7. CTA penutup
-Panel kaca besar: "Coba Exapay gratis 30 hari" + kalimat pendek + tombol primer. Tanpa gradient.
+### Halaman 3 — Tinjauan Absensi `/attendance/review`
+Menu sidebar **Absensi › Tinjauan** aktif (child baru setelah "Pengajuan izin"; terlihat untuk pemilik, admin, atasan).
 
-### Footer
-Logo + satu kalimat deskripsi. Kolom: Produk (Fitur, Harga, FAQ, Masuk), Legal (Kebijakan privasi, Syarat layanan), Kontak (email `halo@exapay.id`, WhatsApp `+62 812-0000-0000` — placeholder). Baris bawah: "© 2026 Exapay".
+- Judul "Tinjauan absensi" + sub-judul "Absen bertanda tetap tercatat dan tidak mengubah gaji. Koreksi jam lewat menu Koreksi."
+- Filter bar: segmented **Perlu ditinjau (5) | Sudah ditinjau | Semua** (default Perlu ditinjau), select **Jenis tanda** (Semua / Di luar lokasi / Lokasi tidak akurat / Tanpa lokasi), rentang tanggal / bulan.
+- **Tabel kaca** (desktop), **satu baris per absen** (masuk dan pulang bisa jadi dua baris terpisah):
+  - Karyawan (avatar inisial + nama, jabatan kecil)
+  - Tanggal
+  - Absen ("Masuk 08:04" / "Pulang 17:12")
+  - **Tanda** (badge status + rincian teks di bawahnya). Badge berwarna peringatan untuk "Di luar lokasi" dan "Lokasi tidak akurat", netral/info untuk "Tanpa lokasi". **Jenis tanda harus generik**: nanti ada jenis lain ("Tanpa jadwal" untuk karyawan shift), jadi jangan buat layout khusus per jenis.
+  - Aksi: tombol **"Diterima"** (sekunder) dan **"Perlu tindak lanjut"** (sekunder/peringatan). Keduanya membuka dialog catatan.
+- Data contoh (Perlu ditinjau):
+  - Fajar Nugroho tidak muncul (dikecualikan)
+  - Rina Wulandari — Kasir — 2 Okt 2026 — Masuk 07:58 — **Di luar lokasi**: 320 m dari Kedai Pettarani (akurasi ±10 m)
+  - Agus Pratama — Barista — 2 Okt 2026 — Masuk 08:11 — **Tanpa lokasi**: izin lokasi ditolak
+  - Hendra Wijaya — Roaster — 1 Okt 2026 — Pulang 17:40 — **Di luar lokasi**: 1,2 km dari Gudang Roasting Tamalanrea (akurasi ±8 m)
+  - Maya Sari — Barista — 1 Okt 2026 — Masuk 08:00 — **Lokasi tidak akurat**: akurasi ±450 m, terdekat Kedai Pettarani
+  - Dewi Lestari — Barista — 30 Sep 2026 — Pulang 21:05 — **Di luar lokasi**: 2,4 km dari Kedai Pettarani (akurasi ±15 m)
+- **Sudah ditinjau:** baris dengan badge keputusan **"Diterima"** (sukses) atau **"Perlu tindak lanjut"** (peringatan), oleh siapa + kapan ("Budi Santoso · 2 Okt 10:15"), dan catatan, mis. "Antar pesanan katering ke kantor pelanggan". Keputusan bisa diubah lewat menu "⋯ Ubah keputusan".
+- **Dialog keputusan:** judul "Terima absen Rina Wulandari?" / "Tandai perlu tindak lanjut?". Ringkasan absen (tanggal, jam, tanda). Textarea **Catatan** (opsional untuk Diterima, **wajib** untuk Perlu tindak lanjut). Teks kecil "Tercatat di log audit." Untuk owner/admin pada "Perlu tindak lanjut": tautan sekunder "Buka koreksi absensi". Tombol konfirmasi + Batal.
+- **Mobile:** tabel menjadi daftar card (nama, tanggal + jam, badge tanda + rincian, dua tombol aksi penuh lebar).
+- **Empty state:** "Tidak ada absen yang perlu ditinjau" + teks "Absen di luar lokasi kerja akan muncul di sini." Jika usaha belum punya lokasi: "Lokasi kerja belum diatur" + tombol "Atur lokasi kerja" (pemilik/admin).
+- **Skeleton** baris.
+- **Tampilan atasan** (frame kecil): judul sama, hanya bawahan langsung (Rina, Agus, Dewi), tanpa tautan koreksi.
 
-## 5. Output yang diminta
-- Halaman lengkap desktop 1440 + mobile 390 (termasuk menu mobile terbuka).
-- State: kalkulator (3 / 15 / 50 karyawan), skeleton harga, accordion FAQ tertutup/terbuka, hover tombol & tautan.
-- Token baru (jika ada) bernama peran agar bisa dipetakan ke Tailwind v4 `@theme`; sebutkan ukuran tipografi khusus landing (judul hero, judul section) dan lebar konten maksimal.
+### Halaman 4 — Portal karyawan `/me` (kartu absen)
+Pakai kartu absen portal yang sudah ada (desain `/me`). Mobile 390px saja. Karyawan **Dewi Lestari**. Tunjukkan state:
 
----
+1. **Sebelum absen, pertama kali** (usaha punya lokasi & karyawan tidak dikecualikan): teks kecil di bawah tombol "Absen masuk": "Saat absen, Exapay membaca lokasi Anda untuk mencatat apakah Anda di area kerja." (sebelum dialog izin bawaan browser).
+2. **Mengambil lokasi…**: tombol absen loading (spinner + "Mengambil lokasi…").
+3. **Berhasil di lokasi**: tampilan sukses biasa ("Masuk 07:58"), tanpa keterangan tambahan.
+4. **Berhasil, di luar lokasi**: sukses + keterangan (banner peringatan ringan, bukan error): **"Anda tercatat di luar area kerja (320 m dari Kedai Pettarani). Absen tetap diterima dan akan ditinjau atasan."**
+5. **Berhasil, tanpa lokasi** (izin ditolak): sukses + keterangan "Lokasi tidak terbaca. Absen tetap diterima dan akan ditinjau. Izinkan lokasi di pengaturan browser untuk absen berikutnya."
+6. **Berhasil, lokasi tidak akurat**: sukses + keterangan "Sinyal lokasi lemah (akurasi ±450 m). Absen tetap diterima dan akan ditinjau."
 
-# Revisi 1 — Pesan "cocok untuk UMKM yang belum menjalankan semua regulasi"
+Keterangan tetap terlihat di kartu sampai absen berikutnya (mis. setelah absen pulang tampil keterangan untuk pulang).
 
-_Ditambahkan 2026-10-02 (permintaan user) setelah desain pertama digenerate. Kirim sebagai pesan lanjutan di percakapan Claude Design yang sama._
-
-Revisi landing page Exapay: pengunjung jangan sampai mengira Exapay hanya untuk perusahaan besar yang sudah tertib PPh 21 & BPJS. Banyak UMKM belum memotong PPh 21, belum mendaftarkan semua karyawan ke BPJS, atau menggaji di bawah UMK. Tambahkan pesan ini **tanpa mengubah gaya, token, dan section lain**:
-
-1. **Hero** — tambahkan satu kalimat pendek di bawah sub-judul (teks biasa, bukan badge/pill): "Belum potong PPh 21 atau belum semua karyawan ikut BPJS? Tetap bisa pakai — aturan dinyalakan sesuai kondisi usaha Anda."
-2. **Section baru setelah "Masalah yang diselesaikan"** — judul mis. "Mulai dari kondisi usaha Anda sekarang". Kalimat pembuka: "Exapay dibuat untuk usaha kecil, bukan hanya perusahaan yang sudah punya HRD. Anda tidak harus sudah tertib semua aturan untuk mulai." Lalu 4 poin teks (tanpa ikon hiasan):
-   - **BPJS diatur per karyawan** — pilih program yang diikuti tiap karyawan (Kesehatan, JHT, JP, JKK, JKM), atau tidak sama sekali. Bisa diubah kapan saja saat sudah mendaftar.
-   - **PPh 21 dihitung otomatis** — untuk gaji di bawah batas penghasilan kena pajak, hasilnya Rp0. Anda tetap tahu kapan karyawan mulai kena pajak.
-   - **Peringatan UMK bisa dimatikan** — tidak ada tanda merah yang mengganggu bila Anda belum siap.
-   - **Potongan absensi sesuai kebijakan Anda** — termasuk pilihan "tidak dipotong".
-   Tutup dengan satu kalimat kecil: "Saat usaha Anda tumbuh, Exapay membantu menertibkan aturan satu per satu — dengan pengingat, bukan paksaan."
-   Visual pendamping (opsional, satu saja): cuplikan pengaturan kepesertaan BPJS per karyawan berisi 5 toggle dengan sebagian dimatikan.
-3. **FAQ** — tambahkan pertanyaan di urutan kedua: "Usaha saya belum memotong PPh 21 dan belum semua karyawan ikut BPJS. Bisa pakai Exapay?" → jawab dengan ringkasan 4 poin di atas.
-4. **Harga** — tambahkan satu baris di daftar "Sudah termasuk": "Cocok untuk usaha 5 karyawan sekalipun".
-
-Tetap patuhi batasan sebelumnya: tanpa badge ber-titik, tanpa ikon hiasan per poin, tanpa gradient/glow, tanpa testimoni atau angka pengguna. Perbarui versi desktop 1440 dan mobile 390.
+## 6. Output yang Diharapkan
+1. Empat halaman/area di atas, desktop 1440px + mobile 390px (portal: mobile saja), high fidelity, data contoh realistis, beserta semua state yang disebut (empty, skeleton, dialog, state tombol lokasi, error validasi, tampilan atasan, state kartu portal).
+2. **Komponen baru beserta variannya** (nama berdasarkan peran, bisa dipetakan ke Tailwind v4 `@theme` yang sudah ada): kartu/baris lokasi, input koordinat + tombol "Pakai lokasi saya" (5 state), input angka bersatuan (m), badge tanda absen (generik per jenis) + baris rincian, badge keputusan tinjauan, dialog keputusan dengan catatan, keterangan lokasi di kartu absen portal, section "Pengaturan absen" (baca/ubah).
+3. Pakai ulang token yang sudah ada; jika butuh token baru, sebutkan eksplisit.
+4. Semua bisa diimplementasikan dengan CSS standar + Tailwind v4.

@@ -246,6 +246,13 @@
       "when": 1790941239809,
       "tag": "0034_billing_confirmation_tokens_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1790953976949,
+      "tag": "0035_work_locations_geofence",
+      "breakpoints": true
     }
   ]
 }

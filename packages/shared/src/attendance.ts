@@ -44,6 +44,21 @@ export const attendanceHistoryQuerySchema = z.object({
 });
 export type AttendanceHistoryQuery = z.infer<typeof attendanceHistoryQuerySchema>;
 
+// Status lokasi absen terhadap lokasi kerja (feature 44) — snapshot saat absen. Absen selalu diterima; selain inside = bertanda.
+// inaccurate = akurasi GPS lebih besar dari radius lokasi terdekat; no_location = izin lokasi ditolak / GPS mati.
+export const GEOFENCE_STATUSES = ["inside", "outside", "inaccurate", "no_location"] as const;
+export type GeofenceStatus = (typeof GEOFENCE_STATUSES)[number];
+
+// null pada record = tidak dicek (usaha tanpa lokasi kerja, karyawan dikecualikan, absen hasil koreksi, data sebelum feature 44)
+export const geofenceResultSchema = z.object({
+  status: z.enum(GEOFENCE_STATUSES),
+  // Jarak ke titik pusat lokasi terdekat (meter) + nama lokasi saat absen — null untuk no_location
+  distanceM: z.number().int().nullable(),
+  locationName: z.string().nullable(),
+  accuracyM: z.number().nullable(),
+});
+export type GeofenceResult = z.infer<typeof geofenceResultSchema>;
+
 // on_time / late = hari kerja; off_day = absen di hari libur / di luar jadwal kerja (tidak dihitung telat)
 export const ATTENDANCE_STATUSES = ["on_time", "late", "off_day"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
@@ -65,6 +80,8 @@ export const attendanceRecordSchema = z.object({
   status: z.enum(ATTENDANCE_STATUSES),
   checkInLocated: z.boolean(),
   checkOutLocated: z.boolean(),
+  checkInGeofence: geofenceResultSchema.nullable(),
+  checkOutGeofence: geofenceResultSchema.nullable(),
 });
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
 
@@ -81,6 +98,8 @@ export const attendanceTodaySchema = z.object({
     // Nama libur nasional/cuti bersama yang diikuti atau libur usaha
     holidayName: z.string().nullable(),
   }),
+  // true = absen dicek terhadap lokasi kerja (portal meminta GPS); false = usaha tanpa lokasi / karyawan dikecualikan (tanpa izin lokasi)
+  locationCheck: z.boolean(),
   record: attendanceRecordSchema.nullable(),
 });
 export type AttendanceToday = z.infer<typeof attendanceTodaySchema>;
