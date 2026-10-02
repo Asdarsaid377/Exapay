@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { BillingAdminController } from "./billing-admin.controller.js";
 import { BillingAdminService } from "./billing-admin.service.js";
 import { BillingDecisionsService } from "./billing-decisions.service.js";
+import { BillingPublicController } from "./billing-public.controller.js";
 import { BillingController } from "./billing.controller.js";
 import { BillingService } from "./billing.service.js";
 import { PaymentConfirmationsController } from "./payment-confirmations.controller.js";
@@ -12,9 +13,9 @@ import { SubscriptionsService } from "./subscriptions.service.js";
 
 // Langganan & trial (Phase 9). SubscriptionGuard didaftarkan di AuthModule (urutan APP_GUARD setelah autentikasi & peran).
 // Cara bayar di balik PaymentProvider (feature 41: qris-manual). Konfirmasi pembayaran: dashboard super-admin &
-// tautan email tanpa login (feature 42) — keduanya lewat BillingDecisionsService.
+// tautan email tanpa login (feature 42) — keduanya lewat BillingDecisionsService. Harga publik landing page (feature 43).
 @Module({
-  controllers: [BillingController, BillingAdminController, PaymentConfirmationsController],
+  controllers: [BillingController, BillingAdminController, PaymentConfirmationsController, BillingPublicController],
   providers: [
     SubscriptionsService,
     BillingService,

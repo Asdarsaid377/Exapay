@@ -6,7 +6,8 @@ import type { NextConfig } from "next";
 
 // Dev lokal: ambil HANYA variabel yang dibutuhkan web dari .env root monorepo — secret API/DB tidak ikut
 // dimuat ke proses Next. Di Docker, env diberikan docker-compose (nilai proses diutamakan).
-const WEB_ENV_KEYS = ["API_INTERNAL_URL"] as const;
+// APP_WEB_URL: URL publik situs — canonical, Open Graph, sitemap & robots landing page (feature 43)
+const WEB_ENV_KEYS = ["API_INTERNAL_URL", "APP_WEB_URL"] as const;
 
 try {
   const rootEnv = parseEnv(readFileSync("../../.env", "utf8"));

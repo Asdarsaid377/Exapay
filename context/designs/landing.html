@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Exapay — Landing page marketing</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636">Route <span style="font-family:'DM Mono',monospace">/</span> · desktop 1440 + mobile 390 · contoh usaha Kopi Nusantara · 2 Okt 2026</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="dashboard.html">Dashboard Owner →</a>
+      <a href="me.html">Portal Karyawan →</a>
+      <a href="design-tokens.html">Token &amp; komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:64px;align-items:flex-start">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Desktop · 1440px — header sticky; kalkulator, slider &amp; FAQ bisa dipakai</div>
+    <div data-screen-label="Landing Desktop" style="position:relative;width:1440px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:720px;height:720px;border-radius:50%;background:#F7D3B3;top:-260px;right:-180px"></div>
+        <div style="position:absolute;width:420px;height:420px;border-radius:50%;background:#EADCCB;top:520px;left:-200px"></div>
+        <div style="position:absolute;width:900px;height:520px;border-radius:64px;background:#F6B27A;top:2860px;right:-260px"></div>
+        <div style="position:absolute;width:520px;height:520px;border-radius:50%;background:#FAE0C8;top:4560px;left:-180px"></div>
+        <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:6050px;right:-120px"></div>
+      </div>
+
+      <div style="position:relative;display:flex;flex-direction:column">
+        <header style="position:sticky;top:16px;z-index:10;margin:16px auto 0;width:1200px;height:68px;box-sizing:border-box;padding:0 12px 0 20px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+          <a href="#" style="display:flex;align-items:center;gap:10px;color:#221208;text-decoration:none" style-hover="color:#221208;text-decoration:none">
+            <span style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</span>
+            <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+          </a>
+          <nav style="display:flex;gap:4px">
+            <sc-for list="{{ anchors }}" as="a" hint-placeholder-count="4">
+              <a href="{{ a.href }}" style="height:44px;padding:0 16px;border-radius:999px;display:flex;align-items:center;color:#221208;font:500 15px 'DM Sans',sans-serif;text-decoration:none;transition:background .15s" style-hover="background:rgba(255,255,255,0.7);color:#221208;text-decoration:none">{{ a.label }}</a>
+            </sc-for>
+          </nav>
+          <div style="display:flex;align-items:center;gap:8px">
+            <a href="/login" style="height:44px;padding:0 16px;border-radius:999px;display:flex;align-items:center;color:#221208;font:700 15px 'DM Sans',sans-serif;text-decoration:none" style-hover="background:rgba(255,255,255,0.7);color:#221208;text-decoration:none">Masuk</a>
+            <a href="/signup" style="height:44px;padding:0 20px;border-radius:999px;display:flex;align-items:center;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;text-decoration:none;transition:background .15s" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis</a>
+          </div>
+        </header>
+
+        <section style="width:1200px;margin:0 auto;padding:88px 0 120px;display:grid;grid-template-columns:minmax(0,0.92fr) minmax(0,1.08fr);gap:56px;align-items:center">
+          <div style="display:flex;flex-direction:column;gap:28px">
+            <h2 style="margin:0;font:800 64px/1.04 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em;text-wrap:balance">Gaji, absensi, dan kinerja karyawan beres tanpa Excel.</h2>
+            <p style="margin:0;font:400 19px/1.55 'DM Sans',sans-serif;color:#5B4636;max-width:540px;text-wrap:pretty">Exapay menghitung gaji lengkap dengan BPJS dan PPh 21 TER, mencatat absensi dari HP karyawan, dan mengubah tugas harian jadi skor kinerja yang bisa dijelaskan. Untuk UMKM yang belum punya HRD.</p>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;gap:12px">
+                <a href="/signup" style="height:54px;padding:0 28px;border-radius:999px;display:inline-flex;align-items:center;gap:10px;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none;transition:background .15s" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari<span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat"></span></a>
+                <a href="#harga" style="height:54px;padding:0 26px;border-radius:999px;display:inline-flex;align-items:center;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24);color:#221208;text-decoration:none">Lihat harga</a>
+              </div>
+              <span style="font-size:14px;color:#5B4636">Tanpa kartu kredit · Data tetap milik Anda</span>
+            </div>
+          </div>
+
+          <div style="position:relative;height:580px">
+            <div style="position:absolute;top:20px;left:0;width:368px;box-sizing:border-box;padding:24px;border-radius:22px;background:rgba(255,253,249,0.82);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 24px 50px -18px rgba(74,42,16,0.28);display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span style="font:700 16px 'Plus Jakarta Sans',sans-serif">Payroll Oktober 2026</span>
+                  <span style="font-size:13px;color:#5B4636">Kopi Nusantara · 1–31 Okt 2026</span>
+                </div>
+                <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Draf</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:12px;background:#FFFDF9">
+                <span style="font-size:13.5px;color:#5B4636">Total gaji bersih</span>
+                <div style="display:flex;align-items:baseline;gap:6px"><span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Rp</span><span style="font:800 38px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">48.215.400</span></div>
+                <span style="font-size:13px;color:#75604D">15 karyawan · slip siap dikirim setelah final</span>
+              </div>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ heroRows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:{{ r.border }}">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#5B4636">{{ r.role }}</span></div>
+                    <span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.net }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:8px">
+                <span style="height:40px;padding:0 18px;border-radius:999px;background:#F2790F;color:#221208;font:700 14px/40px 'Plus Jakarta Sans',sans-serif">Review draf</span>
+                <span style="height:40px;box-sizing:border-box;padding:0 18px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);font:700 14px/38px 'Plus Jakarta Sans',sans-serif">Ekspor Excel</span>
+              </div>
+            </div>
+
+            <div style="position:absolute;top:84px;right:0;width:236px;height:496px;box-sizing:border-box;padding:8px;border-radius:40px;background:#221208;box-shadow:0 30px 60px -20px rgba(34,18,8,0.45)">
+              <div style="position:relative;height:100%;border-radius:32px;overflow:hidden;background:#FBF8F3;display:flex;flex-direction:column">
+                <div style="position:absolute;width:220px;height:220px;border-radius:50%;background:#F7D3B3;top:-90px;right:-80px"></div>
+                <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:12px 12px 0;display:flex;flex-direction:column;gap:8px">
+                  <div style="display:flex;justify-content:space-between;font:700 11.5px 'DM Sans',sans-serif"><span>07.56</span><span style="width:46px;height:12px;border-radius:999px;background:#221208"></span><span>100%</span></div>
+                  <div style="display:flex;flex-direction:column;gap:1px;padding:0 2px"><span style="font:800 17px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Selamat pagi, Rina</span><span style="font-size:12px;color:#5B4636">Jumat, 2 Okt 2026</span></div>
+                  <div style="padding:14px;border-radius:18px;background:rgba(255,253,249,0.92);border:1px solid rgba(255,255,255,0.8);box-shadow:0 10px 24px -12px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;color:#5B4636">Shift pagi · 08.00–16.00</span></div>
+                    <span style="font:800 30px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">07.56</span>
+                    <span style="height:44px;border-radius:999px;background:#F2790F;color:#221208;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px 'Plus Jakarta Sans',sans-serif"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat"></span>Absen masuk</span>
+                  </div>
+                  <div style="padding:12px 14px 4px;border-radius:18px;background:rgba(255,253,249,0.92);border:1px solid rgba(255,255,255,0.8);display:flex;flex-direction:column">
+                    <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;padding-bottom:4px">Tugas hari ini</span>
+                    <sc-for list="{{ phoneTasks }}" as="t" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid rgba(34,18,8,0.08)">
+                        <span style="width:15px;height:15px;flex:none;background:{{ t.color }};-webkit-mask:{{ t.mask }};mask:{{ t.mask }}"></span>
+                        <span style="flex:1;font-size:12px;line-height:1.3">{{ t.label }}</span>
+                        <span style="font:700 11.5px 'DM Sans',sans-serif;color:#5B4636">{{ t.meta }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 6px 12px;background:rgba(255,251,245,0.92);border-top:1px solid rgba(34,18,8,0.06)">
+                  <sc-for list="{{ phoneTabs }}" as="t" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:{{ t.fg }}"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:{{ t.mask }};mask:{{ t.mask }}"></span><span style="font:700 10px 'DM Sans',sans-serif">{{ t.label }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style="width:1200px;margin:0 auto;padding:0 0 128px;display:flex;flex-direction:column;gap:40px">
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:640px">
+            <h2 style="margin:0;font:800 44px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Masih begini di usaha Anda?</h2>
+            <p style="margin:0;font-size:18px;line-height:1.55;color:#5B4636;text-wrap:pretty">Hampir semua usaha kecil mulai dari Excel dan grup WhatsApp. Masalahnya muncul saat karyawan bertambah dan aturan berubah.</p>
+          </div>
+          <div style="border-radius:22px;background:rgba(255,253,249,0.82);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);overflow:hidden">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:rgba(34,18,8,0.035)">
+              <span style="padding:16px 32px;font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Sekarang</span>
+              <span style="padding:16px 32px;font:700 14px 'Plus Jakarta Sans',sans-serif;color:#B34C08;border-left:1px solid rgba(34,18,8,0.08)">Dengan Exapay</span>
+            </div>
+            <sc-for list="{{ problems }}" as="p" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid rgba(34,18,8,0.08)">
+                <p style="margin:0;padding:24px 32px;font-size:17px;line-height:1.5;color:#5B4636;text-wrap:pretty">{{ p.before }}</p>
+                <p style="margin:0;padding:24px 32px;font:500 17px/1.5 'DM Sans',sans-serif;color:#221208;border-left:1px solid rgba(34,18,8,0.08);background:#FFFDF9;text-wrap:pretty">{{ p.after }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section id="fitur" style="width:1200px;margin:0 auto;padding:0 0 128px;display:flex;flex-direction:column;gap:72px">
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:640px">
+            <h2 style="margin:0;font:800 44px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Yang dikerjakan Exapay untuk Anda</h2>
+            <p style="margin:0;font-size:18px;line-height:1.55;color:#5B4636;text-wrap:pretty">Sistem menghitung, memandu, dan mengingatkan. Keputusan tetap di tangan Anda dan atasan.</p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:72px;align-items:center">
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <h3 style="margin:0;font:800 30px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Payroll &amp; PPh 21 TER</h3>
+              <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636;text-wrap:pretty">Gaji dihitung lengkap dengan BPJS dan PPh 21. Anda tinggal meninjau draf, lalu mengunci.</p>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ f1 }}" as="x" hint-placeholder-count="3"><span style="padding:12px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:15.5px;line-height:1.45">{{ x }}</span></sc-for>
+              </div>
+            </div>
+            <div style="padding:24px 28px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 16px 'Plus Jakarta Sans',sans-serif">Slip gaji · Dimas Pratama</span><span style="font-size:13px;color:#5B4636">Kepala barista · Oktober 2026</span></div>
+                <span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(21,128,61,0.12);color:#166534;font:700 12.5px/24px 'DM Sans',sans-serif">Final</span>
+              </div>
+              <sc-for list="{{ slip }}" as="s" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.08)">
+                  <span style="font-size:14.5px;color:#5B4636">{{ s.label }}</span>
+                  <span style="font:500 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums;color:{{ s.fg }}">{{ s.v }}</span>
+                </div>
+              </sc-for>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;border-top:1px solid rgba(34,18,8,0.2)">
+                <span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Gaji bersih</span>
+                <span style="font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">Rp 6.804.000</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:72px;align-items:center">
+            <div style="display:flex;justify-content:center">
+              <div style="width:380px;padding:22px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;justify-content:space-between"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Absensi hari ini</span><span style="font-size:13px;color:#5B4636">Jumat, 2 Okt 2026</span></div>
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font:800 44px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">07.56</span><span style="font-size:13.5px;color:#5B4636">waktu server · WITA</span></div>
+                <span style="font-size:13.5px;color:#5B4636">Shift pagi · 08.00–16.00 · Kopi Nusantara Pettarani</span>
+                <span style="height:48px;border-radius:999px;background:#F2790F;color:#221208;display:flex;align-items:center;justify-content:center;gap:8px;font:700 15px 'Plus Jakarta Sans',sans-serif"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-in.svg) center / contain no-repeat"></span>Absen masuk</span>
+                <div style="display:flex;flex-direction:column">
+                  <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:13.5px"><span style="color:#5B4636">Kamis, 1 Okt</span><span>Masuk 07.52 · Pulang 16.05</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:13.5px"><span style="color:#5B4636">Senin, 5 Okt</span><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(37,99,235,0.1);color:#1D4ED8;font:700 12px/24px 'DM Sans',sans-serif">Cuti · menunggu atasan</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <h3 style="margin:0;font:800 30px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Absensi dari HP</h3>
+              <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636;text-wrap:pretty">Karyawan absen dari HP-nya sendiri. Jamnya diambil dari server, bukan dari jam HP.</p>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ f2 }}" as="x" hint-placeholder-count="3"><span style="padding:12px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:15.5px;line-height:1.45">{{ x }}</span></sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:56px;border-radius:28px;background:rgba(255,253,249,0.82);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 24px 60px -20px rgba(74,42,16,0.3);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px;align-items:center">
+            <div style="display:flex;flex-direction:column;gap:22px">
+              <h3 style="margin:0;font:800 40px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em;text-wrap:balance">Tugas harian jadi skor kinerja yang bisa dijelaskan</h3>
+              <p style="margin:0;font-size:18px;line-height:1.55;color:#5B4636;text-wrap:pretty">Karyawan mencatat hasil kerjanya, atasan memverifikasi, lalu skor 0–100 dihitung dengan rumus yang bisa dilihat semua orang. Saat penilaian, tidak ada lagi “kira-kira”.</p>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ f3 }}" as="x" hint-placeholder-count="3"><span style="padding:13px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:16px;line-height:1.45">{{ x }}</span></sc-for>
+              </div>
+              <span style="font:400 14px 'DM Mono',monospace;color:#5B4636">skor = Σ (realisasi ÷ target × bobot)</span>
+            </div>
+            <div style="padding:26px 28px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 16px 'Plus Jakarta Sans',sans-serif">Rina Wulandari · Kasir</span><span style="font-size:13px;color:#5B4636">Skor KPI September 2026</span></div>
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font:800 52px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">86</span><span style="height:26px;padding:0 10px;border-radius:999px;background:rgba(242,121,15,0.16);color:#8A3A06;font:700 13px/26px 'DM Sans',sans-serif">Baik</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <sc-for list="{{ kpi }}" as="k" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ k.label }}</span><span style="font:700 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ k.pct }}</span></div>
+                    <div style="height:10px;border-radius:999px;background:rgba(34,18,8,0.07);overflow:hidden"><div style="height:100%;width:{{ k.w }};background:#F2790F;border-radius:999px"></div></div>
+                    <span style="font-size:12.5px;color:#5B4636">{{ k.meta }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="padding:14px 16px;border-radius:12px;background:rgba(255,247,237,0.92);border:1px solid rgba(217,119,6,0.3);display:flex;flex-direction:column;gap:6px">
+                <span style="font:700 13px 'DM Sans',sans-serif;color:#92400E">Draf ringkasan AI · menunggu tinjauan atasan</span>
+                <span style="font-size:13.5px;line-height:1.5;color:#3D2A1C">Penjualan menu baru melampaui target. Ketepatan waktu saji masih di bawah target pada jam ramai.</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:72px;align-items:center">
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <h3 style="margin:0;font:800 30px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Kepatuhan</h3>
+              <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636;text-wrap:pretty">Tenggat dan batas aturan muncul sebelum terlambat — di dashboard, dan lewat email H-7 serta H-1.</p>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ f4 }}" as="x" hint-placeholder-count="3"><span style="padding:12px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:15.5px;line-height:1.45">{{ x }}</span></sc-for>
+              </div>
+            </div>
+            <div style="padding:22px 26px 8px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column">
+              <span style="font:700 16px 'Plus Jakarta Sans',sans-serif;padding-bottom:8px">Pengingat kepatuhan</span>
+              <sc-for list="{{ reminders }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:16px;padding:13px 0;border-top:1px solid rgba(34,18,8,0.08)">
+                  <div style="width:44px;flex:none;display:flex;flex-direction:column;align-items:center"><span style="font:800 20px/1.1 'Plus Jakarta Sans',sans-serif">{{ r.day }}</span><span style="font-size:12px;color:#75604D">{{ r.mon }}</span></div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.title }}</span><span style="font-size:13px;color:#5B4636">{{ r.sub }}</span></div>
+                  <span style="height:26px;padding:0 10px;border-radius:999px;background:{{ r.bg }};color:{{ r.fg }};font:700 12.5px/26px 'DM Sans',sans-serif">{{ r.due }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:72px;align-items:center">
+            <div style="display:flex;justify-content:center">
+              <div style="width:380px;padding:22px 22px 10px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column">
+                <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:10px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Portal saya</span><span style="font-size:13px;color:#5B4636">Rina Wulandari · exapay.id/me</span></div>
+                <sc-for list="{{ portal }}" as="p" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid rgba(34,18,8,0.08)">
+                    <span style="flex:1;font-size:14.5px">{{ p.label }}</span>
+                    <span style="font:700 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ p.v }}</span>
+                    <span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <h3 style="margin:0;font:800 30px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Portal karyawan</h3>
+              <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636;text-wrap:pretty">Aplikasi web yang bisa dipasang di layar utama HP karyawan — tanpa unduh dari toko aplikasi.</p>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ f5 }}" as="x" hint-placeholder-count="3"><span style="padding:12px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:15.5px;line-height:1.45">{{ x }}</span></sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="cara-kerja" style="width:1200px;margin:0 auto;padding:0 0 128px;display:flex;flex-direction:column;gap:48px">
+          <h2 style="margin:0;font:800 44px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Mulai dalam satu sore</h2>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:16px;padding-top:24px;border-top:2px solid #221208">
+                <span style="font:800 96px/0.9 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.05em;color:#B34C08">{{ s.n }}</span>
+                <h3 style="margin:0;font:700 21px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.015em;text-wrap:balance">{{ s.title }}</h3>
+                <p style="margin:0;font-size:16px;line-height:1.55;color:#5B4636;text-wrap:pretty">{{ s.body }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section id="harga" style="width:1200px;margin:0 auto;padding:0 0 128px;display:flex;flex-direction:column;gap:40px">
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:640px">
+            <h2 style="margin:0;font:800 44px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Satu harga, semua fitur</h2>
+            <p style="margin:0;font-size:18px;line-height:1.55;color:#5B4636">Bayar sesuai jumlah karyawan aktif. Tanpa paket, tanpa biaya tambahan.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:stretch">
+            <div style="padding:36px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:24px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span style="font:800 56px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em;font-variant-numeric:tabular-nums">Rp10.000</span><span style="font-size:17px;color:#5B4636">per karyawan aktif / bulan</span></div>
+                <span style="font-size:15px;color:#5B4636">Minimum ditagih 5 karyawan (Rp50.000/bulan) · Trial gratis 30 hari · Bayar via QRIS</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:700 15px 'Plus Jakarta Sans',sans-serif;padding-bottom:8px">Sudah termasuk</span>
+                <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:24px">
+                  <sc-for list="{{ included }}" as="x" hint-placeholder-count="6"><span style="padding:11px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:15px;line-height:1.4">{{ x }}</span></sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="padding:32px;border-radius:22px;background:rgba(255,253,249,0.82);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:22px">
+              <span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Hitung estimasi tagihan</span>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <span style="font:500 14px 'DM Sans',sans-serif;color:#5B4636">Jumlah karyawan aktif</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button onClick="{{ calcD.dec }}" aria-label="Kurangi" style="width:48px;height:48px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);cursor:pointer;display:grid;place-items:center;color:#221208" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat"></span></button>
+                  <span style="width:88px;height:48px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFDF9;display:grid;place-items:center;font:800 20px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ calcD.n }}</span>
+                  <button onClick="{{ calcD.inc }}" aria-label="Tambah" style="width:48px;height:48px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);cursor:pointer;display:grid;place-items:center;color:#221208" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span></button>
+                  <span style="font-size:15px;color:#5B4636">karyawan</span>
+                </div>
+                <input type="range" min="1" max="50" value="{{ calcD.n }}" onChange="{{ calcD.onSlide }}" aria-label="Jumlah karyawan" style="width:100%;height:28px;margin:0;accent-color:#F2790F;cursor:pointer">
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#75604D"><span>1</span><span>50</span></div>
+              </div>
+              <div style="padding:20px;border-radius:14px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:14px;color:#5B4636">Estimasi tagihan per bulan</span>
+                <span style="font:800 40px/1.05 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em;font-variant-numeric:tabular-nums">{{ calcD.total }}</span>
+                <span style="font-size:13.5px;color:#5B4636">{{ calcD.formula }}</span>
+                <sc-if value="{{ calcD.isMin }}" hint-placeholder-val="{{ false }}"><span style="margin-top:6px;font:700 13.5px 'DM Sans',sans-serif;color:#92400E">Minimum ditagih 5 karyawan</span></sc-if>
+              </div>
+              <a href="/signup" style="height:52px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none;transition:background .15s" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari</a>
+            </div>
+          </div>
+          <p style="margin:0;font-size:15px;color:#5B4636">Tidak bayar setelah trial? Data tidak dihapus — akun menjadi baca-saja sampai tagihan dibayar.</p>
+        </section>
+
+        <section id="faq" style="width:1200px;margin:0 auto;padding:0 0 128px;display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr);gap:56px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <h2 style="margin:0;font:800 44px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Pertanyaan yang sering muncul</h2>
+            <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636">Belum terjawab? Tulis ke <a href="mailto:halo@exapay.id" style="font-weight:700">halo@exapay.id</a>.</p>
+          </div>
+          <div style="padding:8px 28px;border-radius:22px;background:rgba(255,253,249,0.82);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column">
+            <sc-for list="{{ faqD }}" as="q" hint-placeholder-count="7">
+              <div style="display:flex;flex-direction:column;border-top:{{ q.border }}">
+                <button onClick="{{ q.toggle }}" aria-expanded="{{ q.open }}" style="border:none;background:transparent;min-height:64px;padding:16px 0;display:flex;align-items:center;gap:16px;cursor:pointer;text-align:left;color:#221208" style-hover="color:#B34C08">
+                  <span style="flex:1;font:700 17px/1.4 'Plus Jakarta Sans',sans-serif">{{ q.q }}</span>
+                  <span style="width:20px;height:20px;flex:none;background:currentColor;transform:{{ q.chev }};transition:transform .2s;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+                </button>
+                <sc-if value="{{ q.open }}"><p style="margin:0;padding:0 40px 20px 0;font-size:16px;line-height:1.6;color:#5B4636;text-wrap:pretty">{{ q.a }}</p></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="width:1200px;margin:0 auto;padding:0 0 96px">
+          <div style="padding:72px 48px;border-radius:28px;background:rgba(255,253,249,0.72);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 24px 60px -20px rgba(74,42,16,0.3);display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px">
+            <h2 style="margin:0;font:800 52px/1.08 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em">Coba Exapay gratis 30 hari</h2>
+            <p style="margin:0;font-size:18px;line-height:1.55;color:#3D2A1C;max-width:560px;text-wrap:pretty">Masukkan data usaha dan karyawan, lalu lihat draf gaji bulan ini dihitung untuk Anda.</p>
+            <a href="/signup" style="margin-top:8px;height:56px;padding:0 32px;border-radius:999px;display:inline-flex;align-items:center;gap:10px;background:#F2790F;color:#221208;font:700 17px 'Plus Jakarta Sans',sans-serif;text-decoration:none;transition:background .15s" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari<span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat"></span></a>
+            <span style="font-size:14px;color:#5B4636">Tanpa kartu kredit · Data tetap milik Anda</span>
+          </div>
+        </section>
+
+        <footer style="width:1200px;margin:0 auto;padding:48px 0 40px;border-top:1px solid rgba(34,18,8,0.1);display:flex;flex-direction:column;gap:48px">
+          <div style="display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr));gap:40px">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:10px;background:#F2790F;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</span><span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span></div>
+              <p style="margin:0;font-size:15px;line-height:1.55;color:#5B4636;max-width:340px">Membantu tugas HRD di usaha kecil Indonesia: gaji, absensi, dan kinerja karyawan dalam satu tempat.</p>
+            </div>
+            <sc-for list="{{ footCols }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <span style="font:700 14px 'Plus Jakarta Sans',sans-serif">{{ c.title }}</span>
+                <sc-for list="{{ c.links }}" as="l"><a href="{{ l.href }}" style="font-size:15px;color:#5B4636" style-hover="color:#B34C08">{{ l.label }}</a></sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size:14px;color:#75604D">© 2026 Exapay</span>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · 390px — tombol menu membuka sheet</div>
+    <div data-screen-label="Landing Mobile" style="position:relative;width:390px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-140px;right:-160px"></div>
+        <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#EADCCB;top:640px;left:-160px"></div>
+        <div style="position:absolute;width:420px;height:360px;border-radius:48px;background:#F6B27A;top:3700px;right:-200px"></div>
+        <div style="position:absolute;width:340px;height:340px;border-radius:50%;background:#FAE0C8;top:5600px;left:-140px"></div>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;padding:12px 16px 0">
+        <header style="position:sticky;top:12px;z-index:10;height:60px;box-sizing:border-box;padding:0 6px 0 14px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.18);display:flex;align-items:center;gap:6px">
+          <div style="flex:1;display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9px;background:#F2790F;display:grid;place-items:center;font:800 16px 'Plus Jakarta Sans',sans-serif">e</span><span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span></div>
+          <a href="/signup" style="height:44px;padding:0 16px;border-radius:999px;display:flex;align-items:center;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis</a>
+          <button onClick="{{ openMenu }}" aria-label="Buka menu" style="width:44px;height:44px;border:none;background:transparent;border-radius:14px;display:grid;place-items:center;cursor:pointer" style-hover="background:rgba(255,255,255,0.7)"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></button>
+        </header>
+
+        <section style="padding:44px 4px 64px;display:flex;flex-direction:column;gap:22px">
+          <h2 style="margin:0;font:800 38px/1.08 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em;text-wrap:balance">Gaji, absensi, dan kinerja karyawan beres tanpa Excel.</h2>
+          <p style="margin:0;font-size:17px;line-height:1.55;color:#5B4636;text-wrap:pretty">Exapay menghitung gaji lengkap dengan BPJS dan PPh 21 TER, mencatat absensi dari HP karyawan, dan mengubah tugas harian jadi skor kinerja yang bisa dijelaskan. Untuk UMKM yang belum punya HRD.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <a href="/signup" style="height:52px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:10px;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari</a>
+            <a href="#harga" style="height:52px;box-sizing:border-box;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#FFFFFF;color:#221208;text-decoration:none">Lihat harga</a>
+            <span style="text-align:center;font-size:13.5px;color:#5B4636">Tanpa kartu kredit · Data tetap milik Anda</span>
+          </div>
+          <div style="position:relative;height:420px;margin-top:8px">
+            <div style="position:absolute;top:0;left:0;right:40px;padding:18px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 20px 40px -16px rgba(74,42,16,0.28);display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Payroll Oktober 2026</span><span style="height:22px;padding:0 9px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12px/22px 'DM Sans',sans-serif">Draf</span></div>
+              <div style="padding:12px 14px;border-radius:12px;background:#FFFDF9;display:flex;flex-direction:column;gap:4px"><span style="font-size:12.5px;color:#5B4636">Total gaji bersih · 15 karyawan</span><span style="font:800 28px/1.05 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">Rp 48.215.400</span></div>
+              <sc-for list="{{ heroRows }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span>{{ r.name }}</span><span style="font-weight:700;font-variant-numeric:tabular-nums">{{ r.net }}</span></div>
+              </sc-for>
+            </div>
+            <div style="position:absolute;bottom:0;right:0;width:210px;box-sizing:border-box;padding:6px;border-radius:30px;background:#221208;box-shadow:0 24px 48px -16px rgba(34,18,8,0.45)">
+              <div style="border-radius:24px;background:#FBF8F3;padding:14px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;flex-direction:column"><span style="font:800 15px 'Plus Jakarta Sans',sans-serif">Selamat pagi, Rina</span><span style="font-size:11.5px;color:#5B4636">Jumat, 2 Okt 2026</span></div>
+                <span style="font:800 26px/1 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">07.56</span>
+                <span style="height:40px;border-radius:999px;background:#F2790F;display:flex;align-items:center;justify-content:center;font:700 13px 'Plus Jakarta Sans',sans-serif">Absen masuk</span>
+                <span style="font-size:11.5px;color:#5B4636">3 tugas hari ini · 1 selesai</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style="padding:0 4px 72px;display:flex;flex-direction:column;gap:24px">
+          <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Masih begini di usaha Anda?</h2>
+          <sc-for list="{{ problems }}" as="p" hint-placeholder-count="4">
+            <div style="border-radius:20px;overflow:hidden;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 10px 30px -14px rgba(74,42,16,0.2)">
+              <div style="padding:16px 18px;display:flex;flex-direction:column;gap:4px"><span style="font:700 12.5px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Sekarang</span><span style="font-size:15px;line-height:1.5;color:#5B4636">{{ p.before }}</span></div>
+              <div style="padding:16px 18px;display:flex;flex-direction:column;gap:4px;background:#FFFDF9;border-top:1px solid rgba(34,18,8,0.08)"><span style="font:700 12.5px 'Plus Jakarta Sans',sans-serif;color:#B34C08">Dengan Exapay</span><span style="font:500 15px/1.5 'DM Sans',sans-serif">{{ p.after }}</span></div>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="padding:0 4px 72px;display:flex;flex-direction:column;gap:48px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Yang dikerjakan Exapay untuk Anda</h2>
+            <p style="margin:0;font-size:16px;line-height:1.55;color:#5B4636">Sistem menghitung, memandu, dan mengingatkan. Keputusan tetap di tangan Anda.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 23px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Payroll &amp; PPh 21 TER</h3>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#5B4636">Gaji dihitung lengkap dengan BPJS dan PPh 21. Anda tinggal meninjau draf, lalu mengunci.</p>
+            <div style="display:flex;flex-direction:column"><sc-for list="{{ f1 }}" as="x" hint-placeholder-count="3"><span style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:14.5px;line-height:1.45">{{ x }}</span></sc-for></div>
+            <div style="padding:16px 18px;border-radius:20px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column">
+              <sc-for list="{{ slip }}" as="s" hint-placeholder-count="5"><div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(34,18,8,0.08);font-size:13px"><span style="color:#5B4636">{{ s.label }}</span><span style="font-variant-numeric:tabular-nums;color:{{ s.fg }}">{{ s.v }}</span></div></sc-for>
+              <div style="display:flex;justify-content:space-between;padding-top:10px"><span style="font:700 14px 'Plus Jakarta Sans',sans-serif">Gaji bersih</span><span style="font:800 17px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">Rp 6.804.000</span></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 23px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Absensi dari HP</h3>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#5B4636">Karyawan absen dari HP-nya sendiri. Jamnya diambil dari server, bukan dari jam HP.</p>
+            <div style="display:flex;flex-direction:column"><sc-for list="{{ f2 }}" as="x" hint-placeholder-count="3"><span style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:14.5px;line-height:1.45">{{ x }}</span></sc-for></div>
+          </div>
+          <div style="margin:0 -8px;padding:24px 20px;border-radius:26px;background:rgba(255,253,249,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 20px 50px -20px rgba(74,42,16,0.3);display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 26px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Tugas harian jadi skor kinerja yang bisa dijelaskan</h3>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#5B4636">Karyawan mencatat hasil kerjanya, atasan memverifikasi, lalu skor 0–100 dihitung dengan rumus terbuka.</p>
+            <div style="padding:18px;border-radius:14px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 14px 'Plus Jakarta Sans',sans-serif">Rina · Sep 2026</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 36px/1 'Plus Jakarta Sans',sans-serif">86</span><span style="height:24px;padding:0 9px;border-radius:999px;background:rgba(242,121,15,0.16);color:#8A3A06;font:700 12px/24px 'DM Sans',sans-serif">Baik</span></div></div>
+              <sc-for list="{{ kpi }}" as="k" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;gap:8px;font:700 13px 'DM Sans',sans-serif"><span>{{ k.label }}</span><span>{{ k.pct }}</span></div><div style="height:8px;border-radius:999px;background:rgba(34,18,8,0.07);overflow:hidden"><div style="height:100%;width:{{ k.w }};background:#F2790F;border-radius:999px"></div></div></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column"><sc-for list="{{ f3 }}" as="x" hint-placeholder-count="3"><span style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:14.5px;line-height:1.45">{{ x }}</span></sc-for></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 23px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Kepatuhan</h3>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#5B4636">Tenggat dan batas aturan muncul sebelum terlambat — di dashboard, dan lewat email H-7 serta H-1.</p>
+            <div style="padding:6px 16px;border-radius:20px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column">
+              <sc-for list="{{ reminders }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:{{ r.border }}"><div style="width:34px;flex:none;display:flex;flex-direction:column;align-items:center"><span style="font:800 17px/1.1 'Plus Jakarta Sans',sans-serif">{{ r.day }}</span><span style="font-size:11.5px;color:#75604D">{{ r.mon }}</span></div><span style="flex:1;font:700 13px/1.35 'DM Sans',sans-serif">{{ r.title }}</span><span style="height:24px;padding:0 9px;border-radius:999px;background:{{ r.bg }};color:{{ r.fg }};font:700 12px/24px 'DM Sans',sans-serif">{{ r.due }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 23px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Portal karyawan</h3>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#5B4636">Aplikasi web yang bisa dipasang di layar utama HP karyawan — tanpa unduh dari toko aplikasi.</p>
+            <div style="display:flex;flex-direction:column"><sc-for list="{{ f5 }}" as="x" hint-placeholder-count="3"><span style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.1);font-size:14.5px;line-height:1.45">{{ x }}</span></sc-for></div>
+          </div>
+        </section>
+
+        <section style="padding:0 4px 72px;display:flex;flex-direction:column;gap:28px">
+          <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Mulai dalam satu sore</h2>
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:10px;padding-top:18px;border-top:2px solid #221208">
+              <span style="font:800 64px/0.9 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.05em;color:#B34C08">{{ s.n }}</span>
+              <h3 style="margin:0;font:700 18px/1.3 'Plus Jakarta Sans',sans-serif">{{ s.title }}</h3>
+              <p style="margin:0;font-size:15px;line-height:1.55;color:#5B4636">{{ s.body }}</p>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="padding:0 4px 72px;display:flex;flex-direction:column;gap:20px">
+          <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Satu harga, semua fitur</h2>
+          <div style="padding:22px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font:800 42px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em">Rp10.000</span><span style="font-size:15px;color:#5B4636">per karyawan aktif / bulan · minimum ditagih 5 karyawan (Rp50.000/bulan)</span><span style="font-size:14px;color:#5B4636">Trial gratis 30 hari · Bayar via QRIS</span></div>
+            <div style="display:flex;flex-direction:column"><span style="font:700 14px 'Plus Jakarta Sans',sans-serif;padding-bottom:6px">Sudah termasuk</span><sc-for list="{{ included }}" as="x" hint-placeholder-count="6"><span style="padding:9px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:14px">{{ x }}</span></sc-for></div>
+          </div>
+          <div style="padding:22px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:16px">
+            <span style="font:700 16px 'Plus Jakarta Sans',sans-serif">Hitung estimasi tagihan</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button onClick="{{ calcM.dec }}" aria-label="Kurangi" style="width:48px;height:48px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);cursor:pointer;display:grid;place-items:center;color:#221208"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat"></span></button>
+              <span style="flex:1;height:48px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFDF9;display:grid;place-items:center;font:800 19px 'Plus Jakarta Sans',sans-serif">{{ calcM.n }} karyawan</span>
+              <button onClick="{{ calcM.inc }}" aria-label="Tambah" style="width:48px;height:48px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);cursor:pointer;display:grid;place-items:center;color:#221208"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span></button>
+            </div>
+            <input type="range" min="1" max="50" value="{{ calcM.n }}" onChange="{{ calcM.onSlide }}" aria-label="Jumlah karyawan" style="width:100%;height:28px;margin:0;accent-color:#F2790F">
+            <div style="padding:16px;border-radius:14px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:13.5px;color:#5B4636">Estimasi tagihan per bulan</span>
+              <span style="font:800 32px/1.05 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">{{ calcM.total }}</span>
+              <span style="font-size:13px;color:#5B4636">{{ calcM.formula }}</span>
+              <sc-if value="{{ calcM.isMin }}" hint-placeholder-val="{{ false }}"><span style="margin-top:4px;font:700 13px 'DM Sans',sans-serif;color:#92400E">Minimum ditagih 5 karyawan</span></sc-if>
+            </div>
+            <a href="/signup" style="height:52px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari</a>
+          </div>
+          <p style="margin:0;font-size:14px;line-height:1.5;color:#5B4636">Tidak bayar setelah trial? Data tidak dihapus — akun menjadi baca-saja sampai tagihan dibayar.</p>
+        </section>
+
+        <section style="padding:0 4px 72px;display:flex;flex-direction:column;gap:20px">
+          <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Pertanyaan yang sering muncul</h2>
+          <div style="padding:4px 18px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column">
+            <sc-for list="{{ faqM }}" as="q" hint-placeholder-count="7">
+              <div style="display:flex;flex-direction:column;border-top:{{ q.border }}">
+                <button onClick="{{ q.toggle }}" style="border:none;background:transparent;min-height:60px;padding:14px 0;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;color:#221208">
+                  <span style="flex:1;font:700 15.5px/1.4 'Plus Jakarta Sans',sans-serif">{{ q.q }}</span>
+                  <span style="width:18px;height:18px;flex:none;background:currentColor;transform:{{ q.chev }};transition:transform .2s;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+                </button>
+                <sc-if value="{{ q.open }}"><p style="margin:0;padding:0 0 16px;font-size:14.5px;line-height:1.6;color:#5B4636">{{ q.a }}</p></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="padding:0 0 56px">
+          <div style="padding:40px 22px;border-radius:26px;background:rgba(255,253,249,0.78);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 20px 50px -20px rgba(74,42,16,0.3);display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px">
+            <h2 style="margin:0;font:800 30px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">Coba Exapay gratis 30 hari</h2>
+            <p style="margin:0;font-size:15.5px;line-height:1.55;color:#3D2A1C">Masukkan data usaha dan karyawan, lalu lihat draf gaji bulan ini dihitung untuk Anda.</p>
+            <a href="/signup" style="align-self:stretch;height:52px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;text-decoration:none" style-hover="background:#D9600A;color:#221208;text-decoration:none">Coba gratis 30 hari</a>
+            <span style="font-size:13px;color:#5B4636">Tanpa kartu kredit · Data tetap milik Anda</span>
+          </div>
+        </section>
+
+        <footer style="padding:32px 4px 32px;border-top:1px solid rgba(34,18,8,0.1);display:flex;flex-direction:column;gap:28px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9px;background:#F2790F;display:grid;place-items:center;font:800 16px 'Plus Jakarta Sans',sans-serif">e</span><span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span></div>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#5B4636">Membantu tugas HRD di usaha kecil Indonesia: gaji, absensi, dan kinerja karyawan dalam satu tempat.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+            <sc-for list="{{ footCols }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:700 13.5px 'Plus Jakarta Sans',sans-serif;padding-bottom:4px">{{ c.title }}</span>
+                <sc-for list="{{ c.links }}" as="l"><a href="{{ l.href }}" style="min-height:36px;display:flex;align-items:center;font-size:14px;color:#5B4636">{{ l.label }}</a></sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size:13px;color:#75604D">© 2026 Exapay</span>
+        </footer>
+      </div>
+
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:0;left:0;right:0;height:844px;z-index:20">
+          <div onClick="{{ closeMenu }}" style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+          <div style="position:absolute;top:10px;left:10px;right:10px;padding:12px 12px 16px;border-radius:26px;background:rgba(255,251,245,0.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.7);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-left:10px"><div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9px;background:#F2790F;display:grid;place-items:center;font:800 16px 'Plus Jakarta Sans',sans-serif">e</span><span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span></div><button onClick="{{ closeMenu }}" aria-label="Tutup menu" style="width:44px;height:44px;border:none;background:transparent;border-radius:14px;display:grid;place-items:center;cursor:pointer"><span style="width:20px;height:20px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat"></span></button></div>
+            <nav style="display:flex;flex-direction:column">
+              <sc-for list="{{ anchors }}" as="a" hint-placeholder-count="4"><a href="{{ a.href }}" onClick="{{ closeMenu }}" style="min-height:52px;padding:0 12px;border-radius:14px;display:flex;align-items:center;font:700 17px 'Plus Jakarta Sans',sans-serif;color:#221208;text-decoration:none" style-hover="background:rgba(255,255,255,0.8);color:#221208;text-decoration:none">{{ a.label }}</a></sc-for>
+            </nav>
+            <div style="height:1px;background:rgba(34,18,8,0.08);margin:4px 12px"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:4px">
+              <a href="/login" style="height:50px;box-sizing:border-box;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;text-decoration:none">Masuk</a>
+              <a href="/signup" style="height:50px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;text-decoration:none">Coba gratis 30 hari</a>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · menu terbuka</div>
+    <div data-screen-label="Landing Mobile Menu" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-140px;right:-160px"></div>
+      <div style="position:absolute;top:12px;left:16px;right:16px;height:60px;border-radius:20px;background:rgba(255,251,245,0.7);border:1px solid rgba(255,255,255,0.6)"></div>
+      <div style="position:absolute;top:116px;left:20px;right:20px;font:800 38px/1.08 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.035em">Gaji, absensi, dan kinerja karyawan beres tanpa Excel.</div>
+      <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+      <div style="position:absolute;top:10px;left:10px;right:10px;padding:12px 12px 16px;border-radius:26px;background:rgba(255,251,245,0.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.7);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-left:10px"><div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9px;background:#F2790F;display:grid;place-items:center;font:800 16px 'Plus Jakarta Sans',sans-serif">e</span><span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span></div><span style="width:44px;height:44px;display:grid;place-items:center"><span style="width:20px;height:20px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat"></span></span></div>
+        <nav style="display:flex;flex-direction:column">
+          <sc-for list="{{ anchors }}" as="a" hint-placeholder-count="4"><a href="{{ a.href }}" style="min-height:52px;padding:0 12px;border-radius:14px;display:flex;align-items:center;font:700 17px 'Plus Jakarta Sans',sans-serif;color:#221208;text-decoration:none" style-hover="background:rgba(255,255,255,0.8);color:#221208;text-decoration:none">{{ a.label }}</a></sc-for>
+        </nav>
+        <div style="height:1px;background:rgba(34,18,8,0.08);margin:4px 12px"></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:4px">
+          <a href="/login" style="height:50px;box-sizing:border-box;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;text-decoration:none">Masuk</a>
+          <a href="/signup" style="height:50px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;text-decoration:none">Coba gratis 30 hari</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:24px;width:1440px">
+    <h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">State — kalkulator, skeleton, FAQ, hover</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+      <sc-for list="{{ calcStates }}" as="c" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ c.caption }}</span>
+          <div style="padding:22px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:44px;height:44px;box-sizing:border-box;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:grid;place-items:center;opacity:{{ c.decOp }}"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/minus.svg) center / contain no-repeat"></span></span>
+              <span style="flex:1;height:44px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFDF9;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">{{ c.n }}</span>
+              <span style="width:44px;height:44px;box-sizing:border-box;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);display:grid;place-items:center;opacity:{{ c.incOp }}"><span style="width:16px;height:16px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span></span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:rgba(34,18,8,0.1);overflow:hidden"><div style="height:100%;width:{{ c.w }};background:#F2790F"></div></div>
+            <div style="padding:14px;border-radius:14px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:13px;color:#5B4636">Estimasi tagihan per bulan</span>
+              <span style="font:800 28px/1.05 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">{{ c.total }}</span>
+              <span style="font-size:12.5px;color:#5B4636">{{ c.formula }}</span>
+              <sc-if value="{{ c.isMin }}"><span style="margin-top:4px;font:700 12.5px 'DM Sans',sans-serif;color:#92400E">Minimum ditagih 5 karyawan</span></sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Skeleton · harga sedang dimuat</span>
+        <div style="padding:22px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:16px;animation:exaPulse 1.4s ease-in-out infinite" aria-busy="true">
+          <div style="width:70%;height:40px;border-radius:12px;background:rgba(34,18,8,0.1)"></div>
+          <div style="width:90%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div>
+          <div style="width:60%;height:12px;border-radius:999px;background:rgba(34,18,8,0.07)"></div>
+          <div style="height:1px;background:rgba(34,18,8,0.08)"></div>
+          <div style="width:45%;height:12px;border-radius:999px;background:rgba(34,18,8,0.08)"></div>
+          <div style="width:80%;height:12px;border-radius:999px;background:rgba(34,18,8,0.06)"></div>
+          <div style="width:70%;height:12px;border-radius:999px;background:rgba(34,18,8,0.06)"></div>
+          <div style="height:48px;border-radius:999px;background:rgba(34,18,8,0.08)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) minmax(0,1.3fr);gap:20px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636">FAQ · tertutup</span>
+        <div style="padding:0 24px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+          <div style="min-height:64px;display:flex;align-items:center;gap:16px"><span style="flex:1;font:700 17px/1.4 'Plus Jakarta Sans',sans-serif">Apakah Exapay mentransfer gaji?</span><span style="width:20px;height:20px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+        </div>
+        <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636;padding-top:8px">FAQ · hover</span>
+        <div style="padding:0 24px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75)">
+          <div style="min-height:64px;display:flex;align-items:center;gap:16px;color:#B34C08"><span style="flex:1;font:700 17px/1.4 'Plus Jakarta Sans',sans-serif">Apakah Exapay mentransfer gaji?</span><span style="width:20px;height:20px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636">FAQ · terbuka</span>
+        <div style="padding:0 24px 4px;border-radius:22px;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+          <div style="min-height:64px;display:flex;align-items:center;gap:16px"><span style="flex:1;font:700 17px/1.4 'Plus Jakarta Sans',sans-serif">Apakah Exapay mentransfer gaji?</span><span style="width:20px;height:20px;background:#221208;transform:rotate(180deg);-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span></div>
+          <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#5B4636">Tidak. Exapay tidak memegang uang Anda. Setelah payroll final, unduh file Excel untuk transfer lewat internet banking.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Tombol &amp; tautan · normal → hover</span>
+        <div style="padding:24px;border-radius:22px;background:#FBF8F3;border:1px solid rgba(34,18,8,0.08);display:grid;grid-template-columns:auto auto;gap:16px 24px;justify-content:start;align-items:center">
+          <span style="height:52px;padding:0 26px;border-radius:999px;background:#F2790F;color:#221208;font:700 16px/52px 'Plus Jakarta Sans',sans-serif">Coba gratis 30 hari</span>
+          <span style="height:52px;padding:0 26px;border-radius:999px;background:#D9600A;color:#221208;font:700 16px/52px 'Plus Jakarta Sans',sans-serif">Coba gratis 30 hari</span>
+          <span style="height:52px;box-sizing:border-box;padding:0 24px;border-radius:999px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);font:700 16px/50px 'Plus Jakarta Sans',sans-serif">Lihat harga</span>
+          <span style="height:52px;box-sizing:border-box;padding:0 24px;border-radius:999px;border:1px solid rgba(34,18,8,0.24);background:#FFFFFF;font:700 16px/50px 'Plus Jakarta Sans',sans-serif">Lihat harga</span>
+          <span style="height:44px;padding:0 16px;border-radius:999px;font:500 15px/44px 'DM Sans',sans-serif">Harga</span>
+          <span style="height:44px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,0.9);box-shadow:0 0 0 1px rgba(34,18,8,0.06);font:500 15px/44px 'DM Sans',sans-serif">Harga</span>
+          <span style="font:700 15px 'DM Sans',sans-serif;color:#B34C08">halo@exapay.id</span>
+          <span style="font:700 15px 'DM Sans',sans-serif;color:#D9600A;text-decoration:underline">halo@exapay.id</span>
+          <span style="font-size:15px;color:#5B4636">Kebijakan privasi</span>
+          <span style="font-size:15px;color:#B34C08">Kebijakan privasi</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;width:1440px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Token baru — landing page</h2>
+      <div style="padding:8px 24px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column">
+        <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="10">
+          <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,1.3fr);gap:16px;padding:12px 0;border-top:{{ t.border }};align-items:baseline">
+            <span style="font:400 13px 'DM Mono',monospace">{{ t.name }}</span>
+            <span style="font:700 13.5px 'DM Sans',sans-serif">{{ t.value }}</span>
+            <span style="font-size:13.5px;color:#5B4636">{{ t.use }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="padding:18px 22px;border-radius:18px;background:rgba(37,99,235,0.06);border:1px dashed rgba(37,99,235,0.5);display:flex;flex-direction:column;gap:6px">
+        <span style="font:700 14px 'DM Sans',sans-serif;color:#1D4ED8">Data dinamis (dari database)</span>
+        <span style="font-size:14px;line-height:1.55;color:#221208">Harga per karyawan <b>Rp10.000</b> · minimum ditagih <b>5</b> karyawan (→ Rp50.000) · durasi trial <b>30</b> hari · metode bayar <b>QRIS</b>. Dipakai di header harga, kartu harga, kalkulator, CTA, dan jawaban FAQ trial. Saat dimuat → tampilkan skeleton harga.</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Tailwind v4 — tambahan <span style="font-family:'DM Mono',monospace;font-size:22px">@theme</span></h2>
+      <pre style="margin:0;padding:24px 28px;border-radius:22px;background:#221208;color:#FBF8F3;font:400 13px/1.65 'DM Mono',monospace;overflow:auto;white-space:pre">{{ themeCss }}</pre>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:#5B4636">Performa: blur hanya di header, kartu hero, kalkulator, FAQ, dan CTA penutup (≤ 6 panel). Cuplikan fitur memakai permukaan solid <span style="font-family:'DM Mono',monospace">surface-solid</span> tanpa blur; bentuk latar adalah div flat tanpa gambar. Satu-satunya aset eksternal: 2 font + ikon Lucide (inline SVG saat implementasi).</p>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;calcDefault&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:50,&quot;step&quot;:1,&quot;default&quot;:15,&quot;tsType&quot;:&quot;number&quot;},&quot;faqMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Satu terbuka&quot;,&quot;Bebas&quot;],&quot;default&quot;:&quot;Satu terbuka&quot;,&quot;tsType&quot;:&quot;'Satu terbuka'|'Bebas'&quot;},&quot;mobileMenuOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { nD: null, nM: null, faqD: { 0: true }, faqM: { 0: true }, menu: false };
+  calc(n, set) {
+    const fmt = v => v.toLocaleString('id-ID');
+    const isMin = n < 5;
+    return {
+      n, isMin, total: 'Rp' + fmt(Math.max(n, 5) * 10000),
+      formula: isMin ? `${n} karyawan aktif · ditagih 5 × Rp10.000` : `${n} karyawan aktif × Rp10.000`,
+      dec: () => set(Math.max(1, n - 1)), inc: () => set(Math.min(50, n + 1)),
+      onSlide: e => set(+e.target.value),
+      decOp: n <= 1 ? 0.4 : 1, incOp: n >= 50 ? 0.4 : 1, w: (n / 50 * 100) + '%',
+    };
+  }
+  faq(key) {
+    const single = (this.props.faqMode ?? 'Satu terbuka') === 'Satu terbuka';
+    const open = this.state[key];
+    return FAQ.map((f, i) => ({
+      ...f, open: !!open[i], border: i ? '1px solid rgba(34,18,8,0.08)' : 'none',
+      chev: open[i] ? 'rotate(180deg)' : 'rotate(0deg)',
+      toggle: () => this.setState(s => ({ [key]: single ? (s[key][i] ? {} : { [i]: true }) : { ...s[key], [i]: !s[key][i] } })),
+    }));
+  }
+  renderVals() {
+    const st = this.state;
+    const def = Math.min(50, Math.max(1, this.props.calcDefault ?? 15));
+    const I = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const line = '1px solid rgba(34,18,8,0.08)';
+    const tone = { danger: ['rgba(220,38,38,0.1)', '#B91C1C'], warn: ['rgba(217,119,6,0.14)', '#92400E'], neutral: ['rgba(34,18,8,0.06)', '#5B4636'] };
+    const reminders = [
+      { day: '5', mon: 'Okt', title: 'Masa percobaan Agus Pratama selesai', sub: 'Barista · mulai 5 Jul 2026', due: 'H-3', t: 'danger' },
+      { day: '10', mon: 'Okt', title: 'Setor iuran BPJS', sub: 'Kesehatan & Ketenagakerjaan · Sep 2026', due: 'H-8', t: 'warn' },
+      { day: '12', mon: 'Okt', title: 'Kontrak Rina Wulandari habis', sub: 'Kasir · kontrak 12 bulan', due: 'H-10', t: 'neutral' },
+      { day: '15', mon: 'Okt', title: 'Setor PPh 21', sub: 'Masa pajak September 2026', due: 'H-13', t: 'neutral' },
+    ].map((r, i) => ({ ...r, bg: tone[r.t][0], fg: tone[r.t][1], border: i ? line : 'none' }));
+    const themeCss = `@theme {
+  /* Landing — tipografi */
+  --text-hero: 64px;          --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.035em;
+  --text-hero-sm: 38px;       --text-hero-sm--line-height: 1.08;
+  --text-section: 44px;       --text-section--line-height: 1.1;
+  --text-section-sm: 30px;    --text-section-sm--line-height: 1.15;
+  --text-feature: 30px;       --text-feature--line-height: 1.2;
+  --text-feature-lg: 40px;    --text-feature-lg--line-height: 1.12;
+  --text-step: 96px;          --text-step--line-height: 0.9;
+  --text-price: 56px;         --text-price--line-height: 1;
+  --text-lead: 19px;          --text-lead--line-height: 1.55;
+
+  /* Landing — tata letak */
+  --container-landing: 1200px;
+  --container-prose: 640px;
+  --spacing-section: 128px;   /* mobile: 72px */
+
+  /* Landing — warna */
+  --color-device-bezel: #221208;
+  --color-divider-strong: #221208;   /* garis atas langkah */
+  --color-cta-body: #3D2A1C;         /* = neutral-text */
+  --radius-device: 40px;
+}`;
+    return {
+      anchors: [{ label: 'Fitur', href: '#fitur' }, { label: 'Cara kerja', href: '#cara-kerja' }, { label: 'Harga', href: '#harga' }, { label: 'FAQ', href: '#faq' }],
+      heroRows: [
+        { name: 'Dimas Pratama', role: 'Kepala barista · tetap', net: 'Rp 6.804.000' },
+        { name: 'Rina Wulandari', role: 'Kasir · kontrak', net: 'Rp 3.952.400' },
+        { name: 'Agus Pratama', role: 'Barista · percobaan', net: 'Rp 3.610.000' },
+      ].map((r, i) => ({ ...r, border: i ? line : 'none' })),
+      phoneTasks: [
+        { label: 'Cek stok biji kopi', meta: 'Selesai', color: '#15803D', mask: I('circle-check') },
+        { label: 'Bersihkan mesin espresso', meta: '', color: '#8A7561', mask: I('circle') },
+        { label: 'Jual menu baru', meta: '0/40 cup', color: '#8A7561', mask: I('circle') },
+      ],
+      phoneTabs: [
+        { label: 'Beranda', mask: I('house'), fg: '#B34C08' }, { label: 'Tugas', mask: I('list-checks'), fg: '#5B4636' },
+        { label: 'Izin', mask: I('calendar-plus'), fg: '#5B4636' }, { label: 'Slip', mask: I('receipt'), fg: '#5B4636' },
+      ],
+      problems: [
+        { before: 'Gaji, BPJS & PPh 21 dihitung manual di Excel, padahal aturannya sering berubah.', after: 'Dihitung otomatis memakai aturan yang berlaku pada tanggal periode gaji.' },
+        { before: 'Tugas dikoordinasi lewat WhatsApp. Tidak ada data siapa yang kinerjanya bagus.', after: 'Tugas harian tercatat dan diverifikasi atasan, jadi skor kinerja yang bisa dijelaskan.' },
+        { before: 'Absensi dicatat manual, potongan gaji tidak konsisten antar karyawan.', after: 'Absen dari HP. Potongan mengikuti aturan yang Anda tetapkan, lengkap dengan penjelasannya.' },
+        { before: 'Tenggat setor BPJS dan PPh 21, kontrak habis, atau masa percobaan sering terlupa.', after: 'Pengingat di dashboard dan email, H-7 dan H-1.' },
+      ],
+      f1: ['Komponen gaji, BPJS Kesehatan & Ketenagakerjaan dengan batas upah', 'PPh 21 TER bulanan, dihitung ulang otomatis di bulan Desember', 'Draf → review → final terkunci; slip PDF ke email, ekspor Excel untuk transfer bank'],
+      f2: ['Absen masuk dan pulang dengan waktu server', 'Izin, sakit, dan cuti dengan persetujuan atasan', 'Potongan alpa dan telat sesuai kebijakan usaha Anda'],
+      f3: ['Karyawan mencatat realisasi indikator setiap hari', 'Atasan memverifikasi — hanya tugas terverifikasi yang dihitung', 'Ringkasan kinerja dibantu AI, selalu ditinjau atasan sebelum final'],
+      f4: ['Kalender setor BPJS & PPh 21', 'Kontrak habis dan akhir masa percobaan', 'Peringatan gaji pokok di bawah UMK kota Anda'],
+      f5: ['Absen dan catat tugas harian', 'Ajukan izin, sakit, atau cuti', 'Lihat slip gaji dan skor sendiri'],
+      slip: [
+        { label: 'Gaji pokok', v: 'Rp 6.500.000', fg: '#221208' },
+        { label: 'Tunjangan transport & makan', v: 'Rp 700.000', fg: '#221208' },
+        { label: 'BPJS Kesehatan 1%', v: '− Rp 72.000', fg: '#B91C1C' },
+        { label: 'BPJS Ketenagakerjaan (JHT 2%, JP 1%)', v: '− Rp 216.000', fg: '#B91C1C' },
+        { label: 'PPh 21 TER kategori A 1,5%', v: '− Rp 108.000', fg: '#B91C1C' },
+      ],
+      kpi: [
+        { label: 'Penjualan menu baru', pct: '100%', w: '100%', meta: '42 dari target 40 cup · bobot 40%' },
+        { label: 'Checklist kebersihan kasir', pct: '86%', w: '86%', meta: '26 dari 30 hari · bobot 35%' },
+        { label: 'Pesanan tersaji < 5 menit', pct: '64%', w: '64%', meta: '58% pesanan dari target 90% · bobot 25%' },
+      ],
+      reminders,
+      portal: [
+        { label: 'Slip gaji September', v: 'Rp 3.952.400' }, { label: 'Skor KPI September', v: '86' },
+        { label: 'Sisa cuti tahunan', v: '9 hari' }, { label: 'Ajukan izin', v: '' },
+      ],
+      steps: [
+        { n: '1', title: 'Daftar dan isi profil usaha', body: 'Kota (untuk UMK) dan tanggal gajian. Aturan BPJS, PPh 21, jadwal kerja, dan template KPI bawaan langsung siap.' },
+        { n: '2', title: 'Tambah karyawan', body: 'Isi satu per satu atau impor dari Excel, lalu undang mereka ke portal karyawan.' },
+        { n: '3', title: 'Setiap bulan: tinjau, finalkan', body: 'Draf gaji sudah dihitung. Tinjau, finalisasi, dan slip terkirim otomatis ke email karyawan.' },
+      ],
+      included: ['Semua modul', 'Owner, admin & atasan tanpa batas', 'Portal karyawan', 'Slip gaji PDF & email', 'Ekspor Excel', 'Pembaruan aturan BPJS, PPh 21 & UMK'],
+      calcD: this.calc(st.nD ?? def, n => this.setState({ nD: n })),
+      calcM: this.calc(st.nM ?? def, n => this.setState({ nM: n })),
+      calcStates: [3, 15, 50].map(n => ({ ...this.calc(n, () => {}), caption: n === 3 ? 'Kalkulator · 3 karyawan (kena minimum)' : `Kalkulator · ${n} karyawan` })),
+      faqD: this.faq('faqD'), faqM: this.faq('faqM'),
+      menuOpen: st.menu || !!this.props.mobileMenuOpen,
+      openMenu: () => this.setState({ menu: true }), closeMenu: () => this.setState({ menu: false }),
+      footCols: [
+        { title: 'Produk', links: [{ label: 'Fitur', href: '#fitur' }, { label: 'Harga', href: '#harga' }, { label: 'FAQ', href: '#faq' }, { label: 'Masuk', href: '/login' }] },
+        { title: 'Legal', links: [{ label: 'Kebijakan privasi', href: '/privasi' }, { label: 'Syarat layanan', href: '/syarat' }] },
+        { title: 'Kontak', links: [{ label: 'halo@exapay.id', href: 'mailto:halo@exapay.id' }, { label: 'WhatsApp +62 812-0000-0000', href: '#' }] },
+      ],
+      tokens: [
+        ['text-hero', '64 / 1.04 · 800', 'Judul hero desktop'], ['text-hero-sm', '38 / 1.08 · 800', 'Judul hero mobile'],
+        ['text-section', '44 / 1.1 · 800', 'Judul section desktop'], ['text-section-sm', '30 / 1.15 · 800', 'Judul section mobile'],
+        ['text-feature / -lg', '30 · 40 / 1.2', 'Judul fitur · fitur KPI'], ['text-step', '96 / 0.9 · 800', 'Angka langkah (64 di mobile)'],
+        ['text-price', '56 / 1 · 800', 'Harga per karyawan'], ['text-lead', '19 / 1.55 · 400', 'Sub-judul hero'],
+        ['container-landing', '1200px', 'Lebar konten maksimal'], ['container-prose', '640px', 'Lebar intro section'],
+        ['spacing-section', '128 · 72px', 'Jarak antar section'], ['color-device-bezel', '#221208', 'Bingkai HP di hero'],
+      ].map((t, i) => ({ name: t[0], value: t[1], use: t[2], border: i ? line : 'none' })),
+      themeCss,
+    };
+  }
+}
+const FAQ = [
+  { q: 'Apakah perhitungan PPh 21 sudah sesuai aturan terbaru?', a: 'Ya. Potongan bulanan memakai tarif efektif rata-rata (TER) sesuai PMK 168/2023, lalu dihitung ulang dengan tarif Pasal 17 di bulan Desember. Setiap aturan disimpan dengan tanggal berlakunya, jadi slip lama tetap memakai aturan pada saat itu.' },
+  { q: 'Apakah data karyawan aman?', a: 'NIK, NPWP, dan nomor rekening disimpan terenkripsi dan ditampilkan tersamar. Akses diatur per peran — atasan hanya melihat bawahannya. Setiap perubahan data tercatat: siapa, kapan, dan apa yang diubah.' },
+  { q: 'Apakah Exapay mentransfer gaji?', a: 'Tidak. Exapay tidak memegang uang Anda. Setelah payroll final, unduh file Excel berisi nama, bank, nomor rekening, dan nominal untuk transfer lewat internet banking.' },
+  { q: 'Apa yang terjadi setelah trial 30 hari?', a: 'Bayar tagihan bulan pertama untuk lanjut. Kalau belum dibayar, data tidak dihapus — akun menjadi baca-saja sampai tagihan dibayar.' },
+  { q: 'Bagaimana cara bayar?', a: 'Lewat QRIS, bisa dari semua e-wallet dan m-banking. Pembayaran dikonfirmasi maksimal 1×24 jam, dan kuitansi dikirim ke email Anda.' },
+  { q: 'Apakah AI menentukan nilai karyawan?', a: 'Tidak. Skor dihitung dari rumus yang bisa Anda lihat: realisasi dibanding target, dikali bobot tiap indikator. AI hanya membantu menulis draf ringkasan kinerja, dan atasan wajib meninjaunya sebelum final.' },
+  { q: 'Bisa dipakai karyawan lewat HP?', a: 'Bisa. Portal karyawan dibuka dari browser HP dan bisa dipasang di layar utama seperti aplikasi. Karyawan bisa absen, mencatat tugas, mengajukan izin, serta melihat slip dan skornya sendiri.' },
+];
+</script>
+</body>
+</html>

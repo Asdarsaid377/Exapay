@@ -79,7 +79,7 @@
 │   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22); ringkasan AI /kpi/reviews/:id/summary (kpi-review-summary.ts, kpi-review-summaries.service/controller — feature 23)
 │   │           ├── payroll/          → komponen gaji (feature 28): katalog /salary-components + kelompok risiko JKK (salary-components.service/controller, salary-builtin-components.ts data bawaan + seed), gaji karyawan berlaku-tanggal /employees/:id/salary (employee-salaries.service/controller), salary-access.ts (owner/admin); run payroll draf /payroll/runs (payroll-draft.ts murni → payroll-engine, payroll-runs.service/controller — feature 29)
 │   │           ├── compliance/       → kalender kepatuhan /compliance (compliance.service/controller — pengingat dari fungsi murni @exapay/shared compliance.ts, feature 33)
-│   │           ├── billing/          → langganan & trial (feature 39–40), tagihan + QRIS (qris.ts murni, payment-provider.ts PaymentProvider/qris-manual, klaim bayar — feature 41), keputusan pembayaran billing-decisions.service (dashboard & email), panel super-admin billing-admin.* (/admin/billing, langganan per tenant), konfirmasi email tanpa login payment-confirmations.* (feature 42)
+│   │           ├── billing/          → langganan & trial (feature 39–40), tagihan + QRIS (qris.ts murni, payment-provider.ts PaymentProvider/qris-manual, klaim bayar — feature 41), keputusan pembayaran billing-decisions.service (dashboard & email), panel super-admin billing-admin.* (/admin/billing, langganan per tenant), konfirmasi email tanpa login payment-confirmations.* (feature 42), harga publik landing billing-public.controller (GET /billing/public/price, feature 43)
 │           ├── dashboard/        → ringkasan owner/admin GET /dashboard (dashboard.service/controller — merangkai service rekap absensi, skor KPI, periode gaji, kepatuhan; feature 35)
 │   │           └── audit/
 │   ├── worker/                       → Proses BullMQ (NestJS standalone app)
@@ -106,6 +106,7 @@
 │       │   ├── (admin)/admin/tenants/ → daftar & detail tenant
 │       │   ├── (admin)/admin/billing/ → antrean konfirmasi pembayaran & harga platform (feature 42)
 │       │   ├── (auth)/payment/confirm/[token]/ → konfirmasi pembayaran dari tautan email, tanpa login (feature 42)
+│       │   ├── page.tsx, sitemap.ts, robots.ts → landing page publik `/` + SEO (feature 43; komponen components/landing/, isi lib/landingContent.ts, harga lib/api/publicPricing.ts, URL situs lib/siteUrl.ts)
 │       │   ├── (auth)/invite/[token]/ → terima undangan
 │       │   ├── (main)/settings/users/ → pengguna & undangan usaha (feature 08)
 │       │   ├── (main)/settings/company/ → profil usaha (feature 09)

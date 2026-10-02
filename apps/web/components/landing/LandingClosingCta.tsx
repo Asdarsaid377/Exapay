@@ -1,0 +1,30 @@
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+
+import { buttonClassName } from "@/components/common/Button";
+
+type Props = {
+  trialDays: number | null;
+  ctaLabel: string;
+};
+
+// CTA penutup: panel kaca besar, tanpa gradient
+export function LandingClosingCta({ trialDays, ctaLabel }: Props) {
+  return (
+    <section className="pb-14 lg:pb-24">
+      <div className="glass-strong flex flex-col items-center gap-4 rounded-[26px] px-5.5 py-10 text-center lg:gap-5 lg:rounded-sheet lg:px-12 lg:py-18">
+        <h2 className="text-balance font-display text-section-sm leading-[1.12] font-extrabold lg:text-[52px] lg:leading-[1.08] lg:tracking-[-0.035em]">
+          {trialDays && trialDays > 0 ? `Coba Exapay gratis ${trialDays} hari` : "Coba Exapay gratis"}
+        </h2>
+        <p className="max-w-140 text-[15.5px] leading-[1.55] text-pretty text-neutral-text lg:text-lg">
+          Masukkan data usaha dan karyawan, lalu lihat draf gaji bulan ini dihitung untuk Anda.
+        </p>
+        <Link href="/signup" className={buttonClassName({ className: "mt-0 h-13 w-full px-8 text-base lg:mt-2 lg:h-14 lg:w-auto lg:text-[17px]" })}>
+          {ctaLabel}
+          <ArrowRight aria-hidden className="hidden size-4.5 lg:block" />
+        </Link>
+        <span className="text-[13px] text-text-secondary lg:text-sm">Tanpa kartu kredit · Data tetap milik Anda</span>
+      </div>
+    </section>
+  );
+}

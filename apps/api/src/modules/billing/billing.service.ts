@@ -6,6 +6,7 @@ import {
   type BillingInvoice,
   type BillingInvoiceStatus,
   type BillingOverview,
+  type PublicBillingPrice,
   type SubscriptionRow,
   type SubscriptionState,
   type SubscriptionSummary,
@@ -111,6 +112,18 @@ export class BillingService {
       if (!row) throw new NotFoundException("Data langganan usaha ini tidak ditemukan");
       return summaryOf(row, await this.subscriptions.stateFrom(tx, row, now), now);
     });
+  }
+
+  // Harga platform berlaku hari ini untuk landing page publik (feature 43). billing_prices = data referensi platform
+  // (policy reference_read) — dibaca tanpa konteks usaha.
+  async publicPrice(now: Date = new Date()): Promise<PublicBillingPrice> {
+    const price = await this.subscriptions.priceAt(this.db, now);
+    return {
+      priceDate: subscriptionDate(now),
+      pricePerEmployee: price.pricePerEmployee,
+      minBilledEmployees: price.minBilledEmployees,
+      trialDays: price.trialDays,
+    };
   }
 
   async overview(user: AuthUser, now: Date = new Date()): Promise<BillingOverview> {

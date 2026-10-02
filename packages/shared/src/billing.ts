@@ -193,6 +193,26 @@ export const billingOverviewSchema = z.object({
 });
 export type BillingOverview = z.infer<typeof billingOverviewSchema>;
 
+// ——— Landing page publik (feature 43) ———
+
+// Harga platform yang berlaku hari ini — GET /billing/public/price (tanpa login). Harga khusus per usaha tidak ikut.
+export const publicBillingPriceSchema = z.object({
+  priceDate: isoDateSchema,
+  pricePerEmployee: moneySchema,
+  minBilledEmployees: z.number().int().nonnegative(),
+  trialDays: z.number().int().nonnegative(),
+});
+export type PublicBillingPrice = z.infer<typeof publicBillingPriceSchema>;
+
+// Estimasi tagihan per bulan untuk kalkulator landing: max(karyawan, minimum) × harga — rumus sama dengan estimasi
+// /settings/billing. Dihitung dalam sen (BigInt) agar tepat tanpa float; hasil string desimal 2 angka ("150000.00").
+export function billingEstimateAmount(pricePerEmployee: string, minBilledEmployees: number, employees: number): string {
+  const [whole = "0", fraction = ""] = pricePerEmployee.split(".");
+  const priceCents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0").slice(0, 2));
+  const totalCents = priceCents * BigInt(Math.max(Math.trunc(employees), minBilledEmployees, 0));
+  return `${totalCents / 100n}.${(totalCents % 100n).toString().padStart(2, "0")}`;
+}
+
 // Antrean worker "billing": pemindaian harian → satu job pengingat per usaha
 export const BILLING_QUEUE_NAME = "billing";
 export const BILLING_NOTICE_SCAN_JOB = "billing-notice-scan";

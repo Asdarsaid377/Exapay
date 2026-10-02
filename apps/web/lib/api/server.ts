@@ -15,6 +15,8 @@ type RequestOptions = {
   cookieHeader?: string;
   // X-Forwarded-For dari request browser (diisi reverse proxy) — API memakainya untuk rate limit auth
   forwardedFor?: string;
+  // Data publik tanpa sesi (mis. harga landing page): respons di-cache Next selama N detik. Default: tanpa cache.
+  revalidateSeconds?: number;
 };
 
 const NETWORK_ERROR = "Tidak dapat terhubung ke server. Silakan coba lagi.";
@@ -43,7 +45,7 @@ export async function apiRequest<T>(path: string, parse: (data: unknown) => T, o
         ...(options.forwardedFor ? { "X-Forwarded-For": options.forwardedFor } : {}),
       },
       body: options.body instanceof FormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined,
-      cache: "no-store",
+      ...(options.revalidateSeconds !== undefined ? { next: { revalidate: options.revalidateSeconds } } : { cache: "no-store" as const }),
     });
   } catch (error: unknown) {
     console.error(`[web/api] ${path} gagal: ${error instanceof Error ? error.message : String(error)}`);

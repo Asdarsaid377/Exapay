@@ -175,6 +175,7 @@ services:
     <<: [*restart, *logging]
     environment:
       API_INTERNAL_URL: http://api:4000
+      APP_WEB_URL: https://${APP_DOMAIN}
     depends_on:
       api:
         condition: service_healthy
