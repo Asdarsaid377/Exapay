@@ -1,4 +1,4 @@
-import type { BillingInvoiceStatus, EffectiveSubscriptionStatus, SubscriptionSummary } from "@exapay/shared";
+import type { BillingInvoiceStatus, EffectiveSubscriptionStatus, PaymentConfirmation, SubscriptionSummary } from "@exapay/shared";
 
 import type { BadgeTone } from "@/components/common/Badge";
 import { formatDate } from "@/lib/datetime";
@@ -60,3 +60,5 @@ export function invoiceQrHref(invoiceId: string, download = false): string {
 
 // Hasil Server Action tagihan untuk Client Component. Pesan error sudah human-readable.
 export type BillingActionOutcome = { kind: "error"; message: string } | { kind: "success" };
+
+export type PaymentConfirmationOutcome = { kind: "error"; message: string } | { kind: "success"; confirmation: PaymentConfirmation };

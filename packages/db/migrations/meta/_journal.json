@@ -232,6 +232,20 @@
       "when": 1790935067609,
       "tag": "0032_billing_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790940856214,
+      "tag": "0033_billing_confirmation",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790941239809,
+      "tag": "0034_billing_confirmation_tokens_insert",
+      "breakpoints": true
     }
   ]
 }

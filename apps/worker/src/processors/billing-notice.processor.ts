@@ -1,6 +1,7 @@
 import { type Database, memberships, subscriptionNotices, type TenantContext, tenants, tenantSubscriptions, users, withTenant } from "@exapay/db";
 import {
   BILLING_CLAIM_NOTIFY_JOB,
+  BILLING_DECISION_NOTIFY_JOB,
   BILLING_INVOICE_JOB,
   BILLING_NOTICE_JOB,
   BILLING_NOTICE_SCAN_JOB,
@@ -54,6 +55,7 @@ type NoticeContext = {
 // Feature 41 — satu Worker untuk seluruh antrean "billing" (dua Worker di antrean yang sama saling merebut job):
 // - billing-invoice (dari scan yang sama): terbitkan/kedaluwarsakan tagihan usaha itu → BillingInvoices.issue
 // - billing-claim-notify (dari API saat owner menekan "Saya sudah bayar") → BillingInvoices.notifyClaim
+// - billing-decision-notify (feature 42, setelah konfirmasi/tolak) → BillingInvoices.notifyDecision
 @Injectable()
 export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(BillingNoticeProcessor.name);
@@ -101,6 +103,11 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
       const data = billingClaimNotifyJobDataSchema.safeParse(job.data);
       if (!data.success) throw new UnrecoverableError("payload job tidak valid");
       return this.invoices.notifyClaim(data.data);
+    }
+    if (job.name === BILLING_DECISION_NOTIFY_JOB) {
+      const data = billingClaimNotifyJobDataSchema.safeParse(job.data);
+      if (!data.success) throw new UnrecoverableError("payload job tidak valid");
+      return this.invoices.notifyDecision(data.data);
     }
     throw new UnrecoverableError(`job tidak dikenal: ${job.name}`);
   }

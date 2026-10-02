@@ -22,6 +22,12 @@ export type BillingPrice = {
   graceDays: number;
 };
 
+// Baris langganan + harga khusus usaha (feature 42)
+export type SubscriptionRecord = SubscriptionRow & {
+  pricePerEmployeeOverride: string | null;
+  minBilledEmployeesOverride: number | null;
+};
+
 @Injectable()
 export class SubscriptionsService {
   constructor(
@@ -74,16 +80,30 @@ export class SubscriptionsService {
     });
   }
 
-  async rowOf(tx: Transaction, ctx: TenantContext): Promise<SubscriptionRow | null> {
-    const [row] = await tx
+  // lock: dikunci untuk diubah (keputusan pembayaran, kelola langganan super-admin)
+  async rowOf(tx: Transaction, ctx: TenantContext, lock = false): Promise<SubscriptionRecord | null> {
+    const query = tx
       .select({
         status: tenantSubscriptions.status,
         trialEndsAt: tenantSubscriptions.trialEndsAt,
         currentPeriodEndsAt: tenantSubscriptions.currentPeriodEndsAt,
+        pricePerEmployeeOverride: tenantSubscriptions.pricePerEmployeeOverride,
+        minBilledEmployeesOverride: tenantSubscriptions.minBilledEmployeesOverride,
       })
       .from(tenantSubscriptions)
       .where(eq(tenantSubscriptions.tenantId, ctx.tenantId));
+    const [row] = lock ? await query.for("update") : await query;
     return row ?? null;
+  }
+
+  // Harga yang dipakai untuk usaha ini: harga khusus (bila diatur super-admin) menimpa harga platform berlaku
+  async effectivePriceAt(tx: Transaction, row: SubscriptionRecord, at: Date): Promise<BillingPrice> {
+    const platform = await this.priceAt(tx, at);
+    return {
+      ...platform,
+      pricePerEmployee: row.pricePerEmployeeOverride ?? platform.pricePerEmployee,
+      minBilledEmployees: row.minBilledEmployeesOverride ?? platform.minBilledEmployees,
+    };
   }
 
   async stateFrom(tx: Transaction, row: SubscriptionRow, now: Date): Promise<SubscriptionState> {

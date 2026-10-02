@@ -6,6 +6,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   Network,
+  ReceiptText,
   Settings,
   ShieldCheck,
   Target,
@@ -36,6 +37,7 @@ const ICONS: Record<NavIconKey, typeof LayoutDashboard> = {
   compliance: ShieldCheck,
   settings: Settings,
   tenants: Building2,
+  billing: ReceiptText,
 };
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45";

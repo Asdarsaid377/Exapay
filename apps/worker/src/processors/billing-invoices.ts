@@ -1,7 +1,8 @@
-import { randomInt } from "node:crypto";
+import { createHash, randomBytes, randomInt } from "node:crypto";
 
-import { billingInvoices, billingPrices, type Database, employees, memberships, type TenantContext, tenants, tenantSubscriptions, type Transaction, users, withTenant } from "@exapay/db";
+import { billingConfirmationTokens, billingInvoices, billingPrices, type Database, employees, memberships, type TenantContext, tenants, tenantSubscriptions, type Transaction, users, withTenant } from "@exapay/db";
 import {
+  BILLING_CONFIRMATION_TOKEN_DAYS,
   BILLING_UNIQUE_CODE_MAX,
   BILLING_UNIQUE_CODE_MIN,
   type BillingClaimNotifyJobData,
@@ -24,6 +25,7 @@ import { Mailer } from "../email/mailer.js";
 
 // Kode unik acak; bentrok (nominal sama dengan tagihan berjalan usaha lain) → coba kode lain
 const MAX_CODE_ATTEMPTS = 25;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // Nomor tagihan: EXA-YYMM-XXXXXX (tanpa 0/O/1/I agar mudah dibaca & didiktekan)
 const NUMBER_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const LIVE_STATUSES = ["open", "awaiting_confirmation"] as const;
@@ -67,6 +69,8 @@ export class BillingInvoices {
           status: tenantSubscriptions.status,
           trialEndsAt: tenantSubscriptions.trialEndsAt,
           currentPeriodEndsAt: tenantSubscriptions.currentPeriodEndsAt,
+          pricePerEmployeeOverride: tenantSubscriptions.pricePerEmployeeOverride,
+          minBilledEmployeesOverride: tenantSubscriptions.minBilledEmployeesOverride,
         })
         .from(tenantSubscriptions)
         .innerJoin(tenants, eq(tenants.id, tenantSubscriptions.tenantId))
@@ -80,7 +84,12 @@ export class BillingInvoices {
 
       // Periode yang ditagih mulai di akhir trial/periode; bila sudah lewat (tenggang/baca-saja) → hari ini
       const periodStartAt = state.endsAt > now ? state.endsAt : now;
-      const price = await priceAt(tx, periodStartAt);
+      // Harga khusus usaha (feature 42, diatur super-admin) menimpa harga platform
+      const platformPrice = await priceAt(tx, periodStartAt);
+      const price = {
+        pricePerEmployee: row.pricePerEmployeeOverride ?? platformPrice.pricePerEmployee,
+        minBilledEmployees: row.minBilledEmployeesOverride ?? platformPrice.minBilledEmployees,
+      };
       const [counted] = await tx.select({ active: sql<number>`count(*)::int` }).from(employees).where(isNull(employees.endDate));
       const activeEmployees = counted?.active ?? 0;
       const billedEmployees = Math.max(activeEmployees, price.minBilledEmployees);
@@ -148,15 +157,17 @@ export class BillingInvoices {
     if (outcome !== "none") this.logger.log(`[billing/invoice] usaha ${data.tenantId}: ${outcome}`);
   }
 
-  async notifyClaim(data: BillingClaimNotifyJobData): Promise<void> {
+  // Email ke pemilik platform + tautan konfirmasi/tolak tanpa login (feature 42). Token dibuat di transaksi yang sama
+  // dengan pengiriman: email gagal → token batal → dicoba ulang dengan token baru.
+  async notifyClaim(data: BillingClaimNotifyJobData, now: Date = new Date()): Promise<void> {
     const recipients = this.config.get("BILLING_NOTIFY_EMAIL", { infer: true });
     if (recipients.length === 0) {
       this.logger.warn(`[billing/claim] BILLING_NOTIFY_EMAIL kosong — pemberitahuan tagihan ${data.invoiceId} tidak dikirim`);
       return;
     }
     const ctx: TenantContext = { tenantId: data.tenantId, userId: null };
-    const [invoice] = await withTenant(this.db, ctx, (tx) =>
-      tx
+    const sent = await withTenant(this.db, ctx, async (tx) => {
+      const [invoice] = await tx
         .select({
           tenantName: tenants.name,
           number: billingInvoices.number,
@@ -168,32 +179,112 @@ export class BillingInvoices {
         })
         .from(billingInvoices)
         .innerJoin(tenants, eq(tenants.id, billingInvoices.tenantId))
-        .where(eq(billingInvoices.id, data.invoiceId)),
-    );
-    // Sudah dikonfirmasi/ditolak sebelum job berjalan → tidak perlu diberitahukan lagi
-    if (invoice?.status !== "awaiting_confirmation" || !invoice.claimedAt) {
-      this.logger.log(`[billing/claim] tagihan ${data.invoiceId} tidak lagi menunggu konfirmasi — dilewati`);
-      return;
-    }
+        .where(eq(billingInvoices.id, data.invoiceId));
+      // Sudah dikonfirmasi/ditolak sebelum job berjalan → tidak perlu diberitahukan lagi
+      if (invoice?.status !== "awaiting_confirmation" || !invoice.claimedAt) return null;
 
-    // Tanpa data karyawan: hanya usaha, nomor, nominal (build-plan feature 41)
-    await this.mailer.send({
-      to: recipients.join(", "),
-      subject: `Pembayaran dilaporkan: ${invoice.tenantName} — ${formatRupiah(invoice.totalAmount)}`,
-      text: [
-        `${invoice.tenantName} melaporkan sudah membayar tagihan langganan Exapay.`,
-        "",
-        `Usaha: ${invoice.tenantName}`,
-        `Nomor tagihan: ${invoice.number}`,
-        `Nominal persis: ${formatRupiah(invoice.totalAmount)} (kode unik ${invoice.uniqueCode})`,
-        `Dilaporkan: ${DATE_TIME.format(invoice.claimedAt)} WIB`,
-        `Bukti bayar: ${invoice.hasProof ? "diunggah" : "tidak ada"}`,
-        "",
-        "Cocokkan nominal dengan mutasi di aplikasi merchant QRIS, lalu konfirmasi atau tolak:",
-        `${this.config.get("APP_WEB_URL", { infer: true })}/admin/billing`,
-      ].join("\n"),
+      const token = randomBytes(32).toString("base64url");
+      const expiresAt = new Date(now.getTime() + BILLING_CONFIRMATION_TOKEN_DAYS * DAY_MS);
+      await tx.insert(billingConfirmationTokens).values({
+        tenantId: ctx.tenantId,
+        invoiceId: data.invoiceId,
+        tokenHash: createHash("sha256").update(token).digest("hex"),
+        claimedAt: invoice.claimedAt,
+        expiresAt,
+      });
+
+      const webUrl = this.config.get("APP_WEB_URL", { infer: true });
+      // Tanpa data karyawan: hanya usaha, nomor, nominal (build-plan feature 41)
+      await this.mailer.send({
+        to: recipients.join(", "),
+        subject: `Pembayaran dilaporkan: ${invoice.tenantName} — ${formatRupiah(invoice.totalAmount)}`,
+        text: [
+          `${invoice.tenantName} melaporkan sudah membayar tagihan langganan Exapay.`,
+          "",
+          `Usaha: ${invoice.tenantName}`,
+          `Nomor tagihan: ${invoice.number}`,
+          `Nominal persis: ${formatRupiah(invoice.totalAmount)} (kode unik ${invoice.uniqueCode})`,
+          `Dilaporkan: ${DATE_TIME.format(invoice.claimedAt)} WIB`,
+          `Bukti bayar: ${invoice.hasProof ? "diunggah" : "tidak ada"}`,
+          "",
+          "Cocokkan nominal dengan mutasi di aplikasi merchant QRIS, lalu buka tautan ini untuk mengonfirmasi lunas atau menolak (tanpa login):",
+          `${webUrl}/payment/confirm/${token}`,
+          "",
+          `Tautan hanya bisa dipakai sekali dan berlaku sampai ${DATE_TIME.format(expiresAt)} WIB. Jangan teruskan email ini ke orang lain.`,
+          `Bisa juga lewat panel super-admin: ${webUrl}/admin/billing`,
+        ].join("\n"),
+      });
+      return invoice.number;
     });
-    this.logger.log(`[billing/claim] pemberitahuan ${invoice.number} dikirim ke ${recipients.length} alamat`);
+    if (sent) this.logger.log(`[billing/claim] pemberitahuan ${sent} dikirim ke ${recipients.length} alamat`);
+    else this.logger.log(`[billing/claim] tagihan ${data.invoiceId} tidak lagi menunggu konfirmasi — dilewati`);
+  }
+
+  // Setelah keputusan pemilik platform (feature 42): kuitansi (lunas) atau pemberitahuan penolakan ke owner terverifikasi
+  async notifyDecision(data: BillingClaimNotifyJobData): Promise<void> {
+    const ctx: TenantContext = { tenantId: data.tenantId, userId: null };
+    const outcome = await withTenant(this.db, ctx, async (tx) => {
+      const [invoice] = await tx
+        .select({
+          tenantName: tenants.name,
+          number: billingInvoices.number,
+          status: billingInvoices.status,
+          totalAmount: billingInvoices.totalAmount,
+          paidAt: billingInvoices.paidAt,
+          dueAt: billingInvoices.dueAt,
+          rejectionReason: billingInvoices.rejectionReason,
+          periodEndsAt: tenantSubscriptions.currentPeriodEndsAt,
+          subscriptionStatus: tenantSubscriptions.status,
+        })
+        .from(billingInvoices)
+        .innerJoin(tenants, eq(tenants.id, billingInvoices.tenantId))
+        .innerJoin(tenantSubscriptions, eq(tenantSubscriptions.tenantId, billingInvoices.tenantId))
+        .where(eq(billingInvoices.id, data.invoiceId));
+      const paid = invoice?.status === "paid" && invoice.paidAt;
+      const rejected = invoice?.status === "open" && invoice.rejectionReason;
+      if (!invoice || (!paid && !rejected)) return "keputusan sudah berubah — dilewati";
+
+      const recipients = await tx
+        .select({ email: users.email })
+        .from(memberships)
+        .innerJoin(users, eq(users.id, memberships.userId))
+        .where(and(eq(memberships.tenantId, ctx.tenantId), eq(memberships.role, "owner"), isNotNull(users.emailVerifiedAt)));
+      if (recipients.length === 0) return "tanpa owner terverifikasi";
+
+      const link = `${this.config.get("APP_WEB_URL", { infer: true })}/settings/billing`;
+      const message =
+        paid && invoice.paidAt
+          ? {
+              subject: `Kuitansi pembayaran Exapay ${invoice.number} — ${invoice.tenantName}`,
+              text: [
+                `Terima kasih. Pembayaran langganan Exapay untuk ${invoice.tenantName} telah kami terima.`,
+                "",
+                `Nomor tagihan: ${invoice.number}`,
+                `Jumlah dibayar: ${formatRupiah(invoice.totalAmount)}`,
+                `Dikonfirmasi: ${DATE_TIME.format(invoice.paidAt)} WIB`,
+                invoice.subscriptionStatus === "active" && invoice.periodEndsAt
+                  ? `Langganan aktif sampai: ${LONG_DATE.format(invoice.periodEndsAt)}`
+                  : "Status langganan: gratis (pilot)",
+                "",
+                "Riwayat tagihan & status langganan:",
+                link,
+              ].join("\n"),
+            }
+          : {
+              subject: `Pembayaran tagihan ${invoice.number} belum dapat dikonfirmasi — ${invoice.tenantName}`,
+              text: [
+                `Laporan pembayaran tagihan ${invoice.number} (${formatRupiah(invoice.totalAmount)}) untuk ${invoice.tenantName} belum dapat kami konfirmasi.`,
+                "",
+                `Alasan: ${invoice.rejectionReason ?? "-"}`,
+                "",
+                `Tagihan masih bisa dibayar sampai ${DATE_TIME.format(invoice.dueAt)} WIB. Pastikan nominal dibayar persis (termasuk kode unik), lalu laporkan lagi lewat tombol "Saya sudah bayar":`,
+                link,
+              ].join("\n"),
+            };
+      await this.mailer.send({ to: recipients.map((recipient) => recipient.email).join(", "), ...message });
+      return `${paid ? "kuitansi" : "penolakan"} dikirim ke ${recipients.length} owner`;
+    });
+    this.logger.log(`[billing/decision] tagihan ${data.invoiceId}: ${outcome}`);
   }
 }
 

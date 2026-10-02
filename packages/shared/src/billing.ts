@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { moneySchema } from "./money.js";
+import { isoDateSchema } from "./workCalendar.js";
+
 // Langganan & trial (Phase 9, feature 39–40).
 
 // Status yang DISIMPAN di tenant_subscriptions:
@@ -161,6 +164,10 @@ export const billingInvoiceSchema = z.object({
   totalAmount: z.string(),
   claimedAt: z.string().nullable(),
   proof: z.object({ name: z.string(), contentType: z.string(), size: z.number().int() }).nullable(),
+  // Feature 42: lunas dikonfirmasi pemilik platform
+  paidAt: z.string().nullable(),
+  // Laporan bayar terakhir ditolak (tagihan kembali bisa dibayar) — ditampilkan ke owner selama tagihan open
+  rejection: z.object({ reason: z.string(), rejectedAt: z.string() }).nullable(),
 });
 export type BillingInvoice = z.infer<typeof billingInvoiceSchema>;
 
@@ -199,3 +206,133 @@ export const BILLING_INVOICE_JOB = "billing-invoice";
 export const BILLING_CLAIM_NOTIFY_JOB = "billing-claim-notify";
 export const billingClaimNotifyJobDataSchema = z.object({ tenantId: z.uuid(), invoiceId: z.uuid() });
 export type BillingClaimNotifyJobData = z.infer<typeof billingClaimNotifyJobDataSchema>;
+
+// ——— Konfirmasi pembayaran & kelola langganan (feature 42) ———
+
+export const BILLING_DECISION_NOTIFY_JOB = "billing-decision-notify";
+// Tautan konfirmasi di email pemberitahuan klaim bayar: sekali pakai, berlaku 7 hari
+export const BILLING_CONFIRMATION_TOKEN_DAYS = 7;
+// Sumber keputusan pembayaran (dicatat di tagihan & audit)
+export const BILLING_DECISION_SOURCES = ["dashboard", "email"] as const;
+export type BillingDecisionSource = (typeof BILLING_DECISION_SOURCES)[number];
+
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+// Akhir periode baru = +1 bulan KALENDER di zona platform (WIB, UTC+7 tanpa DST), jam sama; tanggal yang tidak ada di
+// bulan tujuan dijepit ke hari terakhir (31 Jan → 28/29 Feb). Keputusan user feature 42.
+export function addSubscriptionMonth(from: Date): Date {
+  const local = new Date(from.getTime() + WIB_OFFSET_MS);
+  const year = local.getUTCFullYear();
+  const month = local.getUTCMonth() + 1;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const shifted = Date.UTC(year, month, Math.min(local.getUTCDate(), lastDay), local.getUTCHours(), local.getUTCMinutes(), local.getUTCSeconds(), local.getUTCMilliseconds());
+  return new Date(shifted - WIB_OFFSET_MS);
+}
+
+// Pembayaran dikonfirmasi → periode baru mulai dari akhir trial/periode sebelumnya (masih aktif, trial, atau tenggang),
+// atau dari saat konfirmasi bila sudah baca-saja (build-plan feature 42)
+export function subscriptionRenewalStart(state: SubscriptionState, now: Date): Date {
+  if (state.status === "read_only" || !state.endsAt) return now;
+  return state.endsAt;
+}
+
+export const rejectPaymentSchema = z.object({
+  reason: z.string("Alasan wajib diisi").trim().min(5, "Alasan minimal 5 karakter").max(500, "Alasan maksimal 500 karakter"),
+});
+export type RejectPaymentInput = z.infer<typeof rejectPaymentSchema>;
+
+// /admin/billing — antrean konfirmasi (lintas usaha, lewat fungsi definer: hanya data tingkat platform)
+export const adminBillingQueueItemSchema = z.object({
+  invoiceId: z.uuid(),
+  tenantId: z.uuid(),
+  tenantName: z.string(),
+  number: z.string(),
+  totalAmount: z.string(),
+  uniqueCode: z.number().int(),
+  billedEmployees: z.number().int(),
+  claimedAt: z.string(),
+  dueAt: z.string(),
+  hasProof: z.boolean(),
+});
+export type AdminBillingQueueItem = z.infer<typeof adminBillingQueueItemSchema>;
+
+export const billingPriceVersionSchema = z.object({
+  id: z.uuid(),
+  pricePerEmployee: z.string(),
+  minBilledEmployees: z.number().int(),
+  trialDays: z.number().int(),
+  graceDays: z.number().int(),
+  effectiveFrom: z.string(),
+  effectiveTo: z.string().nullable(),
+  note: z.string().nullable(),
+});
+export type BillingPriceVersion = z.infer<typeof billingPriceVersionSchema>;
+
+export const adminBillingOverviewSchema = z.object({
+  queue: z.array(adminBillingQueueItemSchema),
+  // Versi harga platform, terbaru dulu
+  prices: z.array(billingPriceVersionSchema),
+  // Tanggal hari ini (zona platform) — versi baru paling cepat berlaku besok
+  today: z.string(),
+});
+export type AdminBillingOverview = z.infer<typeof adminBillingOverviewSchema>;
+
+// Versi harga platform baru (berlaku-tanggal; tagihan yang sudah terbit tidak berubah)
+export const billingPriceInputSchema = z.object({
+  pricePerEmployee: moneySchema,
+  minBilledEmployees: z.coerce.number("Minimum wajib diisi").int("Harus bilangan bulat").min(0, "Minimal 0").max(1000, "Maksimal 1000"),
+  trialDays: z.coerce.number("Lama trial wajib diisi").int("Harus bilangan bulat").min(0, "Minimal 0 hari").max(365, "Maksimal 365 hari"),
+  graceDays: z.coerce.number("Masa tenggang wajib diisi").int("Harus bilangan bulat").min(0, "Minimal 0 hari").max(90, "Maksimal 90 hari"),
+  effectiveFrom: isoDateSchema,
+  note: z.string().trim().max(200, "Catatan maksimal 200 karakter").optional(),
+});
+export type BillingPriceInput = z.infer<typeof billingPriceInputSchema>;
+
+// /admin/tenants/[id] — langganan satu usaha
+export const adminTenantSubscriptionSchema = z.object({
+  subscription: subscriptionSummarySchema,
+  // Harga khusus usaha ini (null = ikut harga platform)
+  pricePerEmployeeOverride: z.string().nullable(),
+  minBilledEmployeesOverride: z.number().int().nullable(),
+  // Harga platform yang berlaku hari ini (pembanding)
+  platformPrice: z.object({ pricePerEmployee: z.string(), minBilledEmployees: z.number().int(), trialDays: z.number().int() }),
+  // Tagihan berjalan (open/menunggu konfirmasi) — tanpa rincian karyawan
+  liveInvoice: z
+    .object({ id: z.uuid(), number: z.string(), status: z.enum(BILLING_INVOICE_STATUSES), totalAmount: z.string(), dueAt: z.string() })
+    .nullable(),
+});
+export type AdminTenantSubscription = z.infer<typeof adminTenantSubscriptionSchema>;
+
+export const extendTrialSchema = z.object({
+  days: z.coerce.number("Jumlah hari wajib diisi").int("Harus bilangan bulat").min(1, "Minimal 1 hari").max(365, "Maksimal 365 hari"),
+});
+export type ExtendTrialInput = z.infer<typeof extendTrialSchema>;
+
+// Kosong (null) = ikut harga platform
+export const tenantPriceOverrideSchema = z.object({
+  pricePerEmployee: moneySchema.nullable(),
+  minBilledEmployees: z.number().int("Harus bilangan bulat").min(0, "Minimal 0").max(1000, "Maksimal 1000").nullable(),
+});
+export type TenantPriceOverrideInput = z.infer<typeof tenantPriceOverrideSchema>;
+
+// Halaman konfirmasi dari tautan email (tanpa login) — token di body, bukan di URL API
+export const paymentConfirmationTokenSchema = z.object({ token: z.string().min(20).max(200) });
+export type PaymentConfirmationTokenInput = z.infer<typeof paymentConfirmationTokenSchema>;
+export const paymentConfirmationRejectSchema = paymentConfirmationTokenSchema.extend(rejectPaymentSchema.shape);
+export type PaymentConfirmationRejectInput = z.infer<typeof paymentConfirmationRejectSchema>;
+
+// pending: bisa diputuskan · decided: sudah diputuskan (lunas/ditolak, dari email atau dashboard) · expired: tautan kedaluwarsa
+export const PAYMENT_CONFIRMATION_STATES = ["pending", "decided", "expired"] as const;
+export const paymentConfirmationSchema = z.object({
+  state: z.enum(PAYMENT_CONFIRMATION_STATES),
+  tenantName: z.string(),
+  number: z.string(),
+  totalAmount: z.string(),
+  uniqueCode: z.number().int(),
+  claimedAt: z.string().nullable(),
+  hasProof: z.boolean(),
+  invoiceStatus: z.enum(BILLING_INVOICE_STATUSES),
+  // Setelah lunas: langganan aktif sampai
+  periodEndsAt: z.string().nullable(),
+});
+export type PaymentConfirmation = z.infer<typeof paymentConfirmationSchema>;

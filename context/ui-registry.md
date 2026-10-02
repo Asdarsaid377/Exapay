@@ -746,3 +746,48 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Referensi desain:** tanpa referensi — turunan EmptyState, izin user 2026-10-02
 - **Pola kelas kunci:** EmptyState ikon SearchX + judul "Halaman tidak ditemukan" + tombol Link `buttonClassName({ variant: "secondary" })` ke halaman awal area
 - **Catatan:** server component; 404 tampil di dalam kerangka area (sidebar/bottom nav tetap) menggantikan 404 bawaan Next.js
+
+### Halaman Tagihan super-admin (/admin/billing)
+- **Path:** apps/web/app/(admin)/admin/billing/page.tsx (+ loading.tsx, proof/[tenantId]/[invoiceId]/route.ts bukti bayar)
+- **Dipakai di:** panel super-admin, menu "Tagihan" (`ADMIN_MENU`, ikon ReceiptText)
+- **Referensi desain:** tanpa referensi — PageHeader + daftar glass-data + FormSection + ReadFields, feature 42, izin user
+- **Pola kelas kunci:** judul section `px-1.5 font-display text-base font-bold`; "Menunggu konfirmasi (n)" = PaymentQueueList / EmptyState CircleCheck success; FormSection "Harga platform" (aside PlatformPriceDialog, ReadFields versi berlaku); daftar versi harga glass-data + Badge Berlaku (success) / Terjadwal (info) / Selesai (outline)
+- **Catatan:** server component, `fetchAdminBilling()`; `?proof=error` dari Route Handler bukti
+
+### PaymentQueueList
+- **Path:** apps/web/components/admin/PaymentQueueList.tsx
+- **Dipakai di:** /admin/billing
+- **Referensi desain:** tanpa referensi — pola PayrollRunList (glass-data) + angka gaya StatTile, izin user
+- **Pola kelas kunci:** baris grid `lg:grid-cols-[minmax(0,1fr)_auto_auto]`: nama usaha (Link ke detail tenant) + caption nomor·karyawan·waktu lapor + tautan bukti; nominal `font-display text-[22px] font-extrabold` + "kode unik"; PaymentDecisionActions
+- **Catatan:** server component
+
+### PaymentDecisionActions
+- **Path:** apps/web/components/admin/PaymentDecisionActions.tsx
+- **Dipakai di:** PaymentQueueList
+- **Referensi desain:** tanpa referensi — pola TenantStatusActions (Dialog konfirmasi) + TextAreaField, izin user
+- **Pola kelas kunci:** Tolak (secondary) + Konfirmasi lunas (primary); Dialog dengan `footer` (Batal/aksi); tolak menampilkan TextAreaField alasan
+- **Catatan:** client, Server Action `confirmPayment` / `rejectPayment` (`actions/adminBilling.ts`)
+
+### PlatformPriceDialog
+- **Path:** apps/web/components/admin/PlatformPriceDialog.tsx
+- **Dipakai di:** /admin/billing (aside FormSection "Harga platform")
+- **Referensi desain:** tanpa referensi — pola SalaryComponentFormDialog, izin user
+- **Pola kelas kunci:** tombol secondary "Jadwalkan harga baru" → Dialog: MoneyField harga, grid 2 kolom TextField number (minimum, trial, tenggang) + date (min = besok), catatan opsional
+- **Catatan:** client, validasi `billingPriceInputSchema` di client & API, Server Action `addPlatformPrice`
+
+### TenantSubscriptionCard / TenantSubscriptionActions
+- **Path:** apps/web/components/admin/TenantSubscriptionCard.tsx, TenantSubscriptionActions.tsx
+- **Dipakai di:** /admin/tenants/[id] (di bawah kartu Pemilik/Pengguna; gagal muat → FormAlert warning)
+- **Referensi desain:** tanpa referensi — pola card & baris dl detail tenant (feature 07) + Dialog per aksi, izin user
+- **Pola kelas kunci:** card `glass-strong rounded-card px-5 py-5 lg:px-6`, Badge status langganan, baris dl (akhir trial/periode, harga + "(khusus)", minimum, tagihan berjalan, batas bayar); tombol secondary Perpanjang/Beri trial · Jadikan gratis (pilot) · Harga khusus
+- **Catatan:** card server; actions client (`extendTenantTrial`, `setTenantComplimentary`, `setTenantPrice`). Dialog form memakai `footer` + `form=` id
+
+### PaymentConfirmationPanel (/payment/confirm/[token])
+- **Path:** apps/web/components/billing/PaymentConfirmationPanel.tsx; halaman apps/web/app/(auth)/payment/confirm/[token]/page.tsx (+ proof/route.ts)
+- **Dipakai di:** tautan email "Pembayaran dilaporkan" (publik, tanpa login, `robots: noindex`)
+- **Referensi desain:** tanpa referensi — card AuthShell + AuthHeading + baris dl + TextAreaField, izin user
+- **Pola kelas kunci:** nominal `font-display text-[32px] font-extrabold`; baris dl usaha/nomor/dilaporkan/bukti; pending → Button lg fullWidth "Konfirmasi lunas" + secondary "Tolak" (→ TextAreaField + Button danger "Tolak pembayaran"); selesai/kedaluwarsa → FormAlert success/info/warning
+- **Catatan:** client, Server Action `decidePaymentConfirmation` (`actions/paymentConfirmations.ts`, token di body). Membuka halaman tidak mengubah data
+
+### InvoicePaymentCard (pembaruan feature 42)
+- FormAlert danger "Laporan pembayaran sebelumnya ditolak" + alasan saat tagihan open punya `rejection`

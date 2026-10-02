@@ -41,7 +41,7 @@ import { SubscriptionsService } from "./subscriptions.service.js";
 const HISTORY_LIMIT = 24;
 const NOT_FOUND = "Tagihan tidak ditemukan";
 
-const invoiceColumns = {
+export const invoiceColumns = {
   id: billingInvoices.id,
   number: billingInvoices.number,
   status: billingInvoices.status,
@@ -59,6 +59,9 @@ const invoiceColumns = {
   proofName: billingInvoices.proofName,
   proofType: billingInvoices.proofType,
   proofSize: billingInvoices.proofSize,
+  paidAt: billingInvoices.paidAt,
+  rejectionReason: billingInvoices.rejectionReason,
+  rejectedAt: billingInvoices.rejectedAt,
 };
 
 type InvoiceRow = {
@@ -79,6 +82,9 @@ type InvoiceRow = {
   proofName: string | null;
   proofType: string | null;
   proofSize: number | null;
+  paidAt: Date | null;
+  rejectionReason: string | null;
+  rejectedAt: Date | null;
 };
 
 export type InvoiceQrImage = { buffer: Buffer; fileName: string };
@@ -116,7 +122,7 @@ export class BillingService {
 
       // Tagihan berikutnya terbit di akhir trial/periode; jika sudah lewat (tenggang/baca-saja) atau gratis → hari ini
       const billingAt = state.endsAt && state.endsAt > now ? state.endsAt : now;
-      const price = await this.subscriptions.priceAt(tx, billingAt);
+      const price = await this.subscriptions.effectivePriceAt(tx, row, billingAt);
       // Karyawan aktif = belum punya tanggal keluar (sama dengan hitungan "Aktif" di /employees dan snapshot tagihan)
       const [counted] = await tx.select({ active: sql<number>`count(*)::int` }).from(employees).where(isNull(employees.endDate));
       const activeEmployees = counted?.active ?? 0;
@@ -266,11 +272,11 @@ function inspectProof(file: UploadedAttachment): AttachmentFile {
 }
 
 // Tagihan open yang lewat batas bayar tampil "expired" walau worker belum menandainya
-function effectiveStatus(status: BillingInvoiceStatus, dueAt: Date, now: Date): BillingInvoiceStatus {
+export function effectiveStatus(status: BillingInvoiceStatus, dueAt: Date, now: Date): BillingInvoiceStatus {
   return status === "open" && now > dueAt ? "expired" : status;
 }
 
-function toInvoice(row: InvoiceRow, now: Date): BillingInvoice {
+export function toInvoice(row: InvoiceRow, now: Date): BillingInvoice {
   return {
     id: row.id,
     number: row.number,
@@ -287,10 +293,12 @@ function toInvoice(row: InvoiceRow, now: Date): BillingInvoice {
     totalAmount: row.totalAmount,
     claimedAt: row.claimedAt?.toISOString() ?? null,
     proof: row.proofName && row.proofType && row.proofSize !== null ? { name: row.proofName, contentType: row.proofType, size: row.proofSize } : null,
+    paidAt: row.paidAt?.toISOString() ?? null,
+    rejection: row.rejectionReason && row.rejectedAt ? { reason: row.rejectionReason, rejectedAt: row.rejectedAt.toISOString() } : null,
   };
 }
 
-function summaryOf(row: SubscriptionRow, state: SubscriptionState, now: Date): SubscriptionSummary {
+export function summaryOf(row: SubscriptionRow, state: SubscriptionState, now: Date): SubscriptionSummary {
   const deadline = state.status === "past_due" ? state.graceEndsAt : state.status === "trialing" || state.status === "active" ? state.endsAt : null;
   return {
     status: state.status,

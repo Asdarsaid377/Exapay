@@ -6,10 +6,12 @@ import { notFound } from "next/navigation";
 
 import { ResendOwnerInvitationButton } from "@/components/admin/ResendOwnerInvitationButton";
 import { TenantStatusActions } from "@/components/admin/TenantStatusActions";
+import { TenantSubscriptionCard } from "@/components/admin/TenantSubscriptionCard";
 import { Badge } from "@/components/common/Badge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { FormAlert } from "@/components/common/FormAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { fetchAdminTenantSubscription } from "@/lib/api/adminBilling";
 import { fetchAdminTenant } from "@/lib/api/adminTenants";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { ROLE_LABELS } from "@/lib/roleLabels";
@@ -28,7 +30,7 @@ const ROW = "flex items-baseline justify-between gap-4 border-t border-border-su
 export default async function AdminTenantDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { created } = await searchParams;
-  const result = await fetchAdminTenant(id);
+  const [result, subscription] = await Promise.all([fetchAdminTenant(id), fetchAdminTenantSubscription(id)]);
   if (!result.ok && result.status === 404) notFound();
   if (!result.ok) {
     return <EmptyState icon={CloudOff} title="Detail tenant tidak dapat dimuat" description={result.error} />;
@@ -137,6 +139,13 @@ export default async function AdminTenantDetailPage({ params, searchParams }: Pr
           </dl>
         </section>
       </div>
+
+      {/* Langganan (feature 42) — gagal dimuat tidak menggagalkan halaman */}
+      {subscription.ok ? (
+        <TenantSubscriptionCard tenantId={tenant.id} tenantName={tenant.name} data={subscription.data} />
+      ) : (
+        <FormAlert tone="warning">Data langganan tidak dapat dimuat: {subscription.error}</FormAlert>
+      )}
 
       <p className="px-1.5 text-caption text-text-tertiary">
         Panel super-admin hanya menampilkan data tingkat platform. Data karyawan, absensi, KPI, dan gaji tenant tidak dapat dilihat dari sini.

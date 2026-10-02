@@ -73,10 +73,15 @@ export async function apiRequest<T>(path: string, parse: (data: unknown) => T, o
 }
 
 // Unduhan file dari API (mis. template Excel) untuk Route Handler. Respons diteruskan apa adanya;
-// null = API tidak terjangkau.
-export async function apiFetchFile(path: string, cookieHeader: string | undefined): Promise<Response | null> {
+// null = API tidak terjangkau. jsonBody → POST (mis. token di body agar tidak tercatat di log akses — feature 42).
+export async function apiFetchFile(path: string, cookieHeader: string | undefined, jsonBody?: unknown): Promise<Response | null> {
   try {
-    return await fetch(`${apiBaseUrl()}${path}`, { headers: cookieHeader ? { Cookie: cookieHeader } : {}, cache: "no-store" });
+    const headers: Record<string, string> = cookieHeader ? { Cookie: cookieHeader } : {};
+    if (jsonBody !== undefined) {
+      headers["Content-Type"] = "application/json";
+      return await fetch(`${apiBaseUrl()}${path}`, { method: "POST", headers, body: JSON.stringify(jsonBody), cache: "no-store" });
+    }
+    return await fetch(`${apiBaseUrl()}${path}`, { headers, cache: "no-store" });
   } catch (error: unknown) {
     console.error(`[web/api] ${path} gagal: ${error instanceof Error ? error.message : String(error)}`);
     return null;

@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import * as schema from "@exapay/db";
-import { billingInvoices, type Database, departments, employees, memberships, positions, tenants, tenantSubscriptions, users, withTenant, withUser } from "@exapay/db";
+import { billingConfirmationTokens, billingInvoices, type Database, departments, employees, memberships, positions, tenants, tenantSubscriptions, users, withTenant, withUser } from "@exapay/db";
 import { type SubscriptionStatus } from "@exapay/shared";
 import { ConfigService } from "@nestjs/config";
 import { eq, sql } from "drizzle-orm";
@@ -313,6 +313,16 @@ describe("BillingInvoices.notifyClaim", () => {
     expect(notice?.text).toContain(invoice.number);
     expect(notice?.text).toContain("Bukti bayar: tidak ada");
     expect(notice?.text).toContain("https://app.exapay.test/admin/billing");
+    // Tautan konfirmasi tanpa login (feature 42): hanya hash token yang disimpan, terikat klaim ini, berlaku 7 hari
+    const token = notice?.text.match(/\/payment\/confirm\/([A-Za-z0-9_-]{40,})/)?.[1];
+    expect(token).toBeDefined();
+    const tokens = await withTenant(db, { tenantId: ws.tenantId, userId: null }, (tx) =>
+      tx.select({ hash: billingConfirmationTokens.tokenHash, expiresAt: billingConfirmationTokens.expiresAt, usedAt: billingConfirmationTokens.usedAt }).from(billingConfirmationTokens),
+    );
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0]?.hash).toBe(createHash("sha256").update(token ?? "").digest("hex"));
+    expect(tokens[0]?.usedAt).toBeNull();
+    expect(Math.round(((tokens[0]?.expiresAt.getTime() ?? 0) - Date.now()) / (24 * 60 * 60 * 1000))).toBe(7);
     // Tanpa data karyawan
     expect(notice?.text).not.toContain("karyawan");
 
@@ -320,5 +330,56 @@ describe("BillingInvoices.notifyClaim", () => {
     const silent = new FakeMailer();
     await createInvoices(silent, []).notifyClaim({ tenantId: ws.tenantId, invoiceId: invoice.id });
     expect(silent.sent).toHaveLength(0);
+  });
+});
+
+describe("feature 42 — harga khusus & email keputusan", () => {
+  it("tagihan terbit memakai harga khusus usaha (menimpa harga platform)", async () => {
+    const ws = await createWorkspace("Toko Harga Khusus");
+    await addEmployees(ws.tenantId, 1, 0);
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() + 3 * DAY) });
+    await ownerDb.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.tenant_id', ${ws.tenantId}, true)`);
+      await tx.update(tenantSubscriptions).set({ pricePerEmployeeOverride: "200", minBilledEmployeesOverride: 5 }).where(eq(tenantSubscriptions.tenantId, ws.tenantId));
+    });
+    await createInvoices(new FakeMailer()).issue({ tenantId: ws.tenantId });
+    expect(await invoicesOf(ws.tenantId)).toMatchObject([{ pricePerEmployee: "200.00", billedEmployees: 5, baseAmount: "1000.00" }]);
+  });
+
+  it("kuitansi setelah lunas & pemberitahuan penolakan ke owner; keputusan yang sudah berubah dilewati", async () => {
+    const ws = await createWorkspace("Toko Kuitansi");
+    const periodEnd = new Date(Date.now() + 40 * DAY);
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() + 2 * DAY) });
+    const invoices = createInvoices(new FakeMailer());
+    await invoices.issue({ tenantId: ws.tenantId });
+    const [invoice] = await invoicesOf(ws.tenantId);
+    if (!invoice) throw new Error("tagihan tidak terbit");
+
+    // Belum diputuskan → tidak ada email
+    const mailer = new FakeMailer();
+    const notifier = createInvoices(mailer);
+    await notifier.notifyDecision({ tenantId: ws.tenantId, invoiceId: invoice.id });
+    expect(mailer.sent).toHaveLength(0);
+
+    // Ditolak (app_owner meniru keputusan) → email alasan
+    await ownerDb.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.tenant_id', ${ws.tenantId}, true)`);
+      await tx.update(billingInvoices).set({ rejectionReason: "Nominal belum masuk mutasi", rejectedAt: new Date(), decisionSource: "dashboard" }).where(eq(billingInvoices.id, invoice.id));
+    });
+    await notifier.notifyDecision({ tenantId: ws.tenantId, invoiceId: invoice.id });
+    expect(mailer.sent[0]?.to).toBe(ws.ownerEmail);
+    expect(mailer.sent[0]?.subject).toContain("belum dapat dikonfirmasi");
+    expect(mailer.sent[0]?.text).toContain("Alasan: Nominal belum masuk mutasi");
+
+    // Lunas → kuitansi dengan akhir periode
+    await ownerDb.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.tenant_id', ${ws.tenantId}, true)`);
+      await tx.update(billingInvoices).set({ status: "paid", paidAt: new Date() }).where(eq(billingInvoices.id, invoice.id));
+      await tx.update(tenantSubscriptions).set({ status: "active", currentPeriodEndsAt: periodEnd }).where(eq(tenantSubscriptions.tenantId, ws.tenantId));
+    });
+    await notifier.notifyDecision({ tenantId: ws.tenantId, invoiceId: invoice.id });
+    expect(mailer.sent[1]?.subject).toBe(`Kuitansi pembayaran Exapay ${invoice.number} — Toko Kuitansi`);
+    expect(mailer.sent[1]?.text).toContain(`Jumlah dibayar: Rp ${Number(invoice.totalAmount).toLocaleString("id-ID")}`);
+    expect(mailer.sent[1]?.text).toContain("Langganan aktif sampai:");
   });
 });

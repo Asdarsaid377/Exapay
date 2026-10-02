@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
-**Terakhir selesai:** 41 Tagihan & Pembayaran QRIS (2026-10-02)
-**Berikutnya:** 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin). Paralel (langkah user): Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Terakhir selesai:** 42 Konfirmasi Pembayaran & Kelola Langganan (2026-10-02)
+**Berikutnya:** 43 Landing Page Marketing (wajib referensi desain — Claude Design). Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -75,7 +75,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 39 Fondasi Langganan & Trial
 - [x] 40 Halaman Langganan & Pengingat Trial
 - [x] 41 Tagihan & Pembayaran QRIS (uji bayar nyata lolos 2026-10-02)
-- [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
+- [x] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
 - [ ] 43 Landing Page Marketing
 
 ---
@@ -289,6 +289,11 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Uji bayar QRIS nyata lolos** (feature 41): QR merchant user (QRIS statis, NMID ada, tanpa tag tip) di `.env` lokal; tagihan uji dev `EXA-UJI-0771DD` Rp1.245 (Rp200 × 5 + kode unik 245, dibuat manual sebagai app_owner di DB dev) — QR terbaca e-wallet, nominal terisi otomatis dan masuk ke merchant sesuai sistem.
 - 2026-10-02 — **Konfirmasi pembayaran (rencana feature 42, keputusan user):** pemilik platform mengonfirmasi/menolak langsung dari email pemberitahuan lewat tautan bertoken sekali pakai (halaman konfirmasi + tombol POST, tanpa login). **Tidak memakai payment gateway** — QRIS statik→dinamis tidak memberi webhook; integrasi gateway ditolak user. `/admin/billing` tetap dibangun sebagai cadangan & riwayat.
 - 2026-10-02 — Perbaikan di luar scope (laporan user): path `/admin/*` yang belum ada jatuh ke catch-all area usaha `(main)` yang me-logout super-admin (tanpa usaha aktif). Kini `app/(admin)/admin/[...slug]` → 404 di panel super-admin, dan layout `(main)` mengarahkan super-admin tanpa usaha ke `/admin/tenants`. 404 bawaan Next (tak terbaca di tema krem) diganti `NotFoundState` (turunan EmptyState, izin user) lewat `not-found.tsx` per area: `(main)` → Ke dashboard, `(admin)/admin` → Ke daftar tenant, `(portal)/me` → Ke beranda (surface solid). Tampil di dalam kerangka area.
+- 2026-10-02 — Keputusan user (feature 42): UI `/admin/billing`, kartu langganan detail tenant, dan halaman konfirmasi email **tanpa referensi visual** (turunan pola, izin user). Ditolak → tagihan **kembali open** (QR & nominal sama, alasan tampil ke owner, klaim & bukti dilepas; file bukti tetap di storage, key di audit). Lunas → **+1 bulan kalender** WIB (`addSubscriptionMonth`, tanggal dijepit ke akhir bulan) dari akhir trial/periode sebelumnya, atau dari saat konfirmasi bila baca-saja (`subscriptionRenewalStart`). **Harga khusus per usaha** = override `price_per_employee_override` / `min_billed_employees_override` di `tenant_subscriptions` (null = harga platform), dipakai estimasi API & tagihan worker yang terbit sesudahnya.
+- 2026-10-02 — **Konfirmasi (feature 42):** satu jalur `BillingDecisionsService.decide(tx, ctx, invoiceId, confirm|reject, source)` untuk dashboard (`/admin/tenants/:tenantId/invoices/:id/confirm|reject`, super-admin via `withTenant(target)` + flag DB) dan email (`POST /billing/confirmations/lookup|confirm|reject|proof`, `@Public`, token di body). Audit `billing_invoice` confirm_payment/reject_payment + `subscription/renew` (aktor null + `source: "email"` untuk jalur email). Setelah commit → job `billing-decision-notify` (kuitansi / penolakan ke owner terverifikasi).
+- 2026-10-02 — **Token konfirmasi email:** migration `0033_billing_confirmation` — `billing_confirmation_tokens` (hash SHA-256, terikat `claimed_at` klaim, berlaku 7 hari, sekali pakai; app_user SELECT/INSERT, policy `definer_access` untuk app_owner). Worker membuat token di transaksi yang sama dengan email klaim (tautan `/payment/confirm/<token>`). `billing_find_confirmation()` (lookup, hanya baca) & `billing_consume_confirmation()` (definer: tandai `used_at` + `used_txid = txid_current()` bila klaim masih sama & menunggu). Trigger `guard_billing_invoice` / `guard_tenant_subscription` diganti: selain super-admin/app_owner, keputusan diizinkan **hanya bila token dipakai di transaksi yang sama** (`billing_tx_authorized`). Halaman web hanya membaca saat dibuka; aksi lewat tombol POST (pemindai tautan & prefetch tidak bisa memutuskan). Migration `0034`: grant INSERT per kolom diganti INSERT tabel + trigger (Drizzle selalu menyebut semua kolom saat insert) — 0033 sudah ter-apply di dev, jadi tidak diedit.
+- 2026-10-02 — **Panel super-admin (feature 42):** antrean lintas usaha lewat `admin_billing_queue()` (definer, kolom tingkat platform + jumlah karyawan ditagih). Kelola langganan `/admin/tenants/:id/subscription` (GET, `trial` — dari akhir trial berjalan atau sekarang; dari gratis jadi trial; ditolak untuk langganan berbayar, `complimentary` — tagihan open dibatalkan, `price`). **Harga platform** `POST /admin/billing/prices`: paling cepat besok (WIB), jadwal pada/sesudah tanggal itu dihapus, versi berjalan ditutup H-1, di bawah advisory lock — **menyimpang dari pola data referensi** (biasanya hanya migration): policy tulis terbuka + trigger `guard_billing_prices` (super-admin/app_owner, DELETE hanya versi belum berlaku). Perubahan harga **tidak masuk audit_logs** (tenant_id wajib) — riwayat = versi yang tidak pernah ditimpa + log server.
+- 2026-10-02 — Verifikasi feature 42 (user): konfirmasi lunas dari tautan email tanpa login untuk tagihan uji `EXA-UJI-0771DD` → langganan Kopi Nusantara aktif s.d. 7 Nov 2026, kuitansi terkirim. Web: menu admin "Tagihan", rute publik `/payment` di proxy, `apiFetchFile` mendukung POST JSON (token di body).
 ---
 
 ## Catatan (Notes)

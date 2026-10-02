@@ -2,6 +2,7 @@ import {
   ABSENCE_DEDUCTION_MODES,
   AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
+  BILLING_DECISION_SOURCES,
   BILLING_INVOICE_STATUSES,
   BPJS_PROGRAMS,
   COMPLIANCE_DEADLINE_KINDS,
@@ -41,6 +42,7 @@ import {
 } from "@exapay/shared";
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -1590,10 +1592,18 @@ export const tenantSubscriptions = pgTable(
     status: subscriptionStatus("status").notNull(),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     currentPeriodEndsAt: timestamp("current_period_ends_at", { withTimezone: true }),
+    // Harga khusus usaha ini (feature 42, diatur super-admin) — null = ikut harga platform berlaku. Dipakai tagihan
+    // yang terbit setelah diubah; tagihan lama menyimpan snapshot.
+    pricePerEmployeeOverride: numeric("price_per_employee_override", { precision: 18, scale: 2 }),
+    minBilledEmployeesOverride: smallint("min_billed_employees_override"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
+    check(
+      "tenant_subscriptions_overrides",
+      sql`(${t.pricePerEmployeeOverride} IS NULL OR ${t.pricePerEmployeeOverride} >= 0) AND (${t.minBilledEmployeesOverride} IS NULL OR ${t.minBilledEmployeesOverride} >= 0)`,
+    ),
     check(
       "tenant_subscriptions_dates",
       sql`(${t.status} <> 'trialing' OR ${t.trialEndsAt} IS NOT NULL) AND (${t.status} <> 'active' OR ${t.currentPeriodEndsAt} IS NOT NULL)`,
@@ -1656,6 +1666,12 @@ export const billingInvoices = pgTable(
     proofName: text("proof_name"),
     proofType: text("proof_type", { enum: LEAVE_ATTACHMENT_TYPES }),
     proofSize: integer("proof_size"),
+    // Keputusan pemilik platform (feature 42): lunas, atau laporan bayar ditolak (tagihan kembali open + alasan)
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    decidedByUserId: uuid("decided_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    decisionSource: text("decision_source", { enum: BILLING_DECISION_SOURCES }),
+    rejectionReason: text("rejection_reason"),
+    rejectedAt: timestamp("rejected_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -1675,9 +1691,42 @@ export const billingInvoices = pgTable(
     ),
     check("billing_invoices_due_after_issue", sql`${t.dueAt} > ${t.issuedAt}`),
     check("billing_invoices_claim", sql`${t.status} <> 'awaiting_confirmation' OR ${t.claimedAt} IS NOT NULL`),
+    check("billing_invoices_paid", sql`(${t.status} = 'paid') = (${t.paidAt} IS NOT NULL)`),
+    check("billing_invoices_rejection", sql`(${t.rejectionReason} IS NULL) = (${t.rejectedAt} IS NULL)`),
     check(
       "billing_invoices_proof",
       sql`(${t.proofKey} IS NULL) = (${t.proofName} IS NULL) AND (${t.proofKey} IS NULL) = (${t.proofType} IS NULL) AND (${t.proofKey} IS NULL) = (${t.proofSize} IS NULL) AND (${t.proofKey} IS NULL OR ${t.claimedAt} IS NOT NULL)`,
     ),
+  ],
+);
+
+// Tautan konfirmasi/tolak pembayaran di email pemberitahuan klaim (feature 42) — hanya hash SHA-256 token yang disimpan.
+// Sekali pakai, kedaluwarsa, terikat ke klaim tertentu (claimed_at): laporan ulang setelah ditolak = token baru.
+// Dibaca/dipakai tanpa login lewat fungsi SECURITY DEFINER billing_find_confirmation / billing_consume_confirmation;
+// token yang dipakai di transaksi ini (used_txid) membuka izin ubah tagihan & langganan di trigger guard (feature 42).
+export const billingConfirmationTokens = pgTable(
+  "billing_confirmation_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    invoiceId: uuid("invoice_id").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedTxid: bigint("used_txid", { mode: "number" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("billing_confirmation_tokens_hash_key").on(t.tokenHash),
+    index("billing_confirmation_tokens_tenant_invoice_idx").on(t.tenantId, t.invoiceId),
+    foreignKey({
+      name: "billing_confirmation_tokens_invoice_fk",
+      columns: [t.tenantId, t.invoiceId],
+      foreignColumns: [billingInvoices.tenantId, billingInvoices.id],
+    }).onDelete("cascade"),
+    check("billing_confirmation_tokens_used", sql`(${t.usedAt} IS NULL) = (${t.usedTxid} IS NULL)`),
   ],
 );

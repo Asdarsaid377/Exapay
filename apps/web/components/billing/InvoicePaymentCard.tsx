@@ -34,6 +34,13 @@ export function InvoicePaymentCard({ invoice, qrisAvailable, qrisError }: Props)
         <Badge tone={INVOICE_STATUS_TONES[invoice.status]}>{INVOICE_STATUS_LABELS[invoice.status]}</Badge>
       </div>
 
+      {payable && invoice.rejection ? (
+        <FormAlert tone="danger">
+          <p className="font-bold">Laporan pembayaran sebelumnya ditolak ({formatDateTime(invoice.rejection.rejectedAt)})</p>
+          <p className="text-text-secondary">Alasan: {invoice.rejection.reason}. Pastikan nominal dibayar persis, lalu laporkan lagi.</p>
+        </FormAlert>
+      ) : null}
+
       <div className={`grid gap-6 ${payable ? "lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10" : ""}`}>
         {payable ? (
           <div className="flex flex-col items-center gap-3">

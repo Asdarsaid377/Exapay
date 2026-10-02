@@ -12,7 +12,8 @@ import { canAccessStaffPath } from "@/lib/navigation";
 // Ini hanya routing — API tetap memverifikasi token & peran di setiap request.
 
 // Halaman tanpa login. /login tetap diizinkan untuk user tanpa usaha aktif (langkah pilih usaha).
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/signup", "/verify-email", "/invite"];
+// /payment: konfirmasi pembayaran dari tautan email pemilik platform (feature 42, token = akses)
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/signup", "/verify-email", "/invite", "/payment"];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
