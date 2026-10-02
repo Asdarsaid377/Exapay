@@ -9,6 +9,7 @@
     "start": "node dist/main.js",
     "compliance:scan": "node --env-file-if-exists=../../.env dist/scripts/run-compliance-scan.js",
     "billing:scan": "node --env-file-if-exists=../../.env dist/scripts/run-billing-notice-scan.js",
+    "selfie:purge": "node --env-file-if-exists=../../.env dist/scripts/run-selfie-retention.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

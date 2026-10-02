@@ -97,6 +97,15 @@
   --color-chart-absent: #dc2626;
   --color-chart-track: rgb(34 18 8 / 0.07);
 
+  /* Selfie absen (feature 45, design selfie-components): layar kamera gelap agar pratinjau akurat & tidak menyilaukan */
+  --color-camera-bg: #160c05;
+  --color-camera-preview: #3a2b20;
+  --color-camera-guide: rgb(255 253 249 / 0.6);
+  --color-on-camera: #fbf8f3;
+  --color-on-camera-muted: #cdbfb1;
+  /* Isi thumbnail/foto saat memuat atau sebelum gambar tampil — netral, bukan gambar wajah */
+  --color-photo-placeholder: #dccfc0;
+
   /* Blur kaca (dipakai juga oleh backdrop-blur-*) */
   --blur-glass-sm: 16px;
   --blur-glass: 20px;

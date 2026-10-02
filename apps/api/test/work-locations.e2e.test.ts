@@ -85,7 +85,7 @@ async function createWorkspace(name: string): Promise<Workspace> {
     const [department] = await tx.insert(departments).values({ tenantId, name: "Operasional" }).returning({ id: departments.id });
     const [position] = await tx.insert(positions).values({ tenantId, name: "Barista" }).returning({ id: positions.id });
     if (!department || !position) throw new Error("gagal membuat departemen/jabatan");
-    const base = { tenantId, departmentId: department.id, positionId: position.id, joinDate: "2025-01-01", employmentStatus: "permanent" as const, ptkpStatus: "TK/0" as const };
+    const base = { tenantId, departmentId: department.id, positionId: position.id, joinDate: "2025-01-01", employmentStatus: "permanent" as const, ptkpStatus: "TK/0" as const, selfieRequired: false };
     const employeeIds = { owner: randomUUID(), atasan: randomUUID(), karyawan: randomUUID(), other: randomUUID() };
     await tx.insert(employees).values([
       { ...base, id: employeeIds.owner, fullName: `Pemilik ${name}`, userId: userIds.owner },
@@ -306,8 +306,8 @@ describe("status geofence saat absen", () => {
     );
     expect(audit.map((a) => a.after)).toEqual(
       expect.arrayContaining([
-        { locationMode: "exempt", locationIds: [] },
-        { locationMode: "selected", locationIds: [gudangId] },
+        { locationMode: "exempt", locationIds: [], selfieRequired: false },
+        { locationMode: "selected", locationIds: [gudangId], selfieRequired: false },
       ]),
     );
   });
@@ -319,7 +319,7 @@ describe("status geofence saat absen", () => {
     const karyawan = await tokenOf(ws, "karyawan");
 
     const empty = await get(owner, `/employees/${ws.employeeIds.karyawan}/attendance-settings`);
-    expect(empty.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [], canEdit: true });
+    expect(empty.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [], selfieRequired: false, canEdit: true });
 
     const kedaiId = await createLocation(owner, KEDAI);
     expect((await put(owner, `/employees/${ws.employeeIds.karyawan}/attendance-settings`, { locationMode: "selected", locationIds: [] })).status).toBe(400);
@@ -330,7 +330,7 @@ describe("status geofence saat absen", () => {
 
     const mine = await get(atasan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`);
     expect(mine.status).toBe(200);
-    expect(mine.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [{ id: kedaiId, name: "Kedai Pettarani", radiusM: 100 }], canEdit: false });
+    expect(mine.body.data).toEqual({ locationMode: "all", locationIds: [], locations: [{ id: kedaiId, name: "Kedai Pettarani", radiusM: 100 }], selfieRequired: false, canEdit: false });
     expect((await get(atasan, `/employees/${ws.employeeIds.other}/attendance-settings`)).status).toBe(404);
     expect((await put(atasan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`, { locationMode: "exempt" })).status).toBe(403);
     expect((await get(karyawan, `/employees/${ws.employeeIds.karyawan}/attendance-settings`)).status).toBe(403);

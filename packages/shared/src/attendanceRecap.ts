@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { attendanceMonthSchema } from "./attendance.js";
+import { attendanceMonthSchema, geofenceResultSchema, SELFIE_STATES } from "./attendance.js";
 import { LEAVE_REASON_MAX } from "./leaveRequests.js";
 import { CALENDAR_YEAR_MAX, CALENDAR_YEAR_MIN, isoDateSchema } from "./workCalendar.js";
 
@@ -95,11 +95,17 @@ export const attendanceDaySchema = z.object({
   // Absen hari itu (jika ada)
   record: z
     .object({
+      id: z.string(),
       checkInAt: z.string(),
       checkOutAt: z.string().nullable(),
       lateMinutes: z.number().int(),
       scheduledStart: z.string().nullable(),
       scheduledEnd: z.string().nullable(),
+      checkInSelfie: z.enum(SELFIE_STATES).nullable(),
+      checkOutSelfie: z.enum(SELFIE_STATES).nullable(),
+      // Status lokasi saat absen (feature 44) — tanda di sel jam & penampil selfie
+      checkInGeofence: geofenceResultSchema.nullable(),
+      checkOutGeofence: geofenceResultSchema.nullable(),
     })
     .nullable(),
   // Pernah dikoreksi owner/admin

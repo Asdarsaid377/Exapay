@@ -20,6 +20,8 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  // Dev saja: uji dari HP lewat tunnel HTTPS (kamera/GPS butuh secure context)
+  allowedDevOrigins: ["card.solvexaerp.tech"],
   // Image production (docker/production/Dockerfile) memakai server standalone. Dev & `next start` tetap biasa.
   ...(process.env.NEXT_OUTPUT_STANDALONE === "1"
     ? { output: "standalone" as const, outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)) }
@@ -27,7 +29,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // Upload lewat Server Action: impor karyawan (maks 1 MB) & lampiran izin (maks 5 MB, LEAVE_ATTACHMENT_MAX_BYTES)
     // + overhead multipart — bawaan Next 1 MB
-    serverActions: { bodySizeLimit: "6mb" },
+    // Dev: tunnel bisa meneruskan Host "localhost:3000" sementara Origin "card.solvexaerp.tech" → Server Action ditolak (CSRF)
+    serverActions: { bodySizeLimit: "6mb", ...(process.env.NODE_ENV === "production" ? {} : { allowedOrigins: ["card.solvexaerp.tech"] }) },
+    
   },
   // Service worker PWA (feature 37) selalu diambil ulang agar pembaruan langsung berlaku (panduan PWA Next.js)
   async headers() {

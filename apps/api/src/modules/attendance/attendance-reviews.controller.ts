@@ -18,7 +18,7 @@ import { AttendanceReviewsService } from "./attendance-reviews.service.js";
 
 const RECORD_ID = new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Absen tidak ditemukan") });
 
-class AttendanceEventPipe implements PipeTransform<string, AttendanceEvent> {
+export class AttendanceEventPipe implements PipeTransform<string, AttendanceEvent> {
   transform(value: string): AttendanceEvent {
     const event = ATTENDANCE_EVENTS.find((e) => e === value);
     if (!event) throw new NotFoundException("Absen tidak ditemukan");

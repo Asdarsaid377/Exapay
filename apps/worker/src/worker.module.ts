@@ -8,6 +8,7 @@ import { FakeAiProvider } from "./ai/fake-ai-provider.js";
 import { type Env, envSchema } from "./config/env.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { Mailer, SmtpMailer } from "./email/mailer.js";
+import { AttendanceSelfieProcessor } from "./processors/attendance-selfie.processor.js";
 import { BillingInvoices } from "./processors/billing-invoices.js";
 import { BillingNoticeProcessor } from "./processors/billing-notice.processor.js";
 import { ComplianceProcessor } from "./processors/compliance.processor.js";
@@ -19,7 +20,7 @@ const REDIS_CLIENT = Symbol("REDIS_CLIENT");
 
 // Processor BullMQ: ringkasan AI penilaian KPI (feature 23), slip gaji PDF + email (feature 31), email pengingat
 // kalender kepatuhan terjadwal (feature 33), email pengingat langganan terjadwal (feature 40), tagihan langganan &
-// pemberitahuan klaim bayar (feature 41). whatsapp, erp-sync
+// pemberitahuan klaim bayar (feature 41), penghapusan selfie absen > 90 hari (feature 45). whatsapp, erp-sync
 // didaftarkan di sini pada feature terkait.
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true, validationSchema: envSchema }), DatabaseModule],
@@ -69,6 +70,7 @@ const REDIS_CLIENT = Symbol("REDIS_CLIENT");
     ComplianceProcessor,
     BillingInvoices,
     BillingNoticeProcessor,
+    AttendanceSelfieProcessor,
   ],
 })
 export class WorkerModule implements OnApplicationBootstrap, OnApplicationShutdown {

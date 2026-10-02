@@ -253,6 +253,13 @@
       "when": 1790953976949,
       "tag": "0035_work_locations_geofence",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790956294624,
+      "tag": "0036_attendance_selfies",
+      "breakpoints": true
     }
   ]
 }

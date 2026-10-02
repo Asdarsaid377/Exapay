@@ -17,6 +17,13 @@ type Props = {
   settings: EmployeeAttendanceSettings;
 };
 
+const SELFIE_OPTIONS = [
+  { value: "required", label: "Wajib" },
+  { value: "optional", label: "Tidak wajib" },
+] as const;
+
+const SELFIE_HINT = "Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.";
+
 const MODE_OPTIONS = [
   { value: "all", label: "Semua lokasi" },
   { value: "selected", label: "Lokasi tertentu" },
@@ -26,22 +33,26 @@ const MODE_OPTIONS = [
 // Section "Pengaturan absen" di tab Data detail karyawan (design employees-attendance-settings "AttendanceSettingsSection"):
 // form-section 2 kolom, baris label | nilai yang nanti bertambah (Wajib selfie — feature 45, Mode jadwal — feature 46).
 // Ubah di tempat (owner/admin); atasan hanya baca. Lokasi yang dipilih di-snapshot API saat absen.
+// Baris "Wajib selfie saat absen" (feature 45): segmented Wajib | Tidak wajib. Usaha tanpa lokasi kerja tetap bisa
+// mengubah selfie — baris lokasi hanya menampilkan "Belum ada lokasi kerja".
 export function EmployeeAttendanceSettingsSection({ employeeId, settings: initial }: Props) {
   const idPrefix = useId();
   const [settings, setSettings] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [mode, setMode] = useState<EmployeeLocationMode>(initial.locationMode);
   const [selected, setSelected] = useState<string[]>(initial.locationIds);
+  const [selfie, setSelfie] = useState<"required" | "optional">(initial.selfieRequired ? "required" : "optional");
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const noLocations = settings.locations.length === 0;
-  const canEdit = settings.canEdit && !noLocations;
+  const canEdit = settings.canEdit;
 
   function startEdit() {
     setMode(settings.locationMode);
     setSelected(settings.locationIds);
+    setSelfie(settings.selfieRequired ? "required" : "optional");
     setSelectionError(null);
     setFormError(null);
     setEditing(true);
@@ -54,7 +65,11 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
 
   async function save() {
     setFormError(null);
-    const parsed = employeeAttendanceSettingsInputSchema.safeParse({ locationMode: mode, locationIds: mode === "selected" ? selected : [] });
+    const parsed = employeeAttendanceSettingsInputSchema.safeParse({
+      locationMode: mode,
+      locationIds: mode === "selected" ? selected : [],
+      selfieRequired: selfie === "required",
+    });
     if (!parsed.success) {
       setSelectionError(parsed.error.issues[0]?.message ?? "Pilih minimal satu lokasi");
       return;
@@ -105,6 +120,14 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
             <span id={`${idPrefix}-mode`} className="text-[13px] font-bold text-text-primary lg:pt-2.5">
               Lokasi absen
             </span>
+            {noLocations ? (
+              <div className="flex flex-col items-start gap-1 lg:pt-2.5">
+                <span className="text-[15px] font-medium text-text-primary">Belum ada lokasi kerja</span>
+                <Link href="/settings/locations" className="text-sm font-bold text-accent-strong hover:text-accent-hover hover:underline">
+                  Atur lokasi kerja
+                </Link>
+              </div>
+            ) : (
             <div className="flex min-w-0 flex-col items-start gap-3">
               <div className="w-full max-sm:overflow-x-auto sm:w-auto">
                 <SegmentedControl label="Lokasi absen" options={MODE_OPTIONS} value={mode} onChange={setMode} disabled={saving} />
@@ -136,6 +159,16 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
                 <p className="text-[13.5px] text-text-secondary">Cocok untuk karyawan lapangan seperti kurir atau sales. Absen dari mana saja tanpa tanda.</p>
               )}
             </div>
+            )}
+          </div>
+          <div className="grid gap-3 border-t border-border-subtle pt-5 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6">
+            <span className="text-[13px] font-bold text-text-primary lg:pt-2.5">Wajib selfie saat absen</span>
+            <div className="flex min-w-0 flex-col items-start gap-2.5">
+              <div className="w-full sm:w-auto">
+                <SegmentedControl label="Wajib selfie saat absen" options={SELFIE_OPTIONS} value={selfie} onChange={setSelfie} disabled={saving} fullWidth />
+              </div>
+              <p className="text-[13.5px] text-pretty text-text-secondary">{SELFIE_HINT}</p>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2.5 border-t border-border-subtle pt-4 sm:flex sm:justify-end">
             <Button variant="secondary" onClick={() => setEditing(false)} disabled={saving}>
@@ -159,6 +192,10 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
                 </Link>
               ) : null}
             </dd>
+          </div>
+          <div className="mt-2 grid gap-1 border-t border-border-subtle pt-3 pb-1 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6">
+            <dt className="text-[13px] text-text-tertiary lg:pt-0.5">Wajib selfie saat absen</dt>
+            <dd className="text-[15px] font-medium text-text-primary">{settings.selfieRequired ? "Ya — absen masuk & pulang memakai selfie" : "Tidak"}</dd>
           </div>
         </dl>
       )}

@@ -98,7 +98,7 @@
               <sc-if value="{{ c.reading }}">
                 <dl style="margin:0;display:flex;flex-direction:column">
                   <sc-for list="{{ c.rows }}" as="r">
-                    <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding:4px 0">
+                    <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding:12px 0;border-top:{{ r.border }}">
                       <dt style="font-size:13px;color:#75604D;padding-top:2px">{{ r.label }}</dt>
                       <dd style="margin:0;display:flex;flex-direction:column;gap:4px">
                         <span style="font:500 15px 'DM Sans',sans-serif">{{ r.value }}</span>
@@ -132,6 +132,15 @@
                       <sc-if value="{{ c.showExcl }}"><span style="font-size:13.5px;color:#5B4636">Cocok untuk karyawan lapangan seperti kurir atau sales. Absen dari mana saja tanpa tanda.</span></sc-if>
                     </div>
                   </div>
+                  <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding-top:20px;border-top:1px solid rgba(34,18,8,0.07)">
+                    <span style="font:700 13px 'DM Sans',sans-serif;padding-top:10px">Wajib selfie saat absen</span>
+                    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+                      <div role="radiogroup" style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+                        <sc-for list="{{ c.selOpts }}" as="o"><button onClick="{{ o.click }}" role="radio" style="height:36px;padding:0 18px;border:none;border-radius:999px;background:{{ o.bg }};box-shadow:{{ o.shadow }};color:{{ o.fg }};font:{{ o.font }};cursor:pointer">{{ o.label }}</button></sc-for>
+                      </div>
+                      <span style="font-size:13.5px;line-height:1.45;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span>
+                    </div>
+                  </div>
                   <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid rgba(34,18,8,0.07)">
                     <button onClick="{{ c.onCancel }}" style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button>
                     <button onClick="{{ c.onSave }}" style="height:40px;padding:0 18px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">Simpan</button>
@@ -158,6 +167,7 @@
             <section style="padding:16px 18px;border-radius:22px;background:rgba(255,253,249,0.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;align-items:center;justify-content:space-between;min-height:36px"><h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Pengaturan absen</h3><button style="height:36px;padding:0 14px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);font:700 13px 'Plus Jakarta Sans',sans-serif;color:#221208">Ubah</button></div>
               <div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.07)"><span style="font-size:12.5px;color:#75604D">Lokasi absen</span><span style="font:500 15px 'DM Sans',sans-serif">Lokasi tertentu: Gudang Roasting Tamalanrea</span></div>
+              <div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.07)"><span style="font-size:12.5px;color:#75604D">Wajib selfie saat absen</span><span style="font:500 15px 'DM Sans',sans-serif">Ya — absen masuk &amp; pulang memakai selfie</span></div>
             </section>
             <section style="padding:16px 18px;border-radius:22px;background:rgba(255,253,249,0.9);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:6px">
               <h3 style="margin:0;min-height:36px;display:flex;align-items:center;font:700 16px 'Plus Jakarta Sans',sans-serif">Pekerjaan</h3>
@@ -177,6 +187,7 @@
                 <div style="min-height:48px;display:flex;align-items:center;gap:12px"><span style="width:20px;height:20px;box-sizing:border-box;border-radius:6px;border:1.5px solid rgba(34,18,8,0.35);background:#FFFFFF"></span><span style="font:500 15px 'DM Sans',sans-serif">Kedai Pettarani</span></div>
                 <div style="min-height:48px;display:flex;align-items:center;gap:12px"><span style="width:20px;height:20px;box-sizing:border-box;border-radius:6px;background:#F2790F;display:grid;place-items:center"><span style="width:14px;height:14px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span><span style="font:500 15px 'DM Sans',sans-serif">Gudang Roasting Tamalanrea</span></div>
               </div>
+              <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid rgba(34,18,8,0.07)"><span style="font:700 13px 'DM Sans',sans-serif">Wajib selfie saat absen</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Wajib</span><span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Tidak wajib</span></div><span style="font-size:12.5px;line-height:1.45;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span></div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:4px"><button style="height:46px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:46px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Simpan</button></div>
             </section>
           </div>
@@ -197,6 +208,7 @@
               <sc-if value="{{ c.showEdit }}"><button style="height:34px;padding:0 14px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);display:flex;align-items:center;gap:7px;font:700 13px 'Plus Jakarta Sans',sans-serif;color:#221208"><span style="width:15px;height:15px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/pencil.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/pencil.svg) center / contain no-repeat"></span>Ubah</button></sc-if>
             </div>
             <sc-if value="{{ c.reading }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
               <sc-for list="{{ c.rows }}" as="r">
                 <div style="display:flex;flex-direction:column;gap:4px">
                   <span style="font-size:13px;color:#75604D">{{ r.label }}</span>
@@ -205,6 +217,7 @@
                   <sc-if value="{{ r.hasLink }}"><a href="settings-locations.html" style="font:700 14px 'DM Sans',sans-serif">Atur lokasi kerja</a></sc-if>
                 </div>
               </sc-for>
+              </div>
             </sc-if>
             <sc-if value="{{ c.editing }}">
               <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
@@ -215,6 +228,9 @@
                   <sc-if value="{{ c.checkErr }}"><span style="font-size:12.5px;color:#B91C1C">Pilih minimal satu lokasi</span></sc-if>
                 </sc-if>
                 <sc-if value="{{ c.showExcl }}"><span style="font-size:13.5px;color:#5B4636">Cocok untuk karyawan lapangan seperti kurir atau sales.</span></sc-if>
+                <span style="font:700 13px 'DM Sans',sans-serif;padding-top:4px">Wajib selfie saat absen</span>
+                <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><sc-for list="{{ c.selOpts }}" as="o"><span style="height:34px;padding:0 14px;border-radius:999px;background:{{ o.bg }};box-shadow:{{ o.shadow }};color:{{ o.fg }};font:{{ o.font }};line-height:34px">{{ o.label }}</span></sc-for></div>
+                <span style="font-size:13px;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span>
                 <div style="align-self:stretch;display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid rgba(34,18,8,0.07)"><button style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:40px;padding:0 18px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Simpan</button></div>
               </div>
             </sc-if>
@@ -230,12 +246,12 @@ class Component extends DCLogic {
   state = { editing: false, draft: null, saved: {}, err: false };
   people() {
     return {
-      'Dewi Lestari': { ini: 'DL', name: 'Dewi Lestari', line: 'Barista · Operasional · KN-0012', mode: 'all', sel: [], job: [['Departemen','Operasional'],['Jabatan','Barista'],['Atasan langsung','Rudi Hartono'],['Tanggal masuk','3 Feb 2024']] },
-      'Hendra Wijaya': { ini: 'HW', name: 'Hendra Wijaya', line: 'Roaster · Produksi · KN-0006', mode: 'some', sel: ['gr'], job: [['Departemen','Produksi'],['Jabatan','Roaster'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','8 Jan 2022']] },
-      'Fajar Nugroho': { ini: 'FN', name: 'Fajar Nugroho', line: 'Kurir · Logistik · KN-0015', mode: 'excl', sel: [], job: [['Departemen','Logistik'],['Jabatan','Kurir'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','14 Mar 2025']] },
+      'Dewi Lestari': { ini: 'DL', name: 'Dewi Lestari', line: 'Barista · Operasional · KN-0012', mode: 'all', sel: [], selfie: true, job: [['Departemen','Operasional'],['Jabatan','Barista'],['Atasan langsung','Rudi Hartono'],['Tanggal masuk','3 Feb 2024']] },
+      'Hendra Wijaya': { ini: 'HW', name: 'Hendra Wijaya', line: 'Roaster · Produksi · KN-0006', mode: 'some', sel: ['gr'], selfie: true, job: [['Departemen','Produksi'],['Jabatan','Roaster'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','8 Jan 2022']] },
+      'Fajar Nugroho': { ini: 'FN', name: 'Fajar Nugroho', line: 'Kurir · Logistik · KN-0015', mode: 'excl', sel: [], selfie: false, job: [['Departemen','Logistik'],['Jabatan','Kurir'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','14 Mar 2025']] },
     };
   }
-  card({ mode, sel, editing, canEdit, err, noLoc, caption, handlers = {} }) {
+  card({ mode, sel, editing, canEdit, err, noLoc, caption, selfie = true, handlers = {} }) {
     const D = "'DM Sans',sans-serif";
     const L = [{ id: 'kp', label: 'Kedai Pettarani', meta: 'Radius 100 m' }, { id: 'gr', label: 'Gudang Roasting Tamalanrea', meta: 'Radius 150 m' }];
     const names = L.filter(l => sel.includes(l.id)).map(l => l.label).join(', ');
@@ -245,7 +261,9 @@ class Component extends DCLogic {
       : { label: 'Lokasi absen', value: 'Dikecualikan — absen dari mana saja tanpa tanda', hasSub: false, hasLink: false };
     const opts = [['all','Semua lokasi'],['some','Lokasi tertentu'],['excl','Dikecualikan']].map(([k, label]) => { const on = mode === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => handlers.setMode && handlers.setMode(k) }; });
     const checks = L.map(l => { const on = sel.includes(l.id); return { label: l.label, meta: l.meta, box: on ? 'none' : `1.5px solid ${err ? '#DC2626' : 'rgba(34,18,8,0.35)'}`, bg: on ? '#F2790F' : '#FFFFFF', tick: on ? '#221208' : 'transparent', click: () => handlers.toggle && handlers.toggle(l.id) }; });
-    return { caption, rows: [row], reading: !editing, editing, showEdit: canEdit && !editing && !noLoc, frame: editing ? 'rgba(242,121,15,0.45)' : 'rgba(255,255,255,0.75)',
+    const selRow = { label: 'Wajib selfie saat absen', value: selfie ? 'Ya — absen masuk & pulang memakai selfie' : 'Tidak', hasSub: false, hasLink: false, border: '1px solid rgba(34,18,8,0.07)' };
+    const selOpts = [[true, 'Wajib'], [false, 'Tidak wajib']].map(([k, label]) => { const on = selfie === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => handlers.setSelfie && handlers.setSelfie(k) }; });
+    return { caption, selOpts, rows: [{ ...row, border: 'none' }, selRow], reading: !editing, editing, showEdit: canEdit && !editing && !noLoc, frame: editing ? 'rgba(242,121,15,0.45)' : 'rgba(255,255,255,0.75)',
       opts, checks, showAll: mode === 'all', showChecks: mode === 'some', showExcl: mode === 'excl', checkErr: !!err,
       onEdit: handlers.edit, onCancel: handlers.cancel, onSave: handlers.save };
   }
@@ -257,12 +275,13 @@ class Component extends DCLogic {
     const P = this.people();
     const key = this.props.karyawan || 'Dewi Lestari';
     const p = P[key] || P['Dewi Lestari'];
-    const cur = st.saved[key] || { mode: p.mode, sel: p.sel };
+    const cur = st.saved[key] || { mode: p.mode, sel: p.sel, selfie: p.selfie };
     const d = st.editing && st.draft ? st.draft : cur;
     const handlers = {
       edit: () => this.setState({ editing: true, draft: { ...cur, sel: [...cur.sel] }, err: false }),
       cancel: () => this.setState({ editing: false, err: false }),
       save: () => { const dr = this.state.draft; if (dr.mode === 'some' && !dr.sel.length) return this.setState({ err: true }); this.setState(s => ({ editing: false, err: false, saved: { ...s.saved, [key]: dr } })); },
+      setSelfie: v => this.setState(s => ({ draft: { ...s.draft, selfie: v } })),
       setMode: k => this.setState(s => ({ draft: { ...s.draft, mode: k, sel: k === 'some' && !s.draft.sel.length ? [] : s.draft.sel }, err: false })),
       toggle: id => this.setState(s => ({ draft: { ...s.draft, sel: s.draft.sel.includes(id) ? s.draft.sel.filter(x => x !== id) : [...s.draft.sel, id] }, err: false })),
     };
@@ -273,10 +292,10 @@ class Component extends DCLogic {
     const gallery = [
       this.card({ caption: 'Baca · Dewi Lestari — semua lokasi', mode: 'all', sel: [], canEdit: true }),
       this.card({ caption: 'Baca · Hendra Wijaya — lokasi tertentu', mode: 'some', sel: ['gr'], canEdit: true }),
-      this.card({ caption: 'Baca · Fajar Nugroho — dikecualikan', mode: 'excl', sel: [], canEdit: true }),
+      this.card({ caption: 'Baca · Fajar Nugroho — dikecualikan, tidak wajib selfie', mode: 'excl', sel: [], canEdit: true, selfie: false }),
       this.card({ caption: 'Baca · usaha belum punya lokasi kerja', mode: 'all', sel: [], canEdit: true, noLoc: true }),
       this.card({ caption: 'Ubah · lokasi tertentu, belum dipilih (error)', mode: 'some', sel: [], canEdit: true, editing: true, err: true }),
-      this.card({ caption: 'Ubah · dikecualikan', mode: 'excl', sel: [], canEdit: true, editing: true }),
+      this.card({ caption: 'Ubah · dikecualikan, tidak wajib selfie', mode: 'excl', sel: [], canEdit: true, editing: true, selfie: false }),
       this.card({ caption: 'Tampilan atasan · hanya baca, tanpa Ubah', mode: 'some', sel: ['gr'], canEdit: false }),
       this.card({ caption: 'Tampilan atasan · belum ada lokasi (tanpa tautan atur)', mode: 'all', sel: [], canEdit: false, noLoc: true }),
     ];

@@ -20,7 +20,7 @@ import { type Database, type TenantContext, type Transaction, withTenant } from 
 import { AuditService } from "../audit/audit.service.js";
 import { monthRange } from "./attendance-clock.js";
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
-import { AttendanceService } from "./attendance.service.js";
+import { AttendanceService, selfieStateOf } from "./attendance.service.js";
 import { WorkLocationsService } from "./work-locations.service.js";
 
 const FLAGGED = [...ATTENDANCE_FLAG_KINDS];
@@ -70,6 +70,10 @@ export class AttendanceReviewsService {
           checkOutGeofence: attendanceRecords.checkOutGeofence,
           checkOutDistanceM: attendanceRecords.checkOutDistanceM,
           checkOutLocationName: attendanceRecords.checkOutLocationName,
+          checkInSelfieKey: attendanceRecords.checkInSelfieKey,
+          checkInSelfieType: attendanceRecords.checkInSelfieType,
+          checkOutSelfieKey: attendanceRecords.checkOutSelfieKey,
+          checkOutSelfieType: attendanceRecords.checkOutSelfieType,
         })
         .from(attendanceRecords)
         .innerJoin(employees, eq(employees.id, attendanceRecords.employeeId))
@@ -105,8 +109,24 @@ export class AttendanceReviewsService {
         const employee = { id: record.employeeId, fullName: record.fullName, positionName: record.positionName };
         const canReview = record.employeeId !== viewer.ownEmployeeId;
         const sides = [
-          { event: "check_in", at: record.checkInAt, status: record.checkInGeofence, distanceM: record.checkInDistanceM, locationName: record.checkInLocationName, accuracyM: record.checkInAccuracy },
-          { event: "check_out", at: record.checkOutAt, status: record.checkOutGeofence, distanceM: record.checkOutDistanceM, locationName: record.checkOutLocationName, accuracyM: record.checkOutAccuracy },
+          {
+            event: "check_in",
+            at: record.checkInAt,
+            status: record.checkInGeofence,
+            distanceM: record.checkInDistanceM,
+            locationName: record.checkInLocationName,
+            accuracyM: record.checkInAccuracy,
+            selfie: selfieStateOf(record.checkInSelfieKey, record.checkInSelfieType),
+          },
+          {
+            event: "check_out",
+            at: record.checkOutAt,
+            status: record.checkOutGeofence,
+            distanceM: record.checkOutDistanceM,
+            locationName: record.checkOutLocationName,
+            accuracyM: record.checkOutAccuracy,
+            selfie: selfieStateOf(record.checkOutSelfieKey, record.checkOutSelfieType),
+          },
         ] as const;
         for (const side of sides) {
           if (!side.at || !isAttendanceFlag(side.status)) continue;
@@ -117,6 +137,7 @@ export class AttendanceReviewsService {
             workDate: record.workDate,
             at: side.at.toISOString(),
             flag: { kind: side.status, distanceM: side.distanceM, locationName: side.locationName, accuracyM: side.accuracyM },
+            selfie: side.selfie,
             review: reviewOf(record.id, side.event),
             canReview,
           });

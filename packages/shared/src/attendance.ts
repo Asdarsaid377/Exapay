@@ -24,8 +24,17 @@ export const attendanceLocationSchema = z.object({
 export type AttendanceLocation = z.infer<typeof attendanceLocationSchema>;
 
 // Body absen masuk/pulang: hanya lokasi (boleh null — izin lokasi ditolak/tidak tersedia). Jam tidak pernah dikirim client.
+// JSON biasa, atau multipart/form-data (feature 45: + file `selfie`) dengan `location` berupa string JSON / kosong.
 export const attendanceClockInputSchema = z.object({
-  location: attendanceLocationSchema.nullable(),
+  location: z.preprocess((value) => {
+    if (typeof value !== "string") return value;
+    if (value.trim() === "" || value === "null") return null;
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      return value;
+    }
+  }, attendanceLocationSchema.nullable()),
 });
 export type AttendanceClockInput = z.infer<typeof attendanceClockInputSchema>;
 
@@ -59,6 +68,20 @@ export const geofenceResultSchema = z.object({
 });
 export type GeofenceResult = z.infer<typeof geofenceResultSchema>;
 
+// Selfie absen (feature 45): bukti kehadiran — tanpa pengenalan wajah. Dikompres di HP (±100 KB); batas server 1 MB.
+// File dihapus otomatis worker setelah SELFIE_RETENTION_DAYS hari (dihitung dari tanggal kerja).
+export const SELFIE_MAX_BYTES = 1024 * 1024;
+export const SELFIE_RETENTION_DAYS = 90;
+export const ATTENDANCE_SELFIE_QUEUE_NAME = "attendance-selfies";
+export const ATTENDANCE_SELFIE_SCAN_JOB = "selfie-retention-scan";
+export const ATTENDANCE_SELFIE_PURGE_JOB = "selfie-retention-purge";
+export const attendanceSelfiePurgeJobDataSchema = z.object({ tenantId: z.uuid(), cutoff: z.iso.date() });
+export type AttendanceSelfiePurgeJobData = z.infer<typeof attendanceSelfiePurgeJobDataSchema>;
+
+// available = foto bisa dibuka; expired = sudah dihapus setelah 90 hari; null = absen tanpa selfie
+export const SELFIE_STATES = ["available", "expired"] as const;
+export type SelfieState = (typeof SELFIE_STATES)[number];
+
 // on_time / late = hari kerja; off_day = absen di hari libur / di luar jadwal kerja (tidak dihitung telat)
 export const ATTENDANCE_STATUSES = ["on_time", "late", "off_day"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
@@ -82,6 +105,9 @@ export const attendanceRecordSchema = z.object({
   checkOutLocated: z.boolean(),
   checkInGeofence: geofenceResultSchema.nullable(),
   checkOutGeofence: geofenceResultSchema.nullable(),
+  // Foto dibuka lewat GET /attendance/records/:id/selfie/check_in|check_out
+  checkInSelfie: z.enum(SELFIE_STATES).nullable(),
+  checkOutSelfie: z.enum(SELFIE_STATES).nullable(),
 });
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
 
@@ -100,6 +126,8 @@ export const attendanceTodaySchema = z.object({
   }),
   // true = absen dicek terhadap lokasi kerja (portal meminta GPS); false = usaha tanpa lokasi / karyawan dikecualikan (tanpa izin lokasi)
   locationCheck: z.boolean(),
+  // true = absen masuk/pulang wajib menyertakan selfie (portal membuka kamera depan)
+  selfieRequired: z.boolean(),
   record: attendanceRecordSchema.nullable(),
 });
 export type AttendanceToday = z.infer<typeof attendanceTodaySchema>;

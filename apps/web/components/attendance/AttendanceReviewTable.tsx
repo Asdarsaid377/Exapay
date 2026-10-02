@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AttendanceFlag } from "@/components/attendance/AttendanceFlag";
 import { AttendanceReviewActions } from "@/components/attendance/AttendanceReviewActions";
 import { EmployeeAvatar } from "@/components/employees/EmployeeAvatar";
+import { ReviewSelfieThumb } from "@/components/selfie/ReviewSelfie";
 import { formatIsoDate } from "@/lib/datetime";
 import { eventLabel } from "@/lib/workLocationLabels";
 
@@ -21,7 +22,7 @@ const HEAD = "px-4 text-left text-caption font-bold whitespace-nowrap text-text-
 const CELL = "px-4 py-3 first:pl-5 last:pr-5";
 
 // Antrean tinjauan absen bertanda (design attendance-review): tabel kaca di desktop, card di mobile.
-// Satu baris per absen masuk/pulang bertanda.
+// Satu baris per absen masuk/pulang bertanda. Thumbnail selfie di kolom Absen (feature 45).
 export function AttendanceReviewTable({ items, timeZone, decisionHeading, correctionHrefFor, footer }: Props) {
   const key = (item: AttendanceReviewItem): string => `${item.recordId}-${item.event}`;
   return (
@@ -36,7 +37,7 @@ export function AttendanceReviewTable({ items, timeZone, decisionHeading, correc
               <th scope="col" className={`${HEAD} w-28`}>
                 Tanggal
               </th>
-              <th scope="col" className={`${HEAD} w-30`}>
+              <th scope="col" className={`${HEAD} w-38`}>
                 Absen
               </th>
               <th scope="col" className={HEAD}>
@@ -60,7 +61,12 @@ export function AttendanceReviewTable({ items, timeZone, decisionHeading, correc
                   </div>
                 </td>
                 <td className={`${CELL} text-sm tabular-nums`}>{formatIsoDate(item.workDate)}</td>
-                <td className={`${CELL} text-sm font-medium tabular-nums`}>{eventLabel(item.event, item.at, timeZone)}</td>
+                <td className={CELL}>
+                  <div className="flex items-center gap-2.5">
+                    <ReviewSelfieThumb item={item} timeZone={timeZone} />
+                    <span className="text-sm font-medium tabular-nums">{eventLabel(item.event, item.at, timeZone)}</span>
+                  </div>
+                </td>
                 <td className={CELL}>
                   <AttendanceFlag flag={item.flag} />
                 </td>
@@ -88,6 +94,7 @@ export function AttendanceReviewTable({ items, timeZone, decisionHeading, correc
                   <span className="text-sm font-bold tabular-nums">{eventLabel(item.event, item.at, timeZone)}</span>
                   <span className="text-caption text-text-secondary tabular-nums">{formatIsoDate(item.workDate)}</span>
                 </div>
+                <ReviewSelfieThumb item={item} timeZone={timeZone} />
               </div>
               <div className="border-t border-border-subtle/90 pt-2.5">
                 <AttendanceFlag flag={item.flag} />

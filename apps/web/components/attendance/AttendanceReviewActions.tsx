@@ -13,6 +13,7 @@ import { Button } from "@/components/common/Button";
 import { Dialog } from "@/components/common/Dialog";
 import { DropdownMenu } from "@/components/common/DropdownMenu";
 import { FormAlert } from "@/components/common/FormAlert";
+import { ReviewSelfiePhoto } from "@/components/selfie/ReviewSelfie";
 import { TextAreaField } from "@/components/common/TextAreaField";
 import { formatIsoDate } from "@/lib/datetime";
 import { DECISION_TONES, eventLabel, formatReviewedAt } from "@/lib/workLocationLabels";
@@ -156,14 +157,18 @@ export function AttendanceReviewActions({ item, timeZone, correctionHref, fullWi
       >
         <div className="flex flex-col gap-4">
           {formError ? <FormAlert tone="danger">{formError}</FormAlert> : null}
-          <div className="flex flex-col gap-2 rounded-[16px] border border-border-subtle bg-surface-solid px-4 py-3.5">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="text-[14.5px] font-bold">{item.employee.fullName}</span>
+          {/* Ringkasan + bukti foto (feature 45) — tanpa kotak bersarang (maks. 2 level radius) */}
+          <div className="flex items-start gap-4">
+            <ReviewSelfiePhoto item={item} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="text-[15px] font-bold">{item.employee.fullName}</span>
               <span className="text-sm font-medium tabular-nums">
                 {formatIsoDate(item.workDate)} · {eventLabel(item.event, item.at, timeZone)}
               </span>
+              <div className="pt-1">
+                <AttendanceFlag flag={item.flag} />
+              </div>
             </div>
-            <AttendanceFlag flag={item.flag} layout="inline" />
           </div>
           <TextAreaField
             id={noteId}

@@ -348,6 +348,7 @@ class Component extends DCLogic {
     const all = [
       sec('id', 'Identitas', [T('Nama lengkap', 'Dewi Lestari'), T('Nomor induk karyawan', 'KN-0012'), T('Email', 'dewi@kopinusantara.id'), T('No. HP', '0812 4417 2093'), T('Tanggal lahir', '17 Agu 1998'), T('Jenis kelamin', 'Perempuan')]),
       sec('job', 'Pekerjaan', [T('Departemen', 'Operasional'), T('Jabatan', 'Barista'), T('Atasan langsung', 'Rudi Hartono', { link: 1 }), T('Tanggal masuk', '3 Feb 2024'), T('Masa kerja', '2 tahun 7 bulan'), T('Status kerja', 'Tetap', { badge: 1, sub: 'Tanpa tanggal akhir' })]),
+      sec('att', 'Pengaturan absen', [T('Lokasi absen', 'Semua lokasi kerja (2)', { wide: 1 })]),
       sec('tax', 'Pajak & identitas resmi', [T('NIK', '7371 •••• •••• 0004', { mask: 1, full: '7371 0557 0898 0004' }), T('NPWP', '•• ••• ••• •-•••.000', { mask: 1, full: '09.254.781.6-805.000' }), T('Status PTKP', 'TK/0 · tidak kawin, tanpa tanggungan', { wide: 1 })], 1),
       sec('bank', 'Rekening bank', [T('Nama bank', 'BCA'), T('Nomor rekening', '•••• •••• 4821', { mask: 1, full: '0253 9187 4821' }), T('Nama pemilik rekening', 'Dewi Lestari', { wide: 1 })], 1),
       sec('portal', 'Akun portal', [T('Status', 'Tertaut: dewi@kopinusantara.id', { wide: 1 })]),

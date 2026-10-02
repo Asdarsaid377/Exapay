@@ -1,10 +1,13 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-// Penulis file worker ke storage S3-compatible (SeaweedFS self-hosted) — hasil job (PDF slip gaji, feature 31).
+// Penulis file worker ke storage S3-compatible (SeaweedFS self-hosted) — hasil job (PDF slip gaji, feature 31) dan
+// penghapusan selfie absen kedaluwarsa (feature 45).
 // Konfigurasi klien sama dengan S3FileStorage API (path-style, checksum hanya bila diwajibkan). Bucket dibuat API.
 // Key selalu diawali `tenants/<tenant_id>/`; file dibaca hanya lewat endpoint API yang memeriksa akses.
 export abstract class FileStorage {
   abstract put(key: string, body: Buffer, contentType: string): Promise<void>;
+  // Idempoten: key yang sudah tidak ada tidak dianggap gagal
+  abstract remove(key: string): Promise<void>;
 }
 
 export type S3Config = {
@@ -32,6 +35,10 @@ export class S3FileStorage extends FileStorage {
 
   async put(key: string, body: Buffer, contentType: string): Promise<void> {
     await this.client.send(new PutObjectCommand({ Bucket: this.config.bucket, Key: key, Body: body, ContentType: contentType }));
+  }
+
+  async remove(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }));
   }
 
   // Dipanggil Nest saat worker berhenti

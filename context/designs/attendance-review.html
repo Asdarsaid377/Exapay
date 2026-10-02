@@ -94,17 +94,17 @@
 
           <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
             <div style="flex:none;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
-              <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);border-radius:22px 22px 0 0;font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">
+              <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 150px minmax(0,2fr) 300px;gap:16px;align-items:center;height:44px;padding:0 20px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);border-radius:22px 22px 0 0;font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">
                 <span>Karyawan</span><span>Tanggal</span><span>Absen</span><span>Tanda</span><span>{{ lastCol }}</span>
               </div>
               <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
-                <div style="position:relative;display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
+                <div style="position:relative;display:grid;grid-template-columns:minmax(0,1.5fr) 104px 150px minmax(0,2fr) 300px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
                   <div style="display:flex;align-items:center;gap:12px;min-width:0">
                     <span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
                     <div style="display:flex;flex-direction:column;gap:1px;min-width:0"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div>
                   </div>
                   <span style="font-size:14px;font-variant-numeric:tabular-nums">{{ r.date }}</span>
-                  <span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span>
+                  <div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ r.phHas }}"><span aria-label="Ada selfie" style="width:32px;height:32px;flex:none;box-sizing:border-box;border:1px solid rgba(34,18,8,0.1);border-radius:10px;background:#DCCFC0"></span></sc-if><div style="display:flex;flex-direction:column;gap:1px"><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span><sc-if value="{{ r.phDel }}"><span style="font-size:12px;color:#8A7561">Foto dihapus</span></sc-if></div></div>
                   <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0">
                     <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span>
                     <span style="font-size:13.5px;line-height:1.4;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ r.detail }}</span>
@@ -155,7 +155,7 @@
             <div aria-busy="true" style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
               <div style="height:44px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08)"></div>
               <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5">
-                <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 112px minmax(0,2fr) 300px;gap:16px;align-items:center;height:76px;padding:0 20px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite">
+                <div style="display:grid;grid-template-columns:minmax(0,1.5fr) 104px 150px minmax(0,2fr) 300px;gap:16px;align-items:center;height:76px;padding:0 20px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite">
                   <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.09)"></span><div style="flex:1;display:flex;flex-direction:column;gap:7px"><span style="width:{{ k.w }};height:11px;border-radius:999px;background:rgba(34,18,8,0.1)"></span><span style="width:40%;height:9px;border-radius:999px;background:rgba(34,18,8,0.07)"></span></div></div>
                   <span style="width:70px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span>
                   <span style="width:80px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span>
@@ -172,10 +172,7 @@
         <div style="position:absolute;inset:0;z-index:10;background:rgba(34,18,8,0.32);display:flex;justify-content:center;align-items:flex-start;padding-top:180px">
           <div role="dialog" aria-modal="true" style="width:520px;padding:28px;box-sizing:border-box;border-radius:26px;background:rgba(255,253,249,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:18px">
             <h3 style="margin:0;font:800 21px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.015em">{{ dlg.title }}</h3>
-            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ dlg.name }}</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ dlg.when }}</span></div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:{{ dlg.tBg }};color:{{ dlg.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ dlg.kindLabel }}</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ dlg.detail }}</span></div>
-            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start"><sc-if value="{{ dlg.phHas }}"><div style="width:120px;height:150px;flex:none;border-radius:16px;background:#DCCFC0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;box-sizing:border-box;font:500 11px ui-monospace,Menlo,monospace;color:#5B4636">foto selfie</div></sc-if><sc-if value="{{ dlg.phDel }}"><div style="width:120px;height:150px;flex:none;box-sizing:border-box;border-radius:16px;border:1px dashed rgba(34,18,8,0.22);display:grid;place-items:center;padding:10px;text-align:center;font-size:12.5px;line-height:1.4;color:#8A7561">Foto sudah dihapus</div></sc-if><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:700 15px 'DM Sans',sans-serif">{{ dlg.name }}</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ dlg.when }}</span><div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:4px"><span style="height:24px;padding:0 10px;border-radius:999px;background:{{ dlg.tBg }};color:{{ dlg.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ dlg.kindLabel }}</span><span style="font-size:13.5px;line-height:1.4;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ dlg.detail }}</span></div><sc-if value="{{ dlg.phNone }}"><span style="font-size:13px;color:#75604D">Tanpa selfie — karyawan tidak wajib selfie.</span></sc-if></div></div>
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font:700 13px 'DM Sans',sans-serif">Catatan<span style="color:{{ dlg.reqFg }};font-weight:400">{{ dlg.req }}</span></span>
               <textarea onInput="{{ onNote }}" rows="3" placeholder="{{ dlg.ph }}" style="resize:vertical;padding:12px 14px;border-radius:14px;border:1px solid {{ dlg.taBorder }};background:#FFFFFF;font:400 15px/1.45 'DM Sans',sans-serif;color:#221208;outline:none" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)"></textarea>
@@ -226,7 +223,7 @@
               <div style="display:flex;align-items:center;gap:12px">
                 <span style="width:40px;height:40px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
                 <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:13px;color:#75604D">{{ r.jab }}</span></div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ r.date }}</span></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.ev }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ r.date }}</span></div><sc-if value="{{ r.phHas }}"><span aria-label="Ada selfie" style="width:40px;height:40px;flex:none;box-sizing:border-box;border:1px solid rgba(34,18,8,0.1);border-radius:10px;background:#DCCFC0"></span></sc-if>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:10px;border-top:1px solid rgba(34,18,8,0.07)">
                 <span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span>
@@ -271,7 +268,7 @@
           <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
           <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:16px">
             <h3 style="margin:0;font:800 20px/1.25 'Plus Jakarta Sans',sans-serif">Terima absen Rina Wulandari?</h3>
-            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font:700 14.5px 'DM Sans',sans-serif">Rina Wulandari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">2 Okt 2026 · Masuk 07:58</span></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">320 m dari Kedai Pettarani (akurasi ±10 m)</span></div></div>
+            <div style="display:flex;gap:16px;align-items:flex-start"><div style="width:120px;height:150px;flex:none;border-radius:16px;background:#DCCFC0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;box-sizing:border-box;font:500 11px ui-monospace,Menlo,monospace;color:#5B4636">foto selfie</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:700 15px 'DM Sans',sans-serif">Rina Wulandari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">2 Okt 2026 · Masuk 07:58</span><div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:4px"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;line-height:1.4;color:#3D2A1C">320 m dari Kedai Pettarani (akurasi ±10 m)</span></div></div></div>
             <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Catatan <span style="font-weight:400;color:#75604D">(opsional)</span></span><div style="height:76px;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;font-size:15px">Antar pesanan katering ke kantor pelanggan</div><span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span></div>
             <div style="display:flex;justify-content:flex-end;gap:10px"><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Terima absen</button></div>
           </div>
@@ -283,13 +280,18 @@
           <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
           <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:16px">
             <h3 style="margin:0;font:800 20px/1.25 'Plus Jakarta Sans',sans-serif">Tandai perlu tindak lanjut?</h3>
-            <div style="padding:14px 16px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font:700 14.5px 'DM Sans',sans-serif">Dewi Lestari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">30 Sep 2026 · Pulang 21:05</span></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">2,4 km dari Kedai Pettarani (akurasi ±15 m)</span></div></div>
+            <div style="display:flex;gap:16px;align-items:flex-start"><div style="width:120px;height:150px;flex:none;border-radius:16px;background:#DCCFC0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;box-sizing:border-box;font:500 11px ui-monospace,Menlo,monospace;color:#5B4636">foto selfie</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:700 15px 'DM Sans',sans-serif">Dewi Lestari</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">30 Sep 2026 · Pulang 21:05</span><div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:4px"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Di luar lokasi</span><span style="font-size:13.5px;line-height:1.4;color:#3D2A1C">2,4 km dari Kedai Pettarani (akurasi ±15 m)</span></div></div></div>
             <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Catatan<span style="color:#B91C1C"> *</span></span><div style="height:76px;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #DC2626;background:#FFFFFF;font-size:15px;color:#8A7561">Tulis alasan atau langkah berikutnya</div><span style="font-size:12.5px;color:#B91C1C">Catatan wajib diisi untuk “Perlu tindak lanjut”.</span><span style="font-size:12.5px;color:#75604D">Tercatat di log audit.</span></div>
             <div style="display:flex;align-items:center;gap:10px"><a href="#" style="font:700 14px 'DM Sans',sans-serif">Buka koreksi absensi ↗</a><div style="flex:1"></div><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Tandai</button></div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:12px"><div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog keputusan · tanpa selfie (karyawan tidak wajib)</div><div style="padding:24px;border-radius:28px;background:#FBF8F3"><div role="dialog" style="padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.3);display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:800 20px 'Plus Jakarta Sans',sans-serif">Terima absen Maya Sari?</h3><div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 15px 'DM Sans',sans-serif">Maya Sari</span><span style="font:500 14px 'DM Sans',sans-serif">1 Okt 2026 · Masuk 08:00</span><div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:4px"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/24px 'DM Sans',sans-serif">Lokasi tidak akurat</span><span style="font-size:13.5px;color:#3D2A1C">Akurasi ±450 m, terdekat Kedai Pettarani</span></div><span style="font-size:13px;color:#75604D">Tanpa selfie — karyawan tidak wajib selfie.</span></div></div></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px"><div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog keputusan · foto sudah dihapus (&gt; 90 hari)</div><div style="padding:24px;border-radius:28px;background:#FBF8F3"><div role="dialog" style="padding:24px;border-radius:26px;background:#FFFDF9;box-shadow:0 30px 70px -20px rgba(34,18,8,0.3);display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:800 20px 'Plus Jakarta Sans',sans-serif">Ubah keputusan absen Agus Pratama?</h3><div style="display:flex;gap:16px;align-items:flex-start"><div style="width:120px;height:150px;flex:none;box-sizing:border-box;border-radius:16px;border:1px dashed rgba(34,18,8,0.22);display:grid;place-items:center;padding:10px;text-align:center;font-size:12.5px;line-height:1.4;color:#8A7561">Foto sudah dihapus</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><span style="font:700 15px 'DM Sans',sans-serif">Agus Pratama</span><span style="font:500 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">30 Jun 2026 · Masuk 08:20</span><div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding-top:4px"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(34,18,8,0.07);color:#3D2A1C;font:700 12.5px/24px 'DM Sans',sans-serif">Tanpa lokasi</span><span style="font-size:13.5px;line-height:1.4;color:#3D2A1C">Izin lokasi ditolak</span></div></div></div></div></div></div>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;width:1440px">
@@ -327,10 +329,10 @@
       </div>
       <div style="position:relative;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
         <sc-for list="{{ atasanRows }}" as="r" hint-placeholder-count="3">
-          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 100px 108px minmax(0,2fr) 280px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 100px 140px minmax(0,2fr) 280px;gap:16px;align-items:center;min-height:76px;padding:12px 20px;box-sizing:border-box;border-top:{{ r.border }}">
             <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span><div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div></div>
             <span style="font-size:14px">{{ r.date }}</span>
-            <span style="font:500 14px 'DM Sans',sans-serif">{{ r.ev }}</span>
+            <div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ r.phHas }}"><span aria-label="Ada selfie" style="width:32px;height:32px;flex:none;box-sizing:border-box;border:1px solid rgba(34,18,8,0.1);border-radius:10px;background:#DCCFC0"></span></sc-if><span style="font:500 14px 'DM Sans',sans-serif">{{ r.ev }}</span></div>
             <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px"><span style="height:24px;padding:0 10px;border-radius:999px;background:{{ r.tBg }};color:{{ r.tFg }};font:700 12.5px/24px 'DM Sans',sans-serif">{{ r.kindLabel }}</span><span style="font-size:13.5px;color:#3D2A1C">{{ r.detail }}</span></div>
             <div style="display:flex;gap:8px;justify-content:flex-end"><button style="height:36px;padding:0 16px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 13.5px 'Plus Jakarta Sans',sans-serif">Diterima</button><button style="height:36px;padding:0 16px;border:1px solid rgba(217,119,6,0.45);border-radius:999px;background:#FFFFFF;color:#92400E;font:700 13.5px 'Plus Jakarta Sans',sans-serif">Perlu tindak lanjut</button></div>
           </div>
@@ -348,11 +350,12 @@ class Component extends DCLogic {
       { id: 1, ini: 'RW', name: 'Rina Wulandari', jab: 'Kasir', date: '2 Okt 2026', ev: 'Masuk 07:58', kind: 'out', detail: '320 m dari Kedai Pettarani (akurasi ±10 m)', sub: 1 },
       { id: 2, ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '2 Okt 2026', ev: 'Masuk 08:11', kind: 'none', detail: 'Izin lokasi ditolak', sub: 1 },
       { id: 3, ini: 'HW', name: 'Hendra Wijaya', jab: 'Roaster', date: '1 Okt 2026', ev: 'Pulang 17:40', kind: 'out', detail: '1,2 km dari Gudang Roasting Tamalanrea (akurasi ±8 m)' },
-      { id: 4, ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '1 Okt 2026', ev: 'Masuk 08:00', kind: 'weak', detail: 'Akurasi ±450 m, terdekat Kedai Pettarani' },
+      { id: 4, ph: 'none', ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '1 Okt 2026', ev: 'Masuk 08:00', kind: 'weak', detail: 'Akurasi ±450 m, terdekat Kedai Pettarani' },
       { id: 5, ini: 'DL', name: 'Dewi Lestari', jab: 'Barista', date: '30 Sep 2026', ev: 'Pulang 21:05', kind: 'out', detail: '2,4 km dari Kedai Pettarani (akurasi ±15 m)', sub: 1 },
       { id: 6, ini: 'RW', name: 'Rina Wulandari', jab: 'Kasir', date: '29 Sep 2026', ev: 'Masuk 08:02', kind: 'out', detail: '540 m dari Kedai Pettarani (akurasi ±12 m)', d: { t: 'ok', by: 'Budi Santoso · 2 Okt 10:15', note: 'Antar pesanan katering ke kantor pelanggan' } },
       { id: 7, ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '26 Sep 2026', ev: 'Pulang 16:20', kind: 'none', detail: 'Izin lokasi ditolak', d: { t: 'fu', by: 'Budi Santoso · 29 Sep 09:40', note: 'Pulang sebelum jadwal tanpa izin. Dicek lewat koreksi.' } },
-      { id: 8, ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '25 Sep 2026', ev: 'Masuk 07:55', kind: 'weak', detail: 'Akurasi ±300 m, terdekat Kedai Pettarani', d: { t: 'ok', by: 'Rudi Hartono · 25 Sep 11:02', note: '' } },
+      { id: 8, ph: 'none', ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '25 Sep 2026', ev: 'Masuk 07:55', kind: 'weak', detail: 'Akurasi ±300 m, terdekat Kedai Pettarani', d: { t: 'ok', by: 'Rudi Hartono · 25 Sep 11:02', note: '' } },
+      { id: 9, ph: 'del', ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '30 Jun 2026', ev: 'Masuk 08:20', kind: 'none', detail: 'Izin lokasi ditolak', d: { t: 'ok', by: 'Budi Santoso · 1 Jul 09:12', note: 'Dikonfirmasi langsung di kedai.' } },
     ];
   }
   renderVals() {
@@ -365,7 +368,7 @@ class Component extends DCLogic {
     const all = this.base().map(r => {
       const d = st.dec[r.id] || r.d;
       const k = K[r.kind];
-      return { ...r, d, kindLabel: k[0], tBg: k[1], tFg: k[2] };
+      const ph = r.ph || 'has'; return { ...r, d, kindLabel: k[0], tBg: k[1], tFg: k[2], phHas: ph === 'has', phDel: ph === 'del', phNone: ph === 'none', ph };
     });
     const open = (r, t) => this.setState({ dlg: { id: r.id, t }, note: '', err: false, menu: null });
     const decorate = (list) => list.map((r, i) => {
@@ -390,7 +393,7 @@ class Component extends DCLogic {
     const fu = st.dlg && st.dlg.t === 'fu';
     const dlg = dr ? { title: fu ? 'Tandai perlu tindak lanjut?' : `Terima absen ${dr.name}?`, name: dr.name, when: `${dr.date} · ${dr.ev}`, kindLabel: dr.kindLabel, tBg: dr.tBg, tFg: dr.tFg, detail: dr.detail,
       req: fu ? ' *' : ' (opsional)', reqFg: fu ? '#B91C1C' : '#75604D', ph: fu ? 'Tulis alasan atau langkah berikutnya' : 'mis. Antar pesanan ke pelanggan',
-      taBorder: st.err ? '#DC2626' : 'rgba(34,18,8,0.14)', err: st.err, showKoreksi: fu, cta: fu ? 'Tandai' : 'Terima absen' } : {};
+      taBorder: st.err ? '#DC2626' : 'rgba(34,18,8,0.14)', err: st.err, showKoreksi: fu, cta: fu ? 'Tandai' : 'Terima absen', phHas: dr.phHas, phDel: dr.phDel, phNone: dr.phNone } : {};
     const pendingRows = decorate(all.filter(r => !r.d));
     return {
       nav, segs, rows, lastCol: st.seg === 'pending' ? '' : 'Keputusan',
@@ -409,7 +412,7 @@ class Component extends DCLogic {
         this.setState(s => ({ dec: { ...s.dec, [s.dlg.id]: { t: s.dlg.t, by: 'Budi Santoso · 2 Okt 10:15', note: s.note.trim() } }, dlg: null }));
       },
       mobileRows: pendingRows.slice(0, 3),
-      atasanRows: decorate(this.base().filter(r => r.sub).map(r => { const k = K[r.kind]; return { ...r, kindLabel: k[0], tBg: k[1], tFg: k[2] }; })),
+      atasanRows: decorate(this.base().filter(r => r.sub).map(r => { const k = K[r.kind]; const ph = r.ph || 'has'; return { ...r, kindLabel: k[0], tBg: k[1], tFg: k[2], phHas: ph === 'has', phDel: ph === 'del', phNone: ph === 'none' }; })),
     };
   }
 }

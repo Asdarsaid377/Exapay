@@ -288,6 +288,15 @@ export {
   type AttendanceRecord,
   type AttendanceStatus,
   type AttendanceToday,
+  ATTENDANCE_SELFIE_PURGE_JOB,
+  ATTENDANCE_SELFIE_QUEUE_NAME,
+  ATTENDANCE_SELFIE_SCAN_JOB,
+  attendanceSelfiePurgeJobDataSchema,
+  SELFIE_MAX_BYTES,
+  SELFIE_RETENTION_DAYS,
+  SELFIE_STATES,
+  type AttendanceSelfiePurgeJobData,
+  type SelfieState,
 } from "./attendance.js";
 export {
   ATTENDANCE_EVENTS,

@@ -8,6 +8,7 @@ import type {
   AttendancePeriodQuery,
   AttendanceRecap,
   EmployeeAttendanceDays,
+  GeofenceStatus,
   LeaveType,
 } from "@exapay/shared";
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
@@ -21,7 +22,7 @@ import { type RecapEmployment, type RecapLeave, type RecapRecord, type RecapResu
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
 import { payrollMonthOf } from "./attendance-period.js";
 import { AttendancePeriodsService } from "./attendance-periods.service.js";
-import { AttendanceService } from "./attendance.service.js";
+import { AttendanceService, geofenceOf, selfieStateOf } from "./attendance.service.js";
 import { countWorkingDays, type WorkCalendar } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
@@ -74,6 +75,7 @@ type EmployeeRow = {
 };
 
 type RecordRow = {
+  id: string;
   employeeId: string;
   workDate: string;
   checkInAt: Date;
@@ -81,6 +83,18 @@ type RecordRow = {
   lateMinutes: number;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+  checkInSelfieKey: string | null;
+  checkInSelfieType: string | null;
+  checkOutSelfieKey: string | null;
+  checkOutSelfieType: string | null;
+  checkInGeofence: GeofenceStatus | null;
+  checkInDistanceM: number | null;
+  checkInLocationName: string | null;
+  checkInAccuracy: number | null;
+  checkOutGeofence: GeofenceStatus | null;
+  checkOutDistanceM: number | null;
+  checkOutLocationName: string | null;
+  checkOutAccuracy: number | null;
 };
 
 type LeaveRow = RecapLeave & { employeeId: string };
@@ -193,12 +207,17 @@ export class AttendanceRecapService {
           ...day,
           record: record
             ? {
+                id: record.id,
                 checkInAt: record.checkInAt.toISOString(),
                 checkOutAt: record.checkOutAt ? record.checkOutAt.toISOString() : null,
                 lateMinutes: record.lateMinutes,
                 // Kolom `time` dibaca "08:00:00" → "08:00"
                 scheduledStart: record.scheduledStart ? record.scheduledStart.slice(0, 5) : null,
                 scheduledEnd: record.scheduledEnd ? record.scheduledEnd.slice(0, 5) : null,
+                checkInSelfie: selfieStateOf(record.checkInSelfieKey, record.checkInSelfieType),
+                checkOutSelfie: selfieStateOf(record.checkOutSelfieKey, record.checkOutSelfieType),
+                checkInGeofence: geofenceOf(record.checkInGeofence, record.checkInDistanceM, record.checkInLocationName, record.checkInAccuracy),
+                checkOutGeofence: geofenceOf(record.checkOutGeofence, record.checkOutDistanceM, record.checkOutLocationName, record.checkOutAccuracy),
               }
             : null,
           corrected: correctedDates.has(day.date),
@@ -318,6 +337,7 @@ export class AttendanceRecapService {
     if (employeeIds.length === 0) return [];
     return tx
       .select({
+        id: attendanceRecords.id,
         employeeId: attendanceRecords.employeeId,
         workDate: attendanceRecords.workDate,
         checkInAt: attendanceRecords.checkInAt,
@@ -325,6 +345,18 @@ export class AttendanceRecapService {
         lateMinutes: attendanceRecords.lateMinutes,
         scheduledStart: attendanceRecords.scheduledStart,
         scheduledEnd: attendanceRecords.scheduledEnd,
+        checkInSelfieKey: attendanceRecords.checkInSelfieKey,
+        checkInSelfieType: attendanceRecords.checkInSelfieType,
+        checkOutSelfieKey: attendanceRecords.checkOutSelfieKey,
+        checkOutSelfieType: attendanceRecords.checkOutSelfieType,
+        checkInGeofence: attendanceRecords.checkInGeofence,
+        checkInDistanceM: attendanceRecords.checkInDistanceM,
+        checkInLocationName: attendanceRecords.checkInLocationName,
+        checkInAccuracy: attendanceRecords.checkInAccuracy,
+        checkOutGeofence: attendanceRecords.checkOutGeofence,
+        checkOutDistanceM: attendanceRecords.checkOutDistanceM,
+        checkOutLocationName: attendanceRecords.checkOutLocationName,
+        checkOutAccuracy: attendanceRecords.checkOutAccuracy,
       })
       .from(attendanceRecords)
       .where(and(inArray(attendanceRecords.employeeId, employeeIds), between(attendanceRecords.workDate, period.from, period.to)));

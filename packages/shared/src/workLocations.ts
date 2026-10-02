@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { attendanceMonthSchema, type GeofenceStatus } from "./attendance.js";
+import { attendanceMonthSchema, type GeofenceStatus, SELFIE_STATES } from "./attendance.js";
 
 // Lokasi kerja & geofence peringatan (feature 44): owner/admin menyimpan titik + radius; absen di luar radius tetap
 // diterima tetapi bertanda dan masuk antrean tinjauan (/attendance/review). Tanda tidak pernah mengubah gaji.
@@ -69,6 +69,8 @@ export const employeeAttendanceSettingsInputSchema = z
   .object({
     locationMode: z.enum(EMPLOYEE_LOCATION_MODES),
     locationIds: z.array(z.uuid()).max(WORK_LOCATIONS_MAX).default([]),
+    // Wajib selfie saat absen (feature 45) — tidak dikirim = tidak diubah
+    selfieRequired: z.boolean().optional(),
   })
   .refine((input) => input.locationMode !== "selected" || input.locationIds.length > 0, { path: ["locationIds"], message: "Pilih minimal satu lokasi" });
 export type EmployeeAttendanceSettingsInput = z.input<typeof employeeAttendanceSettingsInputSchema>;
@@ -80,6 +82,7 @@ export const employeeAttendanceSettingsSchema = z.object({
   locationIds: z.array(z.string()),
   // Semua lokasi kerja usaha (pilihan checkbox + nama untuk tampilan baca)
   locations: z.array(z.object({ id: z.string(), name: z.string(), radiusM: z.number().int() })),
+  selfieRequired: z.boolean(),
   // owner/admin; atasan hanya baca
   canEdit: z.boolean(),
 });
@@ -151,6 +154,8 @@ export const attendanceReviewItemSchema = z.object({
     locationName: z.string().nullable(),
     accuracyM: z.number().nullable(),
   }),
+  // Selfie absen ini (feature 45) — null = tanpa selfie
+  selfie: z.enum(SELFIE_STATES).nullable(),
   review: z
     .object({
       decision: z.enum(ATTENDANCE_REVIEW_DECISIONS),

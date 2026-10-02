@@ -79,6 +79,8 @@ async function addEmployee(ws: Workspace, userId: string | null, overrides: { jo
       endReason: overrides.endDate ? "Resign" : null,
       employmentStatus: "permanent",
       ptkpStatus: "TK/0",
+      // Selfie wajib diuji di attendance-selfies.e2e (feature 45)
+      selfieRequired: false,
     }),
   );
   return id;

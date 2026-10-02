@@ -31,6 +31,9 @@ export const envSchema = z
     // Pengingat langganan (feature 40): pemindaian harian email trial H-7/H-3/H-1, tenggang, baca-saja
     BILLING_NOTICE_CRON: z.string().trim().min(1).default("0 7 * * *"),
     BILLING_NOTICE_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
+    // Selfie absen (feature 45): penghapusan harian foto > 90 hari (cron 5 kolom + zona waktu IANA; tanggal hari ini dari zona ini)
+    SELFIE_RETENTION_CRON: z.string().trim().min(1).default("30 2 * * *"),
+    SELFIE_RETENTION_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
     // Pemilik platform yang diberi tahu saat owner menekan "Saya sudah bayar" (feature 41) — boleh lebih dari satu,
     // dipisah koma. Kosong di development → pemberitahuan dilewati (log warn); wajib di production.
     BILLING_NOTIFY_EMAIL: z

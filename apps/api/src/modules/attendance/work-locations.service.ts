@@ -29,6 +29,7 @@ const locationColumns = {
 };
 
 type LocationRow = { id: string; name: string; address: string | null; latitude: number; longitude: number; radiusM: number };
+type SettingsEmployee = { id: string; locationMode: EmployeeLocationMode; selfieRequired: boolean };
 
 const auditOf = (row: LocationRow): Omit<LocationRow, "id"> => ({
   name: row.name,
@@ -151,7 +152,7 @@ export class WorkLocationsService {
     return withTenant(this.db, ctx, async (tx) => {
       const viewer = await loadAttendanceViewer(tx, ctx);
       const employee = await this.visibleEmployee(tx, viewer, employeeId);
-      return this.settingsOf(tx, employee.id, employee.locationMode, viewer?.manage ?? false);
+      return this.settingsOf(tx, employee, viewer?.manage ?? false);
     });
   }
 
@@ -159,7 +160,11 @@ export class WorkLocationsService {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
       await this.requireManager(tx, ctx);
-      const [employee] = await tx.select({ id: employees.id, locationMode: employees.locationMode }).from(employees).where(eq(employees.id, employeeId)).for("update");
+      const [employee] = await tx
+        .select({ id: employees.id, locationMode: employees.locationMode, selfieRequired: employees.selfieRequired })
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .for("update");
       if (!employee) throw new NotFoundException("Karyawan tidak ditemukan");
 
       const locationIds = input.locationMode === "selected" ? [...new Set(input.locationIds)] : [];
@@ -169,7 +174,9 @@ export class WorkLocationsService {
       }
       const beforeIds = await this.selectedIds(tx, employee.id);
 
-      await tx.update(employees).set({ locationMode: input.locationMode }).where(eq(employees.id, employee.id));
+      // selfieRequired tidak dikirim = tidak diubah
+      const selfieRequired = input.selfieRequired ?? employee.selfieRequired;
+      await tx.update(employees).set({ locationMode: input.locationMode, selfieRequired }).where(eq(employees.id, employee.id));
       await tx.delete(employeeWorkLocations).where(eq(employeeWorkLocations.employeeId, employee.id));
       if (locationIds.length > 0) {
         await tx
@@ -180,10 +187,10 @@ export class WorkLocationsService {
         entity: "employee",
         entityId: employee.id,
         action: "update_attendance_settings",
-        before: { locationMode: employee.locationMode, locationIds: employee.locationMode === "selected" ? beforeIds : [] },
-        after: { locationMode: input.locationMode, locationIds },
+        before: { locationMode: employee.locationMode, locationIds: employee.locationMode === "selected" ? beforeIds : [], selfieRequired: employee.selfieRequired },
+        after: { locationMode: input.locationMode, locationIds, selfieRequired },
       });
-      return this.settingsOf(tx, employee.id, input.locationMode, true);
+      return this.settingsOf(tx, { id: employee.id, locationMode: input.locationMode, selfieRequired }, true);
     });
   }
 
@@ -209,12 +216,19 @@ export class WorkLocationsService {
     return row !== undefined;
   }
 
-  private async settingsOf(tx: Transaction, employeeId: string, mode: EmployeeLocationMode, canEdit: boolean): Promise<EmployeeAttendanceSettings> {
+  private async settingsOf(tx: Transaction, employee: SettingsEmployee, canEdit: boolean): Promise<EmployeeAttendanceSettings> {
     const locations = await tx
       .select({ id: workLocations.id, name: workLocations.name, radiusM: workLocations.radiusM })
       .from(workLocations)
       .orderBy(asc(workLocations.name));
-    return { locationMode: mode, locationIds: mode === "selected" ? await this.selectedIds(tx, employeeId) : [], locations, canEdit };
+    const mode = employee.locationMode;
+    return {
+      locationMode: mode,
+      locationIds: mode === "selected" ? await this.selectedIds(tx, employee.id) : [],
+      locations,
+      selfieRequired: employee.selfieRequired,
+      canEdit,
+    };
   }
 
   private async selectedIds(tx: Transaction, employeeId: string): Promise<string[]> {
@@ -230,10 +244,10 @@ export class WorkLocationsService {
     tx: Transaction,
     viewer: AttendanceViewer | null,
     employeeId: string,
-  ): Promise<{ id: string; locationMode: EmployeeLocationMode }> {
+  ): Promise<SettingsEmployee> {
     if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke halaman ini");
     const [employee] = await tx
-      .select({ id: employees.id, supervisorId: employees.supervisorId, locationMode: employees.locationMode })
+      .select({ id: employees.id, supervisorId: employees.supervisorId, locationMode: employees.locationMode, selfieRequired: employees.selfieRequired })
       .from(employees)
       .where(eq(employees.id, employeeId));
     if (!employee || !viewerCanSee(viewer, employee.supervisorId)) throw new NotFoundException("Karyawan tidak ditemukan");

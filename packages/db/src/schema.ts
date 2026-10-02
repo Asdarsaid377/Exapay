@@ -446,6 +446,8 @@ export const employees = pgTable(
     endReason: text("end_reason"),
     // Pengecekan lokasi absen (feature 44): all = semua lokasi kerja, selected = employee_work_locations, exempt = tidak dicek
     locationMode: employeeLocationMode("location_mode").notNull().default("all"),
+    // Selfie wajib saat absen masuk/pulang (feature 45) — default aktif untuk karyawan baru & lama
+    selfieRequired: boolean("selfie_required").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -581,6 +583,12 @@ export const attendanceRecords = pgTable(
     checkOutGeofence: attendanceGeofenceStatus("check_out_geofence"),
     checkOutDistanceM: integer("check_out_distance_m"),
     checkOutLocationName: text("check_out_location_name"),
+    // Selfie bukti kehadiran (feature 45) — file di storage `attendance-selfies/<id>/…`. Worker menghapus file setelah
+    // 90 hari: key jadi null, type tetap (tanda "foto sudah dihapus"). Koreksi absensi tidak mengubah selfie.
+    checkInSelfieKey: text("check_in_selfie_key"),
+    checkInSelfieType: text("check_in_selfie_type", { enum: TASK_PHOTO_TYPES }),
+    checkOutSelfieKey: text("check_out_selfie_key"),
+    checkOutSelfieType: text("check_out_selfie_type", { enum: TASK_PHOTO_TYPES }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -618,10 +626,22 @@ export const attendanceRecords = pgTable(
       sql`CASE WHEN ${t.checkOutGeofence} IS NULL OR ${t.checkOutGeofence} = 'no_location' THEN ${t.checkOutDistanceM} IS NULL AND ${t.checkOutLocationName} IS NULL ELSE ${t.checkOutDistanceM} IS NOT NULL AND ${t.checkOutDistanceM} >= 0 AND ${t.checkOutLocationName} IS NOT NULL END`,
     ),
     check("attendance_records_check_out_geofence_needs_time", sql`${t.checkOutAt} IS NOT NULL OR ${t.checkOutGeofence} IS NULL`),
+    check(
+      "attendance_records_check_in_selfie",
+      sql`(${t.checkInSelfieKey} IS NULL OR ${t.checkInSelfieType} IS NOT NULL) AND coalesce(${t.checkInSelfieType} IN ('image/jpeg', 'image/png', 'image/webp'), true)`,
+    ),
+    check(
+      "attendance_records_check_out_selfie",
+      sql`(${t.checkOutSelfieKey} IS NULL OR ${t.checkOutSelfieType} IS NOT NULL) AND coalesce(${t.checkOutSelfieType} IN ('image/jpeg', 'image/png', 'image/webp'), true)`,
+    ),
     // Antrean tinjauan: absen bertanda per tenant per tanggal
     index("attendance_records_tenant_flagged_idx")
       .on(t.tenantId, t.workDate)
       .where(sql`${t.checkInGeofence} IN ('outside', 'inaccurate', 'no_location') OR ${t.checkOutGeofence} IN ('outside', 'inaccurate', 'no_location')`),
+    // Penghapusan selfie > 90 hari oleh worker (lintas tenant lewat fungsi definer, lalu per tenant)
+    index("attendance_records_selfie_retention_idx")
+      .on(t.workDate, t.tenantId)
+      .where(sql`${t.checkInSelfieKey} IS NOT NULL OR ${t.checkOutSelfieKey} IS NOT NULL`),
   ],
 );
 

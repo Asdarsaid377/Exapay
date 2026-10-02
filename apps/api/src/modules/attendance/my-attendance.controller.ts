@@ -7,15 +7,20 @@ import {
   attendanceHistoryQuerySchema,
   type AttendanceRecord,
   MEMBERSHIP_ROLES,
+  SELFIE_MAX_BYTES,
 } from "@exapay/shared";
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
 import { AttendanceRecapService } from "./attendance-recap.service.js";
-import { AttendanceService, type AttendanceTodayResult } from "./attendance.service.js";
+import { AttendanceService, type AttendanceTodayResult, type UploadedSelfie } from "./attendance.service.js";
+
+// Selfie (feature 45) disimpan di memori lalu diteruskan ke storage S3; batas ukuran di multer (413)
+const selfieUpload = FileInterceptor("selfie", { limits: { fileSize: SELFIE_MAX_BYTES, files: 1 } });
 
 // Absen masuk/pulang milik sendiri (feature 14, portal /me). Semua peran; syaratnya akun tertaut data karyawan aktif (dicek service).
 @Controller("attendance/me")
@@ -31,22 +36,28 @@ export class MyAttendanceController {
     return { success: true, data: await this.attendance.today(user) };
   }
 
+  // JSON { location } atau multipart/form-data: location (string JSON / kosong) + selfie (wajib bila karyawan wajib selfie)
   @Post("check-in")
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(selfieUpload)
   async checkIn(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(attendanceClockInputSchema)) body: AttendanceClockInput,
+    @UploadedFile() file: UploadedSelfie | undefined,
   ): Promise<ApiResponse<AttendanceRecord>> {
-    return { success: true, data: await this.attendance.checkIn(user, body.location) };
+    return { success: true, data: await this.attendance.checkIn(user, body.location, file ?? null) };
   }
 
+  // JSON { location } atau multipart/form-data: location (string JSON / kosong) + selfie (wajib bila karyawan wajib selfie)
   @Post("check-out")
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(selfieUpload)
   async checkOut(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(attendanceClockInputSchema)) body: AttendanceClockInput,
+    @UploadedFile() file: UploadedSelfie | undefined,
   ): Promise<ApiResponse<AttendanceRecord>> {
-    return { success: true, data: await this.attendance.checkOut(user, body.location) };
+    return { success: true, data: await this.attendance.checkOut(user, body.location, file ?? null) };
   }
 
   @Get("history")

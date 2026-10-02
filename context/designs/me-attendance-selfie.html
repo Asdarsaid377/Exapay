@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}@keyframes exaSpin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:48px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Portal /me — selfie absen</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:900px;text-wrap:pretty">Dewi Lestari · Barista · Senin, 5 Okt 2026. Foto hanya bukti kehadiran — tanpa pengenalan wajah. Foto contoh = placeholder netral.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="me-attendance-location.html">← Kartu absen + lokasi</a>
+      <a href="attendance-selfie-detail.html">Rincian absensi →</a>
+      <a href="selfie-components.html">Komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <h2 style="margin:0;font:800 22px 'Plus Jakarta Sans',sans-serif">Area 1 · Kartu absen &amp; alur selfie</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 32px">
+      <sc-for list="{{ frames }}" as="f" hint-placeholder-count="11">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ f.caption }}</div>
+          <div data-screen-label="{{ f.caption }}" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+            <div style="position:absolute;inset:0;overflow:hidden">
+              <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+              <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:#EADCCB;top:200px;left:-130px"></div>
+              <div style="position:absolute;width:320px;height:200px;border-radius:44px;background:#F6B27A;top:640px;left:-40px"></div>
+            </div>
+            <div style="position:relative;height:100%;box-sizing:border-box;padding:12px 14px 100px;display:flex;flex-direction:column;gap:14px">
+              <header style="flex:none;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.65);box-shadow:0 10px 30px -14px rgba(74,42,16,0.2);display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;flex-direction:column"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Dewi Lestari · Barista</span></div>
+                <span style="width:44px;height:44px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">DL</span>
+              </header>
+              <section style="flex:none;padding:20px;border-radius:24px;background:rgba(255,253,249,0.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 18px 40px -16px rgba(74,42,16,0.24);display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;color:#5B4636">Jam server · WITA</span><span style="font-size:13.5px;color:#5B4636">Shift pagi</span></div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font:800 68px/0.95 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">{{ f.time }}</span>
+                  <span style="font:700 15px 'DM Sans',sans-serif">Senin, 5 Oktober 2026</span>
+                  <span style="font-size:14px;color:#5B4636">Jadwal 08:00–17:00</span>
+                </div>
+                <sc-if value="{{ f.hasShots }}">
+                  <div style="display:flex;flex-direction:column;gap:12px">
+                    <sc-for list="{{ f.shots }}" as="s">
+                      <div style="display:flex;align-items:center;gap:12px">
+                        <button aria-label="Lihat selfie" style="width:44px;height:44px;flex:none;padding:0;border:1px solid rgba(34,18,8,0.1);border-radius:50%;background:#DCCFC0;cursor:pointer"></button>
+                        <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 16px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ s.time }}</span><span style="font:500 13px 'DM Sans',sans-serif;color:#166534">{{ s.status }}</span></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.plainDone }}">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(21,128,61,0.1)"><span style="width:18px;height:18px;flex:none;background:#15803D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat"></span><span style="font:700 14.5px 'DM Sans',sans-serif;color:#166534">Masuk 07:58 · Tepat waktu</span></div>
+                </sc-if>
+                <sc-if value="{{ f.hasLoc }}">
+                  <div role="status" style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.3)"><span style="width:18px;height:18px;flex:none;margin-top:1px;background:#B45309;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/triangle-alert.svg) center / contain no-repeat"></span><span style="font-size:14px;line-height:1.45">Anda tercatat di luar area kerja (320 m dari Kedai Pettarani). Absen tetap diterima dan akan ditinjau atasan.</span></div>
+                </sc-if>
+                <sc-if value="{{ f.hasBtn }}">
+                  <button style="height:58px;border:none;border-radius:999px;background:{{ f.btnBg }};color:{{ f.btnFg }};cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font:800 17px 'Plus Jakarta Sans',sans-serif"><span style="width:20px;height:20px;background:currentColor;-webkit-mask:{{ f.btnIcon }};mask:{{ f.btnIcon }}"></span>{{ f.btnLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ f.hasConsent }}"><span style="font-size:13px;line-height:1.45;color:#5B4636;text-align:center;text-wrap:pretty">Absen memakai selfie sebagai bukti kehadiran. Lokasi Anda juga dicatat saat absen.</span></sc-if>
+              </section>
+              <section style="flex:none;padding:18px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Tugas hari ini</h2><span style="font-size:13px;color:#5B4636">3 tugas</span></section>
+            </div>
+            <nav style="position:absolute;left:12px;right:12px;bottom:12px;height:72px;box-sizing:border-box;padding:6px;border-radius:24px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.7);box-shadow:0 14px 34px -12px rgba(74,42,16,0.3);display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+              <sc-for list="{{ tabs }}" as="b" hint-placeholder-count="5"><span style="border-radius:18px;background:{{ b.bg }};color:{{ b.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:{{ b.font }}"><span style="width:22px;height:22px;background:currentColor;-webkit-mask:{{ b.mask }};mask:{{ b.mask }}"></span>{{ b.label }}</span></sc-for>
+            </nav>
+
+            <sc-if value="{{ f.intro }}">
+              <div style="position:absolute;inset:0;background:rgba(34,18,8,0.36)"></div>
+              <div role="dialog" aria-modal="true" style="position:absolute;left:0;right:0;bottom:0;padding:10px 22px 28px;border-radius:28px 28px 0 0;background:#FFFDF9;box-shadow:0 -20px 50px -20px rgba(34,18,8,0.4);display:flex;flex-direction:column;gap:16px">
+                <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:rgba(34,18,8,0.18)"></span>
+                <h3 style="margin:0;font:800 21px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.015em">Selfie untuk bukti kehadiran</h3>
+                <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+                  <sc-for list="{{ introPoints }}" as="p"><li style="padding:12px 0;border-top:{{ p.border }};font-size:15px;line-height:1.45;color:#221208;text-wrap:pretty">{{ p.text }}</li></sc-for>
+                </ul>
+                <div style="display:flex;flex-direction:column;gap:10px;padding-top:4px">
+                  <button style="height:52px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 16px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Mengerti, buka kamera</button>
+                  <button style="height:48px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Nanti</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ f.cam }}">
+              <div role="dialog" aria-modal="true" aria-label="{{ f.c.title }}" style="position:absolute;inset:0;background:#160C05;display:flex;flex-direction:column;padding:14px 16px 24px;box-sizing:border-box;gap:14px">
+                <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center">
+                  <button aria-label="Tutup kamera" style="width:44px;height:44px;border:none;border-radius:50%;background:rgba(255,255,255,0.12);display:grid;place-items:center;cursor:pointer"><span style="width:20px;height:20px;background:#FBF8F3;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat"></span></button>
+                  <span style="text-align:center;font:700 15px 'Plus Jakarta Sans',sans-serif;color:#FBF8F3">{{ f.c.title }}</span><span></span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:800 44px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em;color:#FBF8F3;font-variant-numeric:tabular-nums">{{ f.c.time }}</span><span style="font-size:13px;color:#CDBFB1">WITA · jam server</span></div>
+                <div style="position:relative;flex:1;min-height:0;border-radius:28px;overflow:hidden;background:{{ f.c.previewBg }};display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ f.c.guide }}"><div style="width:220px;height:290px;box-sizing:border-box;border-radius:50%;border:2px solid rgba(255,253,249,0.6)"></div></sc-if>
+                  <sc-if value="{{ f.c.hasLabel }}"><span style="position:absolute;left:0;right:0;bottom:16px;text-align:center;font:500 12px ui-monospace,Menlo,monospace;color:{{ f.c.labelFg }}">{{ f.c.label }}</span></sc-if>
+                  <sc-if value="{{ f.c.msg }}">
+                    <div style="max-width:280px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px">
+                      <span style="width:30px;height:30px;background:#E8DCCF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/camera-off.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/camera-off.svg) center / contain no-repeat"></span>
+                      <span style="font:700 18px 'Plus Jakarta Sans',sans-serif;color:#FBF8F3">{{ f.c.msgTitle }}</span>
+                      <span style="font-size:14.5px;line-height:1.5;color:#E8DCCF;text-wrap:pretty">{{ f.c.msgText }}</span>
+                      <button style="margin-top:8px;height:48px;padding:0 24px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Coba lagi</button>
+                      <span style="font-size:13.5px;color:#CDBFB1">Tidak bisa? Hubungi admin usaha Anda.</span>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ f.c.live }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+                    <span style="font-size:15px;color:#F3EAE0">Pastikan wajah terlihat jelas</span>
+                    <button aria-label="Ambil foto" style="width:78px;height:78px;box-sizing:border-box;border-radius:50%;border:4px solid #FFFDF9;background:transparent;padding:5px;cursor:pointer"><span style="display:block;width:100%;height:100%;border-radius:50%;background:#FFFDF9"></span></button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.c.failed }}">
+                  <div role="alert" style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:#FFFDF9;border:1px solid rgba(220,38,38,0.4)"><span style="width:18px;height:18px;flex:none;margin-top:1px;background:#DC2626;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-alert.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-alert.svg) center / contain no-repeat"></span><span style="font:500 14px/1.45 'DM Sans',sans-serif;color:#221208">Absen belum terkirim — periksa sinyal internet. Foto tetap tersimpan di HP.</span></div>
+                </sc-if>
+                <sc-if value="{{ f.c.review }}">
+                  <div style="display:flex;flex-direction:column;gap:12px">
+                    <sc-if value="{{ f.c.showNote }}"><span style="text-align:center;font-size:13px;color:#CDBFB1">Jam absen dicatat saat dikirim.</span></sc-if>
+                    <div style="display:grid;grid-template-columns:0.8fr 1.2fr;gap:10px">
+                      <button disabled="{{ f.c.sending }}" style="height:52px;border:1px solid rgba(255,253,249,0.35);border-radius:999px;background:transparent;color:#FBF8F3;opacity:{{ f.c.secOp }};font:700 15px 'Plus Jakarta Sans',sans-serif">{{ f.c.secLabel }}</button>
+                      <button style="height:52px;border:none;border-radius:999px;background:#F2790F;color:#221208;opacity:{{ f.c.priOp }};font:700 15px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"><sc-if value="{{ f.c.sending }}"><span style="width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:2.5px solid rgba(34,18,8,0.25);border-top-color:#221208;animation:exaSpin .8s linear infinite"></span></sc-if>{{ f.c.priLabel }}</button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <h2 style="margin:0;font:800 22px 'Plus Jakarta Sans',sans-serif">Area 2 · Riwayat absensi /me/attendance</h2>
+    <div style="display:flex;gap:32px">
+      <sc-for list="{{ hist }}" as="h" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ h.caption }}</div>
+          <div data-screen-label="{{ h.caption }}" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+            <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+            <div style="position:relative;height:100%;overflow-y:auto;box-sizing:border-box;padding:12px 14px 100px;display:flex;flex-direction:column;gap:14px">
+              <header style="flex:none;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.65);display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Dewi Lestari · Barista</span></div><span style="width:44px;height:44px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">DL</span></header>
+              <h2 style="margin:4px 4px 0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Riwayat absensi</h2>
+              <sc-for list="{{ h.groups }}" as="g">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span style="padding:0 6px;font:700 13px 'DM Sans',sans-serif;color:#5B4636">{{ g.month }}</span>
+                  <section style="padding:0 16px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07)">
+                    <sc-for list="{{ g.rows }}" as="r">
+                      <div style="display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 0;box-sizing:border-box;border-top:{{ r.border }}">
+                        <div style="width:58px;flex:none;display:flex;flex-direction:column"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.d }}</span><span style="font-size:12.5px;color:#75604D">{{ r.day }}</span></div>
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="font:500 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.times }}</span><span style="height:22px;padding:0 9px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};font:700 12px/22px 'DM Sans',sans-serif">{{ r.badge }}</span></div>
+                        <sc-if value="{{ r.hasPh }}"><div style="display:flex;gap:6px"><sc-for list="{{ r.ph }}" as="p"><button onClick="{{ p.open }}" aria-label="{{ p.aria }}" style="width:36px;height:36px;padding:0;border:1px solid rgba(34,18,8,0.1);border-radius:50%;background:#DCCFC0;cursor:pointer"></button></sc-for></div></sc-if>
+                        <sc-if value="{{ r.del }}"><span style="font-size:12.5px;color:#8A7561">Foto dihapus</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </section>
+                </div>
+              </sc-for>
+              <span style="padding:0 6px;font-size:12.5px;line-height:1.45;color:#75604D">Foto disimpan 90 hari, lalu dihapus otomatis. Absen tetap tercatat.</span>
+            </div>
+            <nav style="position:absolute;left:12px;right:12px;bottom:12px;height:72px;box-sizing:border-box;padding:6px;border-radius:24px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.7);display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+              <sc-for list="{{ tabs2 }}" as="b" hint-placeholder-count="5"><span style="border-radius:18px;background:{{ b.bg }};color:{{ b.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:{{ b.font }}"><span style="width:22px;height:22px;background:currentColor;-webkit-mask:{{ b.mask }};mask:{{ b.mask }}"></span>{{ b.label }}</span></sc-for>
+            </nav>
+            <sc-if value="{{ h.viewer }}">
+              <div onClick="{{ closeViewer }}" style="position:absolute;inset:0;background:rgba(34,18,8,0.4)"></div>
+              <div role="dialog" aria-modal="true" style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 24px;border-radius:28px 28px 0 0;background:#FFFDF9;display:flex;flex-direction:column;gap:14px">
+                <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:rgba(34,18,8,0.18)"></span>
+                <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;font:800 19px 'Plus Jakarta Sans',sans-serif">{{ h.v.title }}</h3><button onClick="{{ closeViewer }}" aria-label="Tutup" style="width:44px;height:44px;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:#FFFFFF;display:grid;place-items:center;cursor:pointer"><span style="width:18px;height:18px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center / contain no-repeat"></span></button></div>
+                <div style="height:430px;border-radius:20px;background:#DCCFC0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:14px;box-sizing:border-box;font:500 12px ui-monospace,Menlo,monospace;color:#5B4636">foto selfie</div>
+                <span style="font:500 15px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ h.v.when }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: null };
+  renderVals() {
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const card = (o) => ({ cam: false, intro: false, hasShots: false, shots: [], plainDone: false, hasLoc: false, hasBtn: false, hasConsent: false, btnBg: '#F2790F', btnFg: '#221208', btnIcon: m('log-in'), btnLabel: 'Absen Masuk', time: '07:57', c: {}, ...o });
+    const pulangBtn = { hasBtn: true, btnBg: '#221208', btnFg: '#FBF8F3', btnIcon: m('log-out'), btnLabel: 'Absen Pulang' };
+    const cam = (caption, k) => {
+      const base = { title: 'Selfie absen masuk', time: '07:58', previewBg: '#3A2B20', guide: false, hasLabel: true, label: 'pratinjau kamera depan', labelFg: '#CDBFB1', msg: false, live: false, failed: false, review: false, showNote: true, sending: false, secLabel: 'Ulangi', priLabel: 'Kirim absen masuk', secOp: 1, priOp: 1 };
+      const S = {
+        live: { guide: true, live: true },
+        review: { previewBg: '#DCCFC0', label: 'foto selfie', labelFg: '#5B4636', review: true },
+        sending: { previewBg: '#DCCFC0', label: 'foto selfie', labelFg: '#5B4636', review: true, sending: true, priLabel: 'Mengirim…', secOp: 0.4, priOp: 0.8, showNote: false },
+        failed: { time: '07:59', previewBg: '#DCCFC0', label: 'foto selfie', labelFg: '#5B4636', review: true, failed: true, showNote: false, secLabel: 'Ulangi foto', priLabel: 'Coba lagi' },
+        denied: { hasLabel: false, msg: true, msgTitle: 'Kamera diblokir', msgText: 'Izinkan akses kamera untuk Exapay di pengaturan browser, lalu coba lagi.' },
+        nocam: { hasLabel: false, msg: true, msgTitle: 'Kamera depan tidak tersedia', msgText: 'Perangkat ini tidak punya kamera depan yang bisa dipakai. Coba dari HP lain.' },
+      };
+      return card({ caption, cam: true, c: { ...base, ...S[k] } });
+    };
+    const frames = [
+      card({ caption: '1 · Sebelum absen, wajib selfie', hasBtn: true, hasConsent: true }),
+      card({ caption: '2 · Pemberitahuan pertama kali', hasBtn: true, hasConsent: true, intro: true }),
+      cam('3 · Kamera aktif', 'live'),
+      cam('4 · Pratinjau hasil', 'review'),
+      cam('5 · Mengirim…', 'sending'),
+      cam('6 · Gagal kirim', 'failed'),
+      cam('7 · Izin kamera ditolak', 'denied'),
+      cam('8 · Kamera tidak tersedia', 'nocam'),
+      card({ caption: '9 · Berhasil masuk + di luar lokasi', time: '07:58', hasShots: true, shots: [{ time: 'Masuk 07:58', status: 'Tepat waktu' }], hasLoc: true, ...pulangBtn }),
+      card({ caption: '10 · Berhasil masuk & pulang', time: '17:06', hasShots: true, shots: [{ time: 'Masuk 07:58', status: 'Tepat waktu' }, { time: 'Pulang 17:06', status: 'Sesuai jadwal' }] }),
+      card({ caption: '11 · Tidak wajib selfie (pembanding)', time: '07:58', plainDone: true, ...pulangBtn }),
+    ];
+    const introPoints = ['Foto diambil setiap absen masuk dan pulang.', 'Hanya dilihat pemilik/admin dan atasan langsung Anda.', 'Disimpan 90 hari, lalu dihapus otomatis.', 'Tidak dipakai untuk pengenalan wajah.'].map((text, i) => ({ text, border: i ? '1px solid rgba(34,18,8,0.08)' : 'none' }));
+    const tabsFor = active => [['Beranda', 'house'], ['Tugas', 'list-checks'], ['Absensi', 'calendar-days'], ['Slip', 'receipt'], ['Profil', 'user']]
+      .map(([label, icon]) => { const on = label === active; return { label, mask: m(icon), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#5B4636', font: on ? "700 12px 'DM Sans',sans-serif" : "500 12px 'DM Sans',sans-serif" }; });
+    const B = { ok: ['Tepat waktu', 'rgba(21,128,61,0.12)', '#166534'], late: ['Telat', 'rgba(242,121,15,0.16)', '#8A3A06'], izin: ['Izin', 'rgba(37,99,235,0.1)', '#1D4ED8'] };
+    const mk = (rows) => rows.map((r, i) => {
+      const b = B[r.s];
+      const ph = (r.ph || []).map(([kind, t]) => ({ aria: `Lihat selfie absen ${kind.toLowerCase()} ${r.d}`, open: () => this.setState({ view: { title: `Selfie absen ${kind.toLowerCase()}`, when: `${r.full} · ${t} WITA` } }) }));
+      return { ...r, border: i ? '1px solid rgba(34,18,8,0.07)' : 'none', badge: b[0], bBg: b[1], bFg: b[2], ph, hasPh: ph.length > 0, del: !!r.del };
+    });
+    const groups = [
+      { month: 'Oktober 2026', rows: mk([
+        { d: '5 Okt', day: 'Senin', full: 'Senin, 5 Okt 2026', times: '07:58 – 17:06', s: 'ok', ph: [['Masuk', '07:58'], ['Pulang', '17:06']] },
+        { d: '3 Okt', day: 'Sabtu', full: 'Sabtu, 3 Okt 2026', times: '08:09 – 17:02', s: 'late', ph: [['Masuk', '08:09'], ['Pulang', '17:02']] },
+        { d: '2 Okt', day: 'Jumat', full: 'Jumat, 2 Okt 2026', times: '07:58 – 17:10', s: 'ok', ph: [['Masuk', '07:58'], ['Pulang', '17:10']] },
+      ]) },
+      { month: 'September 2026', rows: mk([
+        { d: '30 Sep', day: 'Rabu', times: '08:00 – 17:00 · dikoreksi', s: 'ok' },
+        { d: '29 Sep', day: 'Selasa', times: 'Tidak ada absen', s: 'izin' },
+      ]) },
+      { month: 'Juli 2026', rows: mk([{ d: '2 Jul', day: 'Kamis', times: '08:03 – 17:01', s: 'late', del: true }]) },
+    ];
+    const v = this.state.view;
+    const hist = [
+      { caption: 'Riwayat · ketuk thumbnail (interaktif)', groups, viewer: !!v, v: v || {} },
+      { caption: 'Penampil foto (sheet)', groups, viewer: true, v: { title: 'Selfie absen masuk', when: 'Senin, 5 Okt 2026 · 07:58 WITA' } },
+    ];
+    return { frames, introPoints, tabs: tabsFor('Beranda'), tabs2: tabsFor('Absensi'), hist, closeViewer: () => this.setState({ view: null }) };
+  }
+}
+</script>
+</body>
+</html>
