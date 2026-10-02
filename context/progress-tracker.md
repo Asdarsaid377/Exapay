@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
-**Terakhir selesai:** 43 Landing Page Marketing (2026-10-02) — semua feature build-plan selesai
-**Berikutnya:** sisa landing (menunggu user): kontak resmi, halaman `/privasi` & `/syarat`, uji Lighthouse ≥ 90 di build production. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Phase:** 10 — Absensi Lanjutan: Geofence, Selfie & Shift (Phase 1–9 selesai)
+**Terakhir selesai:** 43 Landing Page Marketing (2026-10-02)
+**Berikutnya:** 44 Lokasi Kerja & Geofence (Peringatan) — wajib referensi desain (Claude Design). Tertunda (menunggu user): sisa landing — kontak resmi, halaman `/privasi` & `/syarat`, uji Lighthouse ≥ 90 di build production. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -77,6 +77,12 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 41 Tagihan & Pembayaran QRIS (uji bayar nyata lolos 2026-10-02)
 - [x] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
 - [x] 43 Landing Page Marketing (Lighthouse belum diuji — butuh build production)
+
+### Phase 10 — Absensi Lanjutan: Geofence, Selfie & Shift
+- [ ] 44 Lokasi Kerja & Geofence (Peringatan)
+- [ ] 45 Selfie Absen
+- [ ] 46 Master Shift & Roster
+- [ ] 47 Absensi Berbasis Roster
 
 ---
 
@@ -298,6 +304,7 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Harga landing dari data:** `GET /billing/public/price` (`@Public`, `BillingPublicController`) → harga platform berlaku hari ini (`priceAt` pada `this.db` — `billing_prices` policy `reference_read`, tanpa konteks usaha; harga khusus per usaha tidak ikut). Web: `apiRequest` opsi `revalidateSeconds` (fetch `next.revalidate`, bukan `no-store`) → cache 5 menit. Kalkulator memakai `billingEstimateAmount()` di `@exapay/shared` (sen BigInt, tanpa float; rumus = estimasi /settings/billing). Lama trial ikut data (teks CTA "Coba gratis N hari").
 - 2026-10-02 — **Render `/`:** dinamis per request (`connection()`) + data harga ter-cache, **bukan ISR** — domain (`APP_WEB_URL`, env runtime web baru, di `docker-compose.prod.yml` & whitelist `next.config.ts`) untuk canonical/Open Graph/sitemap/robots tidak tersedia saat build image, dan prerender build tanpa API akan meng-cache halaman tanpa harga. `proxy.ts`: `/` publik untuk tamu, pengguna login tetap diarahkan ke halaman peran.
 - 2026-10-02 — Isi landing disesuaikan dengan fitur nyata (beda dari snapshot): contoh PPh 21 slip Rp112.903 / gaji bersih Rp6.799.097 (bruto PPh termasuk BPJS Kes 4% + JKK + JKM pemberi kerja), "Sisa cuti tahunan" → "Absensi Oktober" (saldo cuti belum ada), tab HP mengikuti bottom nav nyata. Skeleton harga di desain tidak dipakai (harga dirender server; gagal → pesan "Harga sedang tidak dapat dimuat"). FAQ accordion = `<details name>` (tanpa JS).
+- 2026-10-02 — **Phase 10 ditambahkan (brainstorm dengan user):** geofence **hanya peringatan** (absen tetap diterima, tanda ditinjau admin, gaji tidak berubah otomatis); selfie **wajib per karyawan, default aktif** (bisa dimatikan owner/admin), bukti saja tanpa pengenalan wajah, simpan **90 hari**; shift = **roster harian** (bukan pola mingguan — shift bisa berubah kapan saja, mis. menggantikan rekan), **satu shift per karyawan per tanggal**, diatur **owner/admin & atasan** (bawahan langsung), **tanpa aturan jeda** antar shift. Dikerjakan bertahap 44 → 45 → 46 → 47 agar tiap tahap bisa direvisi. WhatsApp tetap fase berikutnya.
 ---
 
 ## Catatan (Notes)

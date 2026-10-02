@@ -290,3 +290,36 @@ Prinsip phase ini:
 **UI:** `/` publik untuk tamu (pengguna login tetap diarahkan ke dashboard/portal) — hero + CTA "Coba gratis 30 hari" → `/signup`, masalah yang diselesaikan, fitur utama (payroll & PPh 21 TER, absensi, tugas harian → KPI, kepatuhan, portal karyawan), cara kerja, **harga per karyawan diambil dari data harga berlaku** (bukan hardcode) + kalkulator estimasi, FAQ, footer (kontak, kebijakan privasi, syarat layanan). **Wajib referensi desain** (Claude Design — prompt disusun saat feature dimulai)
 **Logic:** halaman statis/ISR yang cepat; meta SEO, Open Graph, `sitemap.xml`, `robots.txt`; tanpa pelacak pihak ketiga kecuali disetujui user
 - **Verifikasi:** visual desktop & mobile sesuai desain; Lighthouse performa & SEO ≥ 90; harga di landing = harga berlaku di database; CTA membuka signup dan trial langsung aktif
+
+---
+
+## Phase 10 — Absensi Lanjutan: Geofence, Selfie & Shift
+
+Ditambahkan 2026-10-02 (keputusan user, hasil brainstorm). Dikerjakan **bertahap 44 → 45 → 46 → 47** — tiap feature diverifikasi & bisa direvisi sebelum lanjut.
+
+Prinsip phase ini:
+- Usaha yang tidak memakai fitur ini tidak terpengaruh: karyawan default "ikut jadwal usaha", tanpa lokasi kerja = tanpa pengecekan lokasi. Semua test absensi/payroll/KPI yang ada tetap lulus
+- Tanda (di luar lokasi, tanpa jadwal) **tidak mengubah gaji otomatis** — admin meninjau, koreksi tetap lewat koreksi absensi (feature 16)
+- Jadwal & aturan berlaku-tanggal: payroll final tidak berubah walau roster/lokasi diubah belakangan
+- Setiap perubahan (lokasi, pengaturan selfie, roster, keputusan tinjauan) masuk audit log
+- UI baru wajib referensi desain (Claude Design)
+
+### 44 Lokasi Kerja & Geofence (Peringatan)
+**UI:** pengaturan lokasi kerja (owner/admin) — nama, koordinat (tombol "Pakai lokasi saya sekarang" + isi manual, **tanpa peta pihak ketiga**), radius (default 100 m); banyak lokasi per usaha. Per karyawan: semua lokasi (default) / lokasi tertentu / **dikecualikan** (karyawan lapangan). Antrean **tinjauan absensi** (owner/admin; atasan untuk bawahan langsung): absen bertanda + jarak & lokasi terdekat → "Diterima" / "Perlu tindak lanjut" + catatan. Portal: keterangan "Anda tercatat di luar area kerja" setelah absen
+**Logic:** absen **selalu diterima**; API menghitung jarak ke lokasi terdekat (rumus murni + unit test) dan menyimpan status per absen masuk/pulang: di lokasi / di luar lokasi (jarak) / lokasi tidak akurat (akurasi > radius) / tanpa lokasi (GPS ditolak). Status dihitung saat absen (snapshot — lokasi diubah belakangan tidak mengubah status lama)
+- **Verifikasi:** absen di dalam radius → tanpa tanda; di luar → tanda + jarak benar; akurasi buruk & GPS ditolak → tanda masing-masing; karyawan dikecualikan & usaha tanpa lokasi → tanpa tanda; tinjauan tercatat audit; gaji tidak berubah; isolasi tenant
+
+### 45 Selfie Absen
+**UI:** pengaturan per karyawan "Wajib selfie saat absen" (owner/admin) — **default aktif** untuk karyawan baru & yang sudah ada (migration). Portal: kamera depan langsung di aplikasi (tanpa pilih dari galeri), foto dikompres di HP (±100 KB), tombol "Coba lagi" bila gagal kirim; pemberitahuan sekali di awal (foto = bukti kehadiran, disimpan 90 hari). Foto tampil di rekap/koreksi absensi & antrean tinjauan (owner/admin, atasan untuk bawahan, karyawan untuk miliknya)
+**Logic:** karyawan wajib selfie → absen ditolak tanpa foto (jam tetap jam server saat absen diterima). Foto di storage usaha (`tenants/<tenant_id>/…`, pola foto bukti tugas). **Hanya bukti — tanpa pengenalan wajah** (biometrik, UU PDP). Worker menghapus foto otomatis setelah **90 hari**. Koreksi admin tidak butuh selfie
+- **Verifikasi:** wajib → absen tanpa foto ditolak, dengan foto diterima & tampil; dimatikan → absen tanpa foto diterima; atasan tidak bisa membuka foto di luar bawahannya; foto > 90 hari terhapus; isolasi tenant
+
+### 46 Master Shift & Roster
+**UI:** master shift per usaha (nama, jam mulai–selesai; shift melewati tengah malam didukung). Mode jadwal per karyawan: **ikut jadwal usaha** (default) / **shift (roster)**. Halaman roster: tabel karyawan × tanggal (minggu ini/berikutnya), klik sel → pilih shift atau libur, "salin minggu lalu". **Owner/admin semua karyawan; atasan hanya bawahan langsung.** Portal: "Jadwal saya" beberapa hari ke depan
+**Logic:** **satu shift per karyawan per tanggal.** Roster bisa diubah kapan saja untuk hari ini & ke depan (mis. menggantikan rekan); tanggal lewat / sudah ada absen / periode payroll final → terkunci (koreksi lewat koreksi absensi). Tanpa aturan jeda minimal antar shift (Senin malam → Selasa pagi boleh). Setiap perubahan masuk audit log (dari → ke); pemberitahuan perubahan ke karyawan via email (WhatsApp di fase berikutnya)
+- **Verifikasi:** atasan tidak bisa mengubah roster di luar bawahannya; tanggal terkunci ditolak; salin minggu lalu benar; audit dari→ke; karyawan melihat jadwalnya; isolasi tenant
+
+### 47 Absensi Berbasis Roster
+**Logic:** karyawan mode shift: absen dicocokkan ke shift tanggal itu (absen masuk paling cepat 2 jam sebelum mulai), telat dari jam mulai shift, shift malam dihitung di **tanggal mulai shift** (pulang keesokan hari). Hari tanpa shift = libur (bukan alpa); absen di hari tanpa shift diterima + tanda **"tanpa jadwal"** (antrean tinjauan feature 44). Hari kerja karyawan roster = hari ber-shift dalam periode → dipakai rekap, alpa, potongan absensi (pembagi hari aktual), prorata KPI, dashboard
+**UI:** rekap & detail absensi menampilkan shift per hari; kartu absen portal menampilkan shift hari ini
+- **Verifikasi:** test — shift malam lintas tanggal, telat dari jam shift, alpa hanya di hari ber-shift, potongan & prorata KPI memakai hari roster; karyawan "ikut jadwal usaha" hasilnya sama persis dengan sebelum phase ini; payroll final tidak berubah setelah roster diubah

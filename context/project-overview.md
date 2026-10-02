@@ -143,6 +143,12 @@ Daftar route bersifat acuan; detail diputuskan per feature sesuai desain.
 10. **Tagihan & pembayaran QRIS** — tagihan bulanan otomatis (jumlah karyawan aktif × harga + kode unik), QRIS dinamis dari QRIS statik merchant, owner menandai sudah bayar, super-admin mengonfirmasi; email pengingat, tagihan & kuitansi
 11. **Landing page marketing** — halaman publik `/` untuk tamu: fitur, harga dari data, kalkulator estimasi, FAQ, CTA coba gratis 30 hari
 
+### Phase 10 — Absensi Lanjutan (ditambahkan 2026-10-02)
+
+12. **Geofence peringatan** — lokasi kerja per usaha (radius), status lokasi tiap absen (di luar lokasi / tidak akurat / tanpa lokasi) **hanya sebagai tanda** untuk antrean tinjauan admin — absen tetap diterima, gaji tidak berubah otomatis
+13. **Selfie absen** — wajib per karyawan (default aktif, bisa dimatikan owner/admin), foto sebagai bukti (tanpa pengenalan wajah), disimpan 90 hari
+14. **Shift & roster harian** — master shift; karyawan mode "ikut jadwal usaha" (default) atau "shift"; roster per tanggal (satu shift per tanggal, bisa berubah kapan saja untuk hari ini & ke depan) diatur owner/admin & atasan (bawahan langsung); absen, telat, alpa, potongan & prorata KPI mengikuti roster
+
 ### Fase Berikutnya
 
 - Aplikasi mobile native (iOS/Android) — API dirancang agar bisa dipakai client mobile
@@ -150,7 +156,6 @@ Daftar route bersifat acuan; detail diputuskan per feature sesuai desain.
 - Kalkulator THR otomatis
 - Notifikasi WhatsApp — uji coba via gateway self-hosted (WAHA/Evolution API), tanpa data sensitif di isi pesan
 - Adapter ERPNext & ekspor ke sistem akuntansi lain
-- Geofence, selfie absen, shift & jadwal per karyawan
 - Saldo cuti tahunan otomatis
 - Rekrutmen
 - Asisten AI tanya-jawab hukum ketenagakerjaan
