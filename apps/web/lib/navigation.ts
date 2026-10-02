@@ -78,6 +78,8 @@ export const STAFF_MENU: readonly NavSection[] = [
       { label: "Komponen gaji", href: "/settings/salary-components", roles: MANAGE },
       { label: "Absensi", href: "/settings/attendance", roles: MANAGE },
       { label: "Siklus KPI", href: "/settings/kpi", roles: MANAGE },
+      // Langganan & tagihan khusus owner (feature 40)
+      { label: "Langganan", href: "/settings/billing", roles: ["owner"] },
     ],
   },
 ];

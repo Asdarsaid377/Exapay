@@ -135,6 +135,7 @@ describe("role runtime app_user", () => {
       "refresh_tokens",
       "regencies",
       "salary_components",
+      "subscription_notices",
       "task_logs",
       "tax_rate_brackets",
       "tax_rate_tables",

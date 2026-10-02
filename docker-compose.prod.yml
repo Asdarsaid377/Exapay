@@ -157,6 +157,8 @@ services:
       SMTP_FROM: ${SMTP_FROM:?}
       COMPLIANCE_CRON: ${COMPLIANCE_CRON:-0 7 * * *}
       COMPLIANCE_CRON_TZ: ${COMPLIANCE_CRON_TZ:-Asia/Jakarta}
+      BILLING_NOTICE_CRON: ${BILLING_NOTICE_CRON:-0 7 * * *}
+      BILLING_NOTICE_CRON_TZ: ${BILLING_NOTICE_CRON_TZ:-Asia/Jakarta}
     depends_on:
       migrate:
         condition: service_completed_successfully

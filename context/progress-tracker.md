@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
-**Terakhir selesai:** 39 Fondasi Langganan & Trial (2026-10-02)
-**Berikutnya:** 40 Halaman Langganan & Pengingat Trial. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Terakhir selesai:** 40 Halaman Langganan & Pengingat Trial (2026-10-02)
+**Berikutnya:** 41 Tagihan & Pembayaran QRIS. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -73,7 +73,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ### Phase 9 — Monetisasi: Trial, Langganan & Landing Page
 - [x] 39 Fondasi Langganan & Trial
-- [ ] 40 Halaman Langganan & Pengingat Trial
+- [x] 40 Halaman Langganan & Pengingat Trial
 - [ ] 41 Tagihan & Pembayaran QRIS
 - [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
 - [ ] 43 Landing Page Marketing
@@ -278,6 +278,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — Status efektif **dihitung dari tanggal saat dibaca** (`subscriptionStateAt`, tanpa cron): sebelum akhir → trialing/active; ≤ grace_days → `past_due` (tetap bisa dipakai); lewat → `read_only`; tanggal hilang → read_only (gagal aman). Menyimpang dari build-plan "dicatat saat berubah": transisi otomatis tidak ditulis ke audit (tanpa cron); audit hanya untuk aksi eksplisit (`subscription/start`, nanti pembayaran & super-admin). Feature 40 (email pengingat) yang mendeteksi transisi.
 - 2026-10-02 — **Mode baca-saja:** `SubscriptionGuard` = APP_GUARD ketiga di AuthModule (setelah JwtAuthGuard, RolesGuard). Hanya POST/PUT/DELETE dari anggota usaha (bukan super-admin, bukan @Public) → 402 + code `SUBSCRIPTION_READ_ONLY` (pesan owner/admin vs atasan/karyawan). Pengecualian `@AllowWhenReadOnly` (`common/auth/`): seluruh `auth/*`, `employees/:id/reveal`, pratinjau impor & potongan, cabut akses, batalkan undangan. Tenant tanpa baris langganan → diizinkan + log warn sekali per tenant (test lama membuat tenant langsung tanpa baris). Harga & tanggal di zona platform `Asia/Jakarta`.
 - 2026-10-02 — Signup → `SubscriptionsService.start(tx, ctx, "trial")` di transaksi yang sama; super-admin memilih `subscription: "trial" | "complimentary"` di `createTenantSchema` (bawaan trial) + SelectField di dialog (tanpa desain baru — komponen terdaftar).
+- 2026-10-02 — **Halaman langganan & pengingat (feature 40):** `/settings/billing` + banner AppShell dibangun **tanpa referensi visual** (turunan pola StatTile + FormSection + Banner, izin user). `subscriptionStateAt` dipindah dari API ke `@exapay/shared` (`billing.ts`) bersama `subscriptionDaysUntil` (hari kalender zona platform WIB: 0 = hari ini) dan `subscriptionNoticeAt` (tahap paling mendesak: `trial_h7/h3/h1` bila sisa ≤ 7/3/1 hari, `grace_started` saat past_due, `read_only`) — satu logika untuk banner API & email worker. Periode berbayar yang akan habis tidak diingatkan di sini (lewat tagihan feature 41). API `GET /billing` (owner: ringkasan + estimasi = max(karyawan aktif `end_date IS NULL`, minimum) × harga berlaku pada akhir trial/periode, atau hari ini bila sudah lewat/gratis) dan `GET /billing/status` (owner/admin, untuk banner; tanpa baris langganan → 404 → tanpa banner).
+- 2026-10-02 — Migration `0031_subscription_notices`: `subscription_notices` (tenant, RLS FORCE, app_user SELECT + INSERT saja, unik `(tenant_id, kind, period_ends_at)` — perpanjangan trial/periode = pengingat baru). Worker `BillingNoticeProcessor` antrean `billing`: scheduler `billing-notice-daily` (env `BILLING_NOTICE_CRON` default `0 7 * * *`, `BILLING_NOTICE_CRON_TZ` Asia/Jakarta) → `billing-notice-scan` (id usaha dari `compliance_active_tenant_ids()`) → `billing-notice` per usaha: klaim baris notice + kirim email ke **owner terverifikasi** di transaksi yang sama (email gagal → rollback → retry; job paralel menunggu index unik lalu dilewati). Manual: `pnpm --filter @exapay/worker billing:scan`.
+- 2026-10-02 — Banner langganan: owner → tombol "Lihat langganan"; admin → tanpa tombol + "Hubungi pemilik usaha"; disembunyikan di `/settings/billing`. Menu "Langganan" khusus owner (proxy mengalihkan admin).
+- 2026-10-02 — Test worker kini memakai DB (`apps/worker/vitest.config.ts` → globalSetup API dengan `EXAPAY_TEST_DB=exapayroll_worker_test`) — `turbo run test` menjalankan api & worker bersamaan, jadi nama database harus berbeda. Global setup menolak nama DB selain pola `exapayroll_*test`.
 ---
 
 ## Catatan (Notes)
@@ -352,4 +356,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Uji stack production lokal: `docker compose -p exapay-prod -f docker-compose.prod.yml --env-file <env> up -d` (port 80/443 host). Data uji = seed-trial Roti Sinar Pagi + super-admin `superadmin@exapay.local`. Hapus: `docker compose -p exapay-prod down -v`. Uji restore lokal butuh override agar container `restore` bergabung ke jaringan offsite lokal — **nama service instance uji wajib unik** (sempat menunjuk Postgres production karena sama-sama `postgres`; ditolak karena password beda).
 - Image production sekali build ±5 menit; `migrate` 2,2 GB (stage build penuh) — hanya one-shot.
 - Total test API 302 per feature 39 (`subscription-status.test.ts` 5 unit; `subscriptions.e2e.test.ts` 8 — signup trial, baca-saja 402 per peran, tenggang, transisi waktu dengan fake timers + login ulang, aktif/pilot, pilihan super-admin, trigger, isolasi; `tenant-isolation` + 2 tabel). Guard berjalan sebelum pipe → path salah pun dapat 402 di tenant terkunci (pastikan path benar di test). Data dev: 10 tenant lama `complimentary`; "Bengkel Uji Pilot" (complimentary) dari verifikasi dialog.
-- Belum ada: UI status langganan/banner (feature 40), email pengingat transisi (40), tagihan (41), ubah langganan/harga oleh super-admin (42). Mengubah langganan sementara hanya lewat SQL `app_owner` + `set_config('app.tenant_id')`.
+- Total test API 309 per feature 40 (`billing.e2e.test.ts` 5 — estimasi = hitungan Aktif /employees di bawah & di atas minimum, peran, tahap banner H-8…H-1/tenggang/baca-saja, aktif & gratis tanpa banner; `subscription-status.test.ts` + 2 unit hari kalender & tahap; `tenant-isolation` + `subscription_notices`). Worker 8 (`billing-notice.test.ts` 4 — tahap & sekali kirim, lompat tahap + perpanjangan + gratis, email gagal → retry, isolasi). Diverifikasi visual (Playwright desktop 1440 + mobile 390, Roti Sinar Pagi diubah sementara ke trial H-3 lalu baca-saja, dikembalikan `complimentary`) + Mailpit, dikonfirmasi user ("sudah sesuai").
+- Mengubah langganan untuk uji sementara: SQL `SET ROLE app_owner` + `set_config('app.tenant_id')` + UPDATE `tenant_subscriptions` (lihat langkah verifikasi feature 40). Belum ada: tagihan (41), ubah langganan/harga oleh super-admin (42).

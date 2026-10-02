@@ -704,3 +704,17 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** label `flex min-h-11 items-start gap-3` = Checkbox + judul `text-[15px] font-bold` + penjelasan `text-small text-text-secondary`; FormAlert info "Hanya pemilik usaha…" bila bukan owner (checkbox disabled, tanpa tombol); tombol Simpan kanan `border-t pt-5` (nonaktif bila tidak berubah); FormAlert success/danger setelah simpan
 - **Catatan:** client, Server Action `saveMinimumWageAlerts` (PUT /company/minimum-wage-alerts, khusus owner). MinimumWageBanner kini menerima `summary: null` (peringatan dimatikan) → tidak merender apa pun
 
+### SubscriptionBanner
+- **Path:** apps/web/components/billing/SubscriptionBanner.tsx
+- **Dipakai di:** layout `app/(main)/layout.tsx` (di atas konten semua halaman, owner/admin)
+- **Referensi desain:** tanpa referensi — pola Banner (design-tokens "banner"), feature 40, izin user
+- **Pola kelas kunci:** Banner tone neutral + ikon Clock (trial H-7) · warning (trial H-3/H-1, masa tenggang) · danger (baca-saja); action owner = Link `buttonClassName({ variant: "secondary" })` "Lihat langganan"
+- **Catatan:** client (usePathname — disembunyikan di /settings/billing). Data `GET /billing/status` dimuat layout; gagal → tanpa banner. Admin tanpa tombol, deskripsi + "Hubungi pemilik usaha…". Label/tanggal di `lib/billingLabels.ts`
+
+### Halaman Langganan (/settings/billing)
+- **Path:** apps/web/app/(main)/settings/billing/page.tsx (+ loading.tsx)
+- **Dipakai di:** /settings/billing (khusus owner, menu Pengaturan → Langganan)
+- **Referensi desain:** tanpa referensi — pola StatTile (dashboard) + FormSection + ReadFields + EmptyState, feature 40, izin user
+- **Pola kelas kunci:** Banner warning/danger hanya saat tenggang/baca-saja; grid `sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4` 3 StatTile (status: sisa hari + Badge status `SUBSCRIPTION_STATUS_TONES` · Karyawan aktif · Estimasi tagihan prefix Rp, tile ke-3 `sm:col-span-2 xl:col-span-1`); FormSection "Rincian estimasi" (ReadFields, karyawan aktif = Link ke /employees) + "Masa tenggang & baca-saja" (paragraf `text-sm text-text-secondary`); "Riwayat tagihan" judul `px-1.5 font-display text-base font-bold` + EmptyState ReceiptText
+- **Catatan:** server component, `fetchBillingOverview()` (EmptyState CloudOff bila gagal). Riwayat tagihan diisi feature 41
+

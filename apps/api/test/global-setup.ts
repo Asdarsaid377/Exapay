@@ -7,8 +7,10 @@ import pg from "pg";
 import type { TestProject } from "vitest/node";
 
 // Test integrasi memakai database terpisah agar data dev tidak tersentuh.
-// Hanya database bernama TEST_DB ini yang di-drop/create.
-const TEST_DB = "exapayroll_test";
+// Hanya database bernama TEST_DB ini yang di-drop/create. apps/worker memakai setup ini dengan nama sendiri
+// (EXAPAY_TEST_DB di apps/worker/vitest.config.ts) — turbo menjalankan test api & worker bersamaan.
+const TEST_DB = process.env.EXAPAY_TEST_DB ?? "exapayroll_test";
+if (!/^exapayroll_[a-z_]*test$/.test(TEST_DB)) throw new Error(`[test/setup] nama database test tidak aman: ${TEST_DB}`);
 const MIGRATIONS_FOLDER = fileURLToPath(new URL("../../../packages/db/migrations", import.meta.url));
 
 declare module "vitest" {

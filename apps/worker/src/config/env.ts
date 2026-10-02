@@ -28,6 +28,9 @@ export const envSchema = z
     // Kalender kepatuhan (feature 33): jadwal pemindaian harian email H-7/H-1 (cron 5 kolom + zona waktu IANA)
     COMPLIANCE_CRON: z.string().trim().min(1).default("0 7 * * *"),
     COMPLIANCE_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
+    // Pengingat langganan (feature 40): pemindaian harian email trial H-7/H-3/H-1, tenggang, baca-saja
+    BILLING_NOTICE_CRON: z.string().trim().min(1).default("0 7 * * *"),
+    BILLING_NOTICE_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.ANTHROPIC_API_KEY !== undefined, {
     path: ["ANTHROPIC_API_KEY"],

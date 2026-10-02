@@ -31,6 +31,7 @@ import {
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
+  SUBSCRIPTION_NOTICE_KINDS,
   SUBSCRIPTION_STATUSES,
   TASK_LOG_STATUSES,
   TAX_RATE_KINDS,
@@ -1577,7 +1578,7 @@ export const billingPrices = pgTable(
 );
 
 // Satu baris per tenant. Status efektif (past_due/read_only) dihitung dari tanggal saat dibaca — lihat
-// apps/api/src/modules/billing/subscription-status.ts. Hanya super-admin/app_owner yang boleh membuat selain
+// subscriptionStateAt di @exapay/shared (billing.ts). Hanya super-admin/app_owner yang boleh membuat selain
 // trial (trigger guard_tenant_subscription); app_user tanpa UPDATE/DELETE sampai feature 41/42.
 export const tenantSubscriptions = pgTable(
   "tenant_subscriptions",
@@ -1597,4 +1598,23 @@ export const tenantSubscriptions = pgTable(
       sql`(${t.status} <> 'trialing' OR ${t.trialEndsAt} IS NOT NULL) AND (${t.status} <> 'active' OR ${t.currentPeriodEndsAt} IS NOT NULL)`,
     ),
   ],
+);
+
+export const subscriptionNoticeKind = pgEnum("subscription_notice_kind", SUBSCRIPTION_NOTICE_KINDS);
+
+// Email pengingat langganan yang sudah dikirim worker (feature 40) — satu baris per (usaha, jenis, akhir trial/periode)
+// agar tidak terkirim dua kali; perpanjangan trial/periode = period_ends_at baru = pengingat baru. Append-only.
+export const subscriptionNotices = pgTable(
+  "subscription_notices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    kind: subscriptionNoticeKind("kind").notNull(),
+    periodEndsAt: timestamp("period_ends_at", { withTimezone: true }).notNull(),
+    recipientCount: smallint("recipient_count").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("subscription_notices_once").on(t.tenantId, t.kind, t.periodEndsAt)],
 );

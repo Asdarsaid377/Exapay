@@ -218,6 +218,13 @@
       "when": 1790904127316,
       "tag": "0030_subscriptions_trial",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790932986949,
+      "tag": "0031_subscription_notices",
+      "breakpoints": true
     }
   ]
 }
