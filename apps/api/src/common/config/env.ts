@@ -4,6 +4,10 @@ import { z } from "zod";
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   API_PORT: z.coerce.number().int().positive().default(4000),
+  // Jumlah proxy tepercaya di depan API (Express "trust proxy") — menentukan req.ip untuk rate limit auth.
+  // 0 = IP koneksi langsung (dev). Production: 1 (Caddy → API, atau Caddy → web → API; keduanya meneruskan satu X-Forwarded-For).
+  // Hanya aman jika port API TIDAK terbuka ke internet (X-Forwarded-For bisa dipalsukan).
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(32, "JWT_ACCESS_SECRET minimal 32 karakter"),

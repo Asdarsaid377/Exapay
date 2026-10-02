@@ -31,6 +31,7 @@ import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Public } from "../../common/auth/public.decorator.js";
 import type { Env } from "../../common/config/env.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
+import { AUTH_RATE_LIMITS, AuthRateLimitService } from "./auth-rate-limit.service.js";
 import { ACCESS_TOKEN_TTL_SECONDS, AuthService, type IssuedSession, REFRESH_TOKEN_TTL_SECONDS } from "./auth.service.js";
 import { EmailVerificationService } from "./email-verification.service.js";
 import { PasswordResetService } from "./password-reset.service.js";
@@ -43,6 +44,7 @@ export class AuthController {
     private readonly passwordResetService: PasswordResetService,
     private readonly signupService: SignupService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly rateLimit: AuthRateLimitService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -51,9 +53,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body(new ZodValidationPipe(loginSchema)) body: LoginInput,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse<AuthResult>> {
-    const issued = await this.authService.login(body);
+    const issued = await this.authService.login(body, req.ip);
     return { success: true, data: this.deliver(res, issued, body.client) };
   }
 
@@ -101,7 +104,8 @@ export class AuthController {
   @Public()
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordInput): Promise<ApiResponse<null>> {
+  async forgotPassword(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordInput, @Req() req: Request): Promise<ApiResponse<null>> {
+    await this.rateLimit.consume({ policy: AUTH_RATE_LIMITS.emailRequestsPerIp, scope: "forgot-password", id: req.ip });
     await this.passwordResetService.request(body.email);
     return { success: true, data: null };
   }
@@ -119,7 +123,8 @@ export class AuthController {
   @Public()
   @Post("signup")
   @HttpCode(HttpStatus.OK)
-  async signup(@Body(new ZodValidationPipe(signupSchema)) body: SignupInput): Promise<ApiResponse<null>> {
+  async signup(@Body(new ZodValidationPipe(signupSchema)) body: SignupInput, @Req() req: Request): Promise<ApiResponse<null>> {
+    await this.rateLimit.consume({ policy: AUTH_RATE_LIMITS.emailRequestsPerIp, scope: "signup", id: req.ip });
     await this.signupService.signup(body);
     return { success: true, data: null };
   }
@@ -139,7 +144,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resendVerification(
     @Body(new ZodValidationPipe(resendVerificationSchema)) body: ResendVerificationInput,
+    @Req() req: Request,
   ): Promise<ApiResponse<null>> {
+    await this.rateLimit.consume({ policy: AUTH_RATE_LIMITS.emailRequestsPerIp, scope: "resend-verification", id: req.ip });
     await this.emailVerificationService.resend(body.email);
     return { success: true, data: null };
   }

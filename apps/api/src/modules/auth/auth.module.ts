@@ -5,6 +5,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard.js";
 import { RolesGuard } from "../../common/auth/roles.guard.js";
 import { AuthController } from "./auth.controller.js";
+import { AuthRateLimitService } from "./auth-rate-limit.service.js";
 import { AuthService } from "./auth.service.js";
 import { EmailVerificationService } from "./email-verification.service.js";
 import { PasswordResetService } from "./password-reset.service.js";
@@ -16,6 +17,7 @@ import { SignupService } from "./signup.service.js";
   controllers: [AuthController],
   providers: [
     AuthService,
+    AuthRateLimitService,
     PasswordResetService,
     EmailVerificationService,
     SignupService,

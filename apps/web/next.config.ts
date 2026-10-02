@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 
 import type { NextConfig } from "next";
@@ -18,6 +19,10 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  // Image production (docker/production/Dockerfile) memakai server standalone. Dev & `next start` tetap biasa.
+  ...(process.env.NEXT_OUTPUT_STANDALONE === "1"
+    ? { output: "standalone" as const, outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)) }
+    : {}),
   experimental: {
     // Upload lewat Server Action: impor karyawan (maks 1 MB) & lampiran izin (maks 5 MB, LEAVE_ATTACHMENT_MAX_BYTES)
     // + overhead multipart — bawaan Next 1 MB

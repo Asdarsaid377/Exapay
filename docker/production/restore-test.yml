@@ -1,0 +1,86 @@
+# Instance UJI RESTORE (feature 38) — terpisah total dari production: project, jaringan, dan volume sendiri.
+# Dijalankan lewat restore-test.sh (bukan langsung). Mengambil backup dari repository restic (S3 eksternal)
+# lalu memulihkannya ke Postgres + SeaweedFS baru, kemudian menyalakan API production di atas data tsb.
+# Sengaja TIDAK tergabung ke jaringan production: hostname service tidak bisa salah menunjuk ke database asli.
+name: exapay-restore-test
+
+services:
+  restore-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: restore-test-pg
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      APP_OWNER_PASSWORD: restore-test-app
+      APP_USER_PASSWORD: restore-test-app
+    volumes:
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB}"]
+      interval: 3s
+      retries: 30
+
+  restore-storage:
+    image: chrislusf/seaweedfs:4.48
+    command: server -s3 -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: restore-test
+      AWS_SECRET_ACCESS_KEY: restore-test-secret
+
+  restore-redis:
+    image: redis:8-alpine
+
+  restore:
+    build:
+      context: backup
+    profiles: ["tools"]
+    environment:
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?}
+      BACKUP_S3_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      BACKUP_S3_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION:-auto}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      RESTORE_PG_HOST: restore-db
+      RESTORE_PG_USER: postgres
+      RESTORE_PG_PASSWORD: restore-test-pg
+      RESTORE_PG_DB: ${POSTGRES_DB:?}
+      RESTORE_S3_ENDPOINT: http://restore-storage:8333
+      RESTORE_S3_BUCKET: ${S3_BUCKET:?}
+      RESTORE_S3_ACCESS_KEY_ID: restore-test
+      RESTORE_S3_SECRET_ACCESS_KEY: restore-test-secret
+
+  restore-api:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile
+      target: api
+    profiles: ["app"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://app_user:restore-test-app@restore-db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://restore-redis:6379
+      # JWT baru (sesi production tidak berlaku di sini); kunci enkripsi WAJIB sama dengan production
+      JWT_ACCESS_SECRET: restore-test-jwt-access-secret-0123456789abcdef
+      JWT_REFRESH_SECRET: restore-test-jwt-refresh-secret-0123456789abcdef
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?}
+      S3_ENDPOINT: http://restore-storage:8333
+      S3_REGION: us-east-1
+      S3_BUCKET: ${S3_BUCKET:?}
+      S3_ACCESS_KEY_ID: restore-test
+      S3_SECRET_ACCESS_KEY: restore-test-secret
+      APP_WEB_URL: https://restore-test.invalid
+      # Tidak ada email keluar dari instance uji
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "2525"
+      SMTP_FROM: "Uji Restore <uji@restore-test.invalid>"
+    ports:
+      # Hanya localhost VPS — akses lewat SSH tunnel bila perlu dicek manual
+      - "127.0.0.1:14000:4000"
+    depends_on:
+      restore-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health || exit 1"]
+      interval: 5s
+      retries: 20

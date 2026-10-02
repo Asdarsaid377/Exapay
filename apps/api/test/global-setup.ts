@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { drizzle } from "drizzle-orm/node-postgres";
+import { Redis } from "ioredis";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 import type { TestProject } from "vitest/node";
@@ -57,6 +58,16 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
   if (process.env.NODE_ENV === "production") {
     throw new Error("[test/setup] test integrasi tidak boleh dijalankan dengan NODE_ENV=production");
+  }
+
+  // Redis DB 15 khusus test (lihat setup-env.ts): kosongkan sisa job antrean & hitungan rate limit (feature 38) run sebelumnya
+  const redisUrl = new URL(requireEnv("REDIS_URL"));
+  redisUrl.pathname = "/15";
+  const redis = new Redis(redisUrl.toString());
+  try {
+    await redis.flushdb();
+  } finally {
+    await redis.quit();
   }
 
   const migrationUrl = requireEnv("DATABASE_MIGRATION_URL");

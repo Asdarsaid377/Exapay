@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 8 — Siap Produksi
-**Terakhir selesai:** 37b Tab KPI & Absensi Detail Karyawan + revisi peringatan upah minimum (2026-10-02)
-**Berikutnya:** 38 Backup & Deploy VPS
+**Terakhir selesai:** 38 Backup & Deploy VPS — diverifikasi di Docker lokal (2026-10-02)
+**Berikutnya:** semua feature build-plan selesai. Langkah user: deploy ke VPS sungguhan mengikuti `docker/production/README.md` + `restore-test.sh` di VPS, lalu uji coba klien
 
 ---
 
@@ -69,7 +69,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 37b Tab KPI & Absensi Detail Karyawan (sisipan, keputusan user 2026-10-02)
 
 ### Phase 8 — Siap Produksi
-- [ ] 38 Backup & Deploy VPS
+- [x] 38 Backup & Deploy VPS (diverifikasi lokal; deploy VPS nyata menunggu VPS user — keputusan user 2026-10-02)
 
 ---
 
@@ -257,6 +257,13 @@ _Format: tanggal — keputusan — alasan._
 
 - 2026-10-02 — **Tab KPI & Absensi detail karyawan (feature 37b, sisipan — keputusan user):** tab ini tercantum di project-overview tapi tidak pernah dijadwalkan di build-plan (masih "Segera hadir"). UI **tanpa referensi visual** (turunan pola /me/performance, /attendance/corrections, baris /kpi/reviews — izin user). Tab kini di URL (`?tab=data|salary|kpi|attendance`, Link; konstanta `EMPLOYEE_DETAIL_TABS` di `lib/employeeLabels.ts` — bukan di file "use client"), data tab KPI/Absensi hanya dimuat saat aktif dan dikirim ke `EmployeeDetailView` sebagai `tabContent`. API: `GET /kpi/employees/:id/score?month=` (`KpiScoresService.employeeScore`, bulan kalender s.d. hari ini — sama dengan skor milik sendiri) & `GET /kpi/employees/:id/reviews` (`KpiReviewsService.employeeReviews`, semua status, skor hanya final dari `final_score`) di `KpiEmployeesController`; cakupan `viewerEmployeeScope` (atasan bawahan langsung, lainnya 404). Tab Absensi memakai ulang `GET /attendance/recap/:employeeId` (respons kini + `month`/`currentMonth`) + `AttendancePeriodNav` (`keep={{tab}}`) + `AttendanceDayList` (prop `showEmployee`); tombol Koreksi tetap untuk owner/admin. `monthHref` menerima basePath ber-query.
 - 2026-10-02 — **Revisi peringatan upah minimum (keputusan user):** peringatan gaji di bawah UMK/UMP (feature 34) jadi **pengaturan per usaha, bawaan mati** — pemilik usaha tidak suka ditandai, dan usaha mikro & kecil dikecualikan dari upah minimum (PP 36/2021 — pasal perlu dicek ulang sebelum dikutip di UI). Migration `0029_minimum_wage_alerts`: `tenants.minimum_wage_alerts boolean not null default false` (semua usaha lama ikut mati). `MinimumWageService.summary` mengembalikan **null** bila mati → banner dashboard, banner/catatan kalender kepatuhan, dan tanda daftar karyawan hilang (tipe `minimumWage` dashboard & kepatuhan kini nullable). Sakelar **khusus owner**: `PUT /company/minimum-wage-alerts` (`@Roles("owner")` + peran dibaca ulang dari memberships, audit `tenant/update_minimum_wage_alerts`); UI di `/settings/company` (FormSection "Peringatan upah minimum", admin hanya melihat). Perhitungan UMK di payroll (batas BPJS) tidak berubah.
+- 2026-10-02 — **Feature 38 dinyatakan selesai dengan verifikasi lokal** (keputusan user: VPS belum ada). Stack production dijalankan di Docker lokal (APP_DOMAIN=localhost, sertifikat CA lokal Caddy); deploy VPS nyata = langkah user mengikuti runbook.
+- 2026-10-02 — Production: `docker-compose.prod.yml` + `docker/production/` (Dockerfile multi-target `api`/`worker`/`web`/`migrate`, Caddyfile, SeaweedFS `start.sh`, image backup, uji restore, README runbook). **Caddy** (HTTPS otomatis) satu domain: `/api/*` → NestJS (prefix dibuang), lainnya → web. Hanya Caddy membuka port. Env per service eksplisit (`${VAR:?}`), bukan `env_file`. Web: Next standalone hanya saat `NEXT_OUTPUT_STANDALONE=1` (dev/`next start` tetap). API/worker: `pnpm deploy --legacy --prod` (tanpa inject-workspace-packages agar dev tetap symlink). Container `migrate` memanggil `drizzle-kit` langsung (bukan `pnpm run` — gagal tanpa TTY) dan dipakai juga untuk `create-super-admin`.
+- 2026-10-02 — **Backup: restic → S3 eksternal (Cloudflare R2/B2)** (keputusan user) — terenkripsi di VPS. Isi: `pg_dump -Fc` (superuser, `--stdin-from-command` → pg_dump gagal = snapshot batal) + mirror bucket via rclone (konsisten per objek, bukan file volume SeaweedFS). Harian 02:30 WIB (`BACKUP_CRON`/`BACKUP_TZ`, crond busybox), retensi 7/4/6, `restic check --read-data-subset=5%`, ping healthchecks opsional. `restore.sh` menolak DB tujuan berisi tabel kecuali `RESTORE_CONFIRM=<db>`. Role DB tidak ikut backup — dibuat ulang `docker/postgres/init` (password boleh beda).
+- 2026-10-02 — SeaweedFS production: identitas `app` (`Admin/Read/Write/List/Tagging:<bucket>` — Admin bucket-scoped cukup untuk CreateBucket) dan `backup` (Read+List saja), tanpa admin global. Diverifikasi: backup tidak bisa tulis/hapus, app tidak bisa membuat bucket lain.
+- 2026-10-02 — **Rate limit auth** (keputusan user: masuk feature 38) — detail di `database-standards.md`. Env baru API `TRUST_PROXY_HOPS` (default 0, production 1). Server Action auth web meneruskan `X-Forwarded-For`. Tanpa rate limit di Caddy (butuh plugin custom build).
+- 2026-10-02 — SMTP: `secure` otomatis untuk port 465; production `requireTLS` (API & worker) — relay tanpa TLS ditolak. Provider relay belum dipilih (Brevo/Resend/Mailjet di runbook).
+
 ---
 
 ## Catatan (Notes)
@@ -274,8 +281,8 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Healthcheck container pakai `127.0.0.1`, bukan `localhost` (Alpine me-resolve `localhost` ke `::1`, API listen IPv4).
 - `pnpm-workspace.yaml`: `allowBuilds.esbuild: true` (pnpm 11 menolak install drizzle-kit/vitest tanpa izin build script).
 - Test RLS: `pnpm --filter @exapay/api test` butuh container postgres jalan. Test "semua tabel public RLS + FORCE" berisi daftar tabel eksplisit — update saat menambah tabel.
-- **Belum ada rate limiting login** (brute force) — putuskan di feature 04 atau 38.
-- Cookie sesi path `/` di domain web — sesuaikan jika reverse proxy production memakai prefix `/api` (feature 38).
+- Rate limiting login sudah ada sejak feature 38 (Redis). Belum ada: rate limit endpoint lain (mis. undangan accept), plugin rate limit di Caddy.
+- Cookie sesi path `/` tetap benar di production: browser hanya bicara dengan web; `/api/*` untuk client mobile (Bearer).
 - Email (reset password, verifikasi, pemberitahuan signup) dikirim fire-and-forget di proses API — belum tahan restart/tanpa retry. Pindahkan ke BullMQ saat infrastruktur antrean dibangun (feature 23/31 atau lebih awal).
 - Test API (`pnpm --filter @exapay/api test`) butuh postgres, redis, **dan mailpit** jalan. Total 106 test per feature 12. Sekali terlihat flake 405 di test undangan `users.e2e` (kemungkinan port supertest) — lulus saat diulang.
 - Browser dev: HTTP 431 di localhost = cookie besar dari project lain di `localhost` (cookie tidak dipisah per port). Solusi: hapus data situs localhost, bukan menaikkan batas header.
@@ -326,3 +333,7 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - Total test API 278 per feature 36 (`dashboard.e2e.test.ts` + skenario atasan — hanya bawahan langsung, cocok dengan /tasks/verification, /attendance/leave-requests, /kpi/reviews, /attendance/recap, /kpi/scores versi atasan; atasan tanpa tautan semua nol; pemisahan peran 403). Diverifikasi visual (Playwright desktop 1440 + mobile 390, Hendra Roti Sinar Pagi) dan dikonfirmasi user ("sesuai"). Belum ada: pembanding skor bulan lalu, hitungan tertunda di sidebar.
 - Total test API 280 per feature 37 (`employee-portal.e2e.test.ts`: profil tersamar + nonaktif, penilaian hanya final + narasi, alpa riwayat portal, ganti password & sesi lain dicabut; `attendance.e2e` riwayat kini cek alpa). **Jangan menjalankan dua proses vitest API bersamaan** — globalSetup drop/create `exapayroll_test` sehingga run lain gagal massal. Diverifikasi visual (Playwright mobile 390: Dewi Kopi Nusantara & Sari Demo Slip Gaji) dan dikonfirmasi user ("sudah sesuai"). Belum ada: ubah kontak sendiri oleh karyawan, notifikasi push, email pemberitahuan password diubah, rate limit percobaan password saat ini; tampilan nonaktif hanya diuji otomatis (belum visual).
 - Total test API 282 per feature 37b + revisi UMK (`employee-tabs.e2e.test.ts`: skor = /kpi/scores, cakupan atasan, riwayat penilaian, bulan payroll di rincian absensi; `minimum-wage.e2e` + skenario bawaan mati & khusus owner). Sekali terlihat timeout massal 15 dtk di full suite — lulus saat diulang tanpa perubahan (beban dev server). Diverifikasi visual (Playwright desktop 1440 + mobile 390) dan dikonfirmasi user ("sudah sesuai").
+- Total test API 289 per feature 38 (`auth-rate-limit.e2e.test.ts` 6 skenario, IP lewat `X-Forwarded-For` + `TRUST_PROXY_HOPS=1`). `global-setup.ts` kini mem-flush Redis DB 15. Full suite sempat timeout 15 dtk saat stack production lokal ikut berjalan — lulus saat diulang.
+- **Jangan menjalankan `pnpm deploy` di mesin dev** — menulis `node_modules/.pnpm-workspace-state-v1.json` dengan `production: true` sehingga `pnpm test` mencoba reinstall prod dan gagal (no TTY). Pulihkan dengan `pnpm install --frozen-lockfile`. Di Dockerfile aman (stage build).
+- Uji stack production lokal: `docker compose -p exapay-prod -f docker-compose.prod.yml --env-file <env> up -d` (port 80/443 host). Data uji = seed-trial Roti Sinar Pagi + super-admin `superadmin@exapay.local`. Hapus: `docker compose -p exapay-prod down -v`. Uji restore lokal butuh override agar container `restore` bergabung ke jaringan offsite lokal — **nama service instance uji wajib unik** (sempat menunjuk Postgres production karena sama-sama `postgres`; ditolak karena password beda).
+- Image production sekali build ±5 menit; `migrate` 2,2 GB (stage build penuh) — hanya one-shot.

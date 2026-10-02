@@ -1,0 +1,41 @@
+# Reverse proxy production (feature 38). Satu domain:
+#   /api/*  → NestJS (prefix /api dibuang; untuk client mobile/integrasi — browser memakai Server Action web)
+#   lainnya → Next.js
+# HTTPS otomatis (Let's Encrypt) untuk APP_DOMAIN. Uji lokal: APP_DOMAIN=localhost → sertifikat CA lokal Caddy.
+# X-Forwarded-For kiriman klien diabaikan Caddy (tanpa trusted_proxies) dan diganti IP klien asli —
+# dasar rate limit auth di API (TRUST_PROXY_HOPS=1).
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
+		-X-Powered-By
+	}
+
+	# Upload terbesar: lampiran izin 5 MB via Server Action (bodySizeLimit 6mb di next.config.ts)
+	request_body {
+		max_size 8MB
+	}
+
+	handle_path /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

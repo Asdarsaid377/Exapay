@@ -12,6 +12,7 @@ import type { AccessTokenPayload, AuthUser } from "../../common/auth/auth-user.j
 import type { Env } from "../../common/config/env.js";
 import { DRIZZLE } from "../../database/database.module.js";
 import { type Database, type Transaction, withUser } from "../../database/tenant-transaction.js";
+import { AUTH_RATE_LIMITS, AuthRateLimitService, type RateLimitSubject } from "./auth-rate-limit.service.js";
 
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -58,9 +59,18 @@ export class AuthService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly jwt: JwtService,
     private readonly config: ConfigService<Env, true>,
+    private readonly rateLimit: AuthRateLimitService,
   ) {}
 
-  async login(input: LoginInput): Promise<IssuedSession> {
+  // clientIp: IP browser (req.ip; di production lewat reverse proxy + web, lihat TRUST_PROXY_HOPS)
+  async login(input: LoginInput, clientIp: string | undefined): Promise<IssuedSession> {
+    const limits: RateLimitSubject[] = [
+      { policy: AUTH_RATE_LIMITS.loginFailuresPerIp, id: clientIp },
+      { policy: AUTH_RATE_LIMITS.loginFailuresPerEmail, id: input.email },
+    ];
+    // Dicek sebelum argon2: saat tertahan, password benar pun ditolak (tebakan tidak bisa dikonfirmasi)
+    await this.rateLimit.ensureAllowed(limits);
+
     // Belum ada konteks user → satu-satunya jalur baca users adalah fungsi SECURITY DEFINER
     const { rows } = await this.db.execute<LoginAccount>(
       sql`select id, password_hash, is_super_admin, email_verified_at from auth_find_user_by_email(${input.email})`,
@@ -71,8 +81,11 @@ export class AuthService {
       ? await verify(account.password_hash, input.password)
       : await this.verifyDummy(input.password);
     if (!account || !passwordValid) {
+      await this.rateLimit.record(limits);
       throw new UnauthorizedException("Email atau password salah");
     }
+    // Hitungan IP tidak direset: satu login benar tidak boleh membuka kembali tebakan massal dari IP yang sama
+    await this.rateLimit.clear([{ policy: AUTH_RATE_LIMITS.loginFailuresPerEmail, id: input.email }]);
     // Dicek SETELAH password benar: status verifikasi tidak bocor ke orang yang tidak tahu password
     if (!account.email_verified_at) {
       throw new ForbiddenException({
@@ -118,11 +131,18 @@ export class AuthService {
   // diakhiri (refresh token family lain dicabut); sesi yang sedang dipakai tetap. Access token sesi lain masih berlaku
   // ≤ 15 menit (sama dengan reset password & cabut akses).
   async changePassword(user: AuthUser, currentPassword: string, newPassword: string, refreshToken: string | undefined): Promise<void> {
+    // Access token curian tidak boleh dipakai menebak password lama tanpa batas
+    const limit: RateLimitSubject = { policy: AUTH_RATE_LIMITS.changePasswordFailuresPerUser, id: user.userId };
+    await this.rateLimit.ensureAllowed([limit]);
     const [account] = await withUser(this.db, user.userId, (tx) =>
       tx.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, user.userId)),
     );
     const valid = account?.passwordHash ? await verify(account.passwordHash, currentPassword) : await this.verifyDummy(currentPassword);
-    if (!valid) throw new BadRequestException("Password saat ini salah");
+    if (!valid) {
+      await this.rateLimit.record([limit]);
+      throw new BadRequestException("Password saat ini salah");
+    }
+    await this.rateLimit.clear([limit]);
 
     const payload = refreshToken ? await this.verifyRefreshToken(refreshToken) : null;
     const keepFamily = payload?.sub === user.userId ? payload.fam : null;

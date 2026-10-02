@@ -13,6 +13,8 @@ type RequestOptions = {
   body?: unknown;
   // Nilai header Cookie yang diteruskan ke API (sesi user)
   cookieHeader?: string;
+  // X-Forwarded-For dari request browser (diisi reverse proxy) — API memakainya untuk rate limit auth
+  forwardedFor?: string;
 };
 
 const NETWORK_ERROR = "Tidak dapat terhubung ke server. Silakan coba lagi.";
@@ -38,6 +40,7 @@ export async function apiRequest<T>(path: string, parse: (data: unknown) => T, o
         // Multipart: Content-Type (dengan boundary) diisi fetch sendiri
         ...(options.body !== undefined && !multipart ? { "Content-Type": "application/json" } : {}),
         ...(options.cookieHeader ? { Cookie: options.cookieHeader } : {}),
+        ...(options.forwardedFor ? { "X-Forwarded-For": options.forwardedFor } : {}),
       },
       body: options.body instanceof FormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined,
       cache: "no-store",

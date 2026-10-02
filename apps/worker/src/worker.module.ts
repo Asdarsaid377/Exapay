@@ -58,6 +58,7 @@ const REDIS_CLIENT = Symbol("REDIS_CLIENT");
           user: config.get("SMTP_USER", { infer: true }),
           password: config.get("SMTP_PASSWORD", { infer: true }),
           from: config.get("SMTP_FROM", { infer: true }),
+          requireTls: config.get("NODE_ENV", { infer: true }) === "production",
         }),
     },
     KpiReviewSummaryProcessor,

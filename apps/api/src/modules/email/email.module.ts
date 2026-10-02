@@ -9,9 +9,13 @@ function createSmtpTransport(config: ConfigService<Env, true>): EmailTransport {
   const user = config.get("SMTP_USER", { infer: true });
   const password = config.get("SMTP_PASSWORD", { infer: true });
   const from = config.get("SMTP_FROM", { infer: true });
+  const port = config.get("SMTP_PORT", { infer: true });
   const transporter = nodemailer.createTransport({
     host: config.get("SMTP_HOST", { infer: true }),
-    port: config.get("SMTP_PORT", { infer: true }),
+    port,
+    // 465 = TLS langsung; port lain (587) = STARTTLS. Production wajib TLS — kredensial relay tidak pernah terkirim polos.
+    secure: port === 465,
+    requireTLS: config.get("NODE_ENV", { infer: true }) === "production",
     auth: user && password ? { user, pass: password } : undefined,
   });
 

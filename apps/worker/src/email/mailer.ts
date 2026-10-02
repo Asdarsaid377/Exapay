@@ -19,6 +19,8 @@ export type SmtpConfig = {
   user: string | undefined;
   password: string | undefined;
   from: string;
+  // Production: tolak koneksi tanpa TLS (STARTTLS di 587, TLS langsung di 465)
+  requireTls: boolean;
 };
 
 export class SmtpMailer extends Mailer {
@@ -29,6 +31,8 @@ export class SmtpMailer extends Mailer {
     this.transporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
+      secure: config.port === 465,
+      requireTLS: config.requireTls,
       auth: config.user && config.password ? { user: config.user, pass: config.password } : undefined,
     });
   }

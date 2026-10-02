@@ -14,7 +14,7 @@ import {
   type SignupInput,
   verifyEmailSchema,
 } from "@exapay/shared";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -61,6 +61,11 @@ function homeOf(session: AuthSession): string | null {
   });
 }
 
+// IP browser dari reverse proxy (production: Caddy mengganti X-Forwarded-For kiriman klien). Dev tanpa proxy: kosong.
+async function forwardedFor(): Promise<string | undefined> {
+  return (await headers()).get("x-forwarded-for") ?? undefined;
+}
+
 function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Input tidak valid";
 }
@@ -69,7 +74,11 @@ export async function login(input: { email: string; password: string }): Promise
   const parsed = loginSchema.safeParse({ ...input, client: "web" });
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
-  const result = await apiRequest("/auth/login", (data) => authSessionSchema.parse(data), { method: "POST", body: parsed.data });
+  const result = await apiRequest("/auth/login", (data) => authSessionSchema.parse(data), {
+    method: "POST",
+    body: parsed.data,
+    forwardedFor: await forwardedFor(),
+  });
   // Password benar tapi email belum diverifikasi → tawarkan kirim ulang. 403 lain (mis. usaha dinonaktifkan) = error biasa.
   if (!result.ok && result.code === "EMAIL_UNVERIFIED") return { kind: "unverified", email: parsed.data.email, message: result.error };
   if (!result.ok) return { kind: "error", message: result.error };
@@ -124,7 +133,7 @@ export async function requestPasswordReset(email: string): Promise<SimpleOutcome
   const parsed = forgotPasswordSchema.safeParse({ email });
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
-  const result = await apiRequest("/auth/forgot-password", ignoreData, { method: "POST", body: parsed.data });
+  const result = await apiRequest("/auth/forgot-password", ignoreData, { method: "POST", body: parsed.data, forwardedFor: await forwardedFor() });
   return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
 }
 
@@ -143,7 +152,7 @@ export async function signup(input: SignupInput): Promise<SimpleOutcome> {
   const parsed = signupSchema.safeParse(input);
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
-  const result = await apiRequest("/auth/signup", ignoreData, { method: "POST", body: parsed.data });
+  const result = await apiRequest("/auth/signup", ignoreData, { method: "POST", body: parsed.data, forwardedFor: await forwardedFor() });
   return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
 }
 
@@ -161,7 +170,7 @@ export async function resendVerification(email: string): Promise<SimpleOutcome> 
   const parsed = resendVerificationSchema.safeParse({ email });
   if (!parsed.success) return { kind: "error", message: firstIssue(parsed.error) };
 
-  const result = await apiRequest("/auth/resend-verification", ignoreData, { method: "POST", body: parsed.data });
+  const result = await apiRequest("/auth/resend-verification", ignoreData, { method: "POST", body: parsed.data, forwardedFor: await forwardedFor() });
   return result.ok ? { kind: "success" } : { kind: "error", message: result.error };
 }
 

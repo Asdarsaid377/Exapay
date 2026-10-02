@@ -40,7 +40,10 @@
 │   └── designs/                      → Referensi desain (png/jpg)
 ├── docker-compose.yml                → api, web, worker, postgres, redis, mailpit, storage (development)
 ├── Dockerfile                        → image dev bersama api/web/worker
-├── docker/postgres/init/             → script init: role app_owner & app_user
+├── docker-compose.prod.yml           → production satu VPS (caddy, api, web, worker, postgres, redis, storage, migrate, backup)
+├── .env.production.example           → template env production (salinan asli `.env.production` tidak di-commit)
+├── docker/postgres/init/             → script init: role app_owner & app_user (dev & production)
+├── docker/production/                → Dockerfile multi-target, Caddyfile, SeaweedFS start.sh, image backup (restic), uji restore, README runbook deploy
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── apps/
@@ -188,8 +191,8 @@ Detail: `context/database-standards.md`.
 ## Environment & Deployment
 
 - **Local/dev:** Docker Compose (`api`, `web`, `worker`, `postgres`, `redis`, `mailpit`, storage S3-compatible)
-- **Prinsip:** semua infrastruktur self-hosted di VPS user; satu-satunya pihak ketiga di MVP adalah SMTP relay (production) dan API Claude
-- **Production awal:** satu VPS, Docker Compose, reverse proxy (web dan api di domain yang sama agar cookie sesi sederhana, mis. `/api` → NestJS)
-- **Backup:** pg_dump terjadwal ke penyimpanan di luar server — wajib sebelum ada data klien nyata
+- **Prinsip:** semua infrastruktur self-hosted di VPS user; pihak ketiga di MVP hanya SMTP relay (production), API Claude, dan penyimpanan backup S3 eksternal (Cloudflare R2/B2 — hanya menerima data terenkripsi restic)
+- **Production (feature 38):** satu VPS, `docker-compose.prod.yml`. Caddy (HTTPS otomatis) satu domain: `/api/*` → NestJS (prefix dibuang, untuk client mobile), lainnya → Next.js standalone. Hanya Caddy yang membuka port; service lain di jaringan Docker. API `TRUST_PROXY_HOPS=1` (IP klien untuk rate limit auth). Runbook: `docker/production/README.md`
+- **Backup:** service `backup` — pg_dump + mirror bucket storage → restic (terenkripsi) → S3 eksternal, harian + retensi + `restic check`. Uji restore ke instance terpisah: `docker/production/restore-test.sh`
 - **Migration:** dijalankan lewat drizzle-kit (koneksi `DATABASE_MIGRATION_URL`), dari CI atau manual terkontrol — tidak pernah SQL copy-paste ke production
 - Belum perlu Kubernetes

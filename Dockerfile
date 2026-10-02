@@ -1,5 +1,5 @@
 # Image development bersama untuk api, web, worker (satu build, beda command).
-# Image production yang ramping dibuat di feature 38.
+# Image production: docker/production/Dockerfile (feature 38).
 FROM node:24-alpine
 RUN npm install -g pnpm@11.9.0
 WORKDIR /repo

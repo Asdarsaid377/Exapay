@@ -117,6 +117,7 @@ Aturan:
 - Fungsi SECURITY DEFINER membaca tabel lewat policy `definer_select` (`current_user = 'app_owner'`) — ada di `users`, `tenants`, `memberships`, `invitations`, dan tabel token. Jangan membuat policy yang memanggil fungsi definer yang membaca tabel ber-policy lain (risiko rekursi policy)
 - Login tanpa konteks memakai fungsi `auth_find_user_by_email()` (SECURITY DEFINER milik `app_owner`); policy `definer_select` di `users` hanya berlaku untuk `current_user = 'app_owner'`
 - `is_super_admin` hanya bisa diubah `app_owner` (trigger `guard_super_admin_flag`)
+- **Rate limit auth (feature 38):** `AuthRateLimitService` (Redis, jendela tetap, kunci `ratelimit:<policy>:[scope:]<sha256 id>` — tanpa email/IP mentah). Kebijakan di `AUTH_RATE_LIMITS`: login **gagal** 10/15 menit per email + 50/15 menit per IP (login benar tidak dihitung — satu kantor = satu IP NAT; berhasil mereset hitungan email, bukan IP); dicek **sebelum** argon2 sehingga password benar pun 429 saat tertahan. Ganti password salah 5/15 menit per user. Lupa password/signup/kirim ulang verifikasi 20/jam per IP per endpoint. Redis mati → diizinkan + log warn. IP = `req.ip` dengan `TRUST_PROXY_HOPS` (production 1: Caddy mengganti `X-Forwarded-For`; Server Action auth web meneruskan header itu ke API). Test e2e memakai Redis DB 15 yang di-flush di `global-setup.ts`
 
 ---
 
