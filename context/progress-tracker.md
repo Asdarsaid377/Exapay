@@ -300,6 +300,7 @@ _Format: tanggal — keputusan — alasan._
 
 _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat session berikutnya._
 
+- `dev-accounts.md` (root, **tidak di-commit** — ada di `.gitignore`, berisi email nyata): daftar akun percobaan dev lokal per usaha + peran, dibuat 2026-10-02 atas permintaan user. Password dicek dengan mencocokkan hash (bukan login): akun seed/uji umumnya `password123`; yang "tidak diketahui" direset lewat Lupa password + Mailpit. Perbarui file ini bila user menambah usaha/akun.
 - Belum diputuskan: nama produk final & domain. Harga sudah diputuskan (Rp10.000/karyawan aktif/bulan, min. 5 — Phase 9).
 - `context/designs/` berisi snapshot glassmorphism (dashboard, portal `/me`, token & komponen). Halaman lain belum punya desain — turunkan dari pola snapshot + `ui-rules.md`, tetap lewat cek referensi `ui-workflow.md` (tawarkan prompt Claude Design untuk halaman yang polanya belum ada, mis. tabel data, form panjang, halaman auth versi kaca).
 - Elemen di desain yang belum didukung fitur: "Daftarkan usaha baru" di dropdown tenant (signup saat ini hanya untuk email baru), hitungan tertunda di sidebar (butuh data feature 15/20), kota di sub-judul tenant (feature 09). Logo di desain berupa placeholder "e" + wordmark "exapay" (huruf kecil) — berbeda dari `ExapayLogo` sekarang; putuskan saat redesign.
