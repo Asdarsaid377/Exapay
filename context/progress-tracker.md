@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
-**Terakhir selesai:** 40 Halaman Langganan & Pengingat Trial (2026-10-02)
-**Berikutnya:** 41 Tagihan & Pembayaran QRIS. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Terakhir selesai:** 41 Tagihan & Pembayaran QRIS (2026-10-02)
+**Berikutnya:** 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin). Paralel (langkah user): uji bayar QRIS nyata nominal kecil setelah `QRIS_STATIC_PAYLOAD` diisi QR merchant asli; Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -74,7 +74,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 9 — Monetisasi: Trial, Langganan & Landing Page
 - [x] 39 Fondasi Langganan & Trial
 - [x] 40 Halaman Langganan & Pengingat Trial
-- [ ] 41 Tagihan & Pembayaran QRIS
+- [x] 41 Tagihan & Pembayaran QRIS (uji bayar nyata menunggu QR merchant user)
 - [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
 - [ ] 43 Landing Page Marketing
 
@@ -282,6 +282,11 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — Migration `0031_subscription_notices`: `subscription_notices` (tenant, RLS FORCE, app_user SELECT + INSERT saja, unik `(tenant_id, kind, period_ends_at)` — perpanjangan trial/periode = pengingat baru). Worker `BillingNoticeProcessor` antrean `billing`: scheduler `billing-notice-daily` (env `BILLING_NOTICE_CRON` default `0 7 * * *`, `BILLING_NOTICE_CRON_TZ` Asia/Jakarta) → `billing-notice-scan` (id usaha dari `compliance_active_tenant_ids()`) → `billing-notice` per usaha: klaim baris notice + kirim email ke **owner terverifikasi** di transaksi yang sama (email gagal → rollback → retry; job paralel menunggu index unik lalu dilewati). Manual: `pnpm --filter @exapay/worker billing:scan`.
 - 2026-10-02 — Banner langganan: owner → tombol "Lihat langganan"; admin → tanpa tombol + "Hubungi pemilik usaha"; disembunyikan di `/settings/billing`. Menu "Langganan" khusus owner (proxy mengalihkan admin).
 - 2026-10-02 — Test worker kini memakai DB (`apps/worker/vitest.config.ts` → globalSetup API dengan `EXAPAY_TEST_DB=exapayroll_worker_test`) — `turbo run test` menjalankan api & worker bersamaan, jadi nama database harus berbeda. Global setup menolak nama DB selain pola `exapayroll_*test`.
+- 2026-10-02 — Keputusan user (feature 41): tagihan terbit **H-7** sebelum trial/periode berakhir, berlaku **14 hari kalender** sampai akhir hari WIB (= akhir masa tenggang 7 hari); usaha yang sudah tenggang/baca-saja tanpa tagihan berjalan → terbit saat pemindaian berikutnya (periode mulai = hari terbit). UI tagihan **tanpa referensi visual** (turunan pola FormSection/StatTile/PayrollRunList, izin user). Konstanta `BILLING_INVOICE_LEAD_DAYS/DUE_DAYS` di `@exapay/shared` (kebijakan produk, bukan data harga).
+- 2026-10-02 — **Tagihan (feature 41):** migration `0032_billing_invoices` — tabel tenant `billing_invoices` (status `open/awaiting_confirmation/paid/expired`, snapshot harga/minimum/karyawan aktif, `unique_code` 1–999, CHECK konsistensi nominal, bukti bayar opsional di storage `billing-invoices/<id>/…`). Index unik parsial: **satu tagihan berjalan per usaha** dan **nominal total unik di antara tagihan berjalan seluruh platform** (index tidak melewati RLS → tanpa membaca data usaha lain; worker memilih kode acak + `ON CONFLICT DO NOTHING` + coba ulang). app_user SELECT/INSERT + UPDATE per kolom (status & klaim); trigger `guard_billing_invoice`: INSERT hanya open, open→awaiting_confirmation (≤ due_at), open→expired (> due_at, jam DB); lunas/tolak hanya super-admin/app_owner (feature 42). Tagihan open lewat batas tampil `expired` di API walau worker belum menandai.
+- 2026-10-02 — Worker antrean `billing` (satu Worker untuk semua job — dua Worker di satu antrean saling merebut job): scan harian kini juga menjadwalkan `billing-invoice` per usaha (`BillingInvoices.issue`: expire → terbitkan + email ke owner terverifikasi di transaksi yang sama) dan memproses `billing-claim-notify` dari API (email ke `BILLING_NOTIFY_EMAIL`, dipisah koma, wajib di production; tanpa data karyawan). Nomor tagihan `EXA-YYMM-XXXXXX`.
+- 2026-10-02 — **QRIS:** `apps/api/src/modules/billing/qris.ts` (murni) mengurai TLV EMVCo — bukan ganti-teks seperti verssache — cek CRC16/CCITT-FALSE, tag 01 → 12, sisip/ganti tag 54, **buang tag tip 55–57** agar nominal persis, CRC ulang; diuji terhadap vektor yang dihitung terpisah dengan cara verssache. Env API `QRIS_STATIC_PAYLOAD` (opsional, divalidasi saat start; kosong → QR tidak tampil). `PaymentProvider` (abstrak) + `QrisManualPaymentProvider` (`qrcode` 1.5.4, PNG). API: `GET /billing` (+ `invoice`, `invoices` 24 terakhir, `qrisAvailable`), `GET /billing/invoices/:id/qris` (PNG, owner, hanya tagihan yang masih bisa dibayar), `POST /billing/invoices/:id/claim` (multipart `proof` opsional, owner dibaca ulang dari memberships, `@AllowWhenReadOnly`, audit `billing_invoice/claim`, enqueue pemberitahuan setelah commit — gagal enqueue tidak membatalkan klaim). Web: Route Handler `/settings/billing/invoices/[id]/qris` (`?download=1` → lampiran).
+- 2026-10-02 — Perbaikan di luar scope (laporan user): path `/admin/*` yang belum ada jatuh ke catch-all area usaha `(main)` yang me-logout super-admin (tanpa usaha aktif). Kini `app/(admin)/admin/[...slug]` → 404 di panel super-admin, dan layout `(main)` mengarahkan super-admin tanpa usaha ke `/admin/tenants`. Halaman 404 bawaan Next belum bergaya Exapay (teks nyaris tak terbaca) — perlu keputusan UI terpisah.
 ---
 
 ## Catatan (Notes)

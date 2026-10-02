@@ -101,6 +101,7 @@ describe("role runtime app_user", () => {
       "attendance_deduction_rules",
       "attendance_records",
       "audit_logs",
+      "billing_invoices",
       "billing_prices",
       "bpjs_rates",
       "company_holidays",

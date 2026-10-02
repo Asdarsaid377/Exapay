@@ -2,12 +2,12 @@ import "reflect-metadata";
 import { randomUUID } from "node:crypto";
 
 import * as schema from "@exapay/db";
-import { departments, employees, memberships, positions, tenants, tenantSubscriptions, users } from "@exapay/db";
+import { auditLogs, billingInvoices, departments, employees, memberships, positions, tenants, tenantSubscriptions, users } from "@exapay/db";
 import { type MembershipRole, type SubscriptionStatus } from "@exapay/shared";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { hash } from "@node-rs/argon2";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import request from "supertest";
@@ -19,6 +19,8 @@ import { type Database, withTenant, withUser } from "../src/database/tenant-tran
 
 // Verifikasi feature 40: GET /billing (owner) — estimasi = karyawan aktif /employees × harga berlaku (min. ditagih);
 // GET /billing/status (owner/admin) — tahap banner pada hari yang tepat. Email pengingat: apps/worker/test/billing-notice.test.ts.
+// Feature 41: tagihan di /billing, QRIS (PNG) bernominal, "Saya sudah bayar" (+ bukti) → menunggu konfirmasi, juga saat
+// baca-saja. Penerbitan tagihan (worker): apps/worker/test/billing-invoices.test.ts — di sini tagihan dibuat langsung.
 
 const PASSWORD = "password-billing-123";
 const DAY = 24 * 60 * 60 * 1000;
@@ -77,6 +79,55 @@ async function addEmployees(tenantId: string, active: number, inactive: number):
     ];
     if (rows.length > 0) await tx.insert(employees).values(rows);
   });
+}
+
+// PNG 1×1 minimal (cukup untuk pemeriksaan magic bytes)
+const PNG = Buffer.from("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082", "hex");
+// Kode unik berurutan per file test agar nominal tagihan berjalan tidak bentrok (index unik lintas tenant)
+let nextCode = 100;
+
+// Tagihan open seperti yang diterbitkan worker (app_user boleh INSERT status open). Tanggal lampau → app_owner.
+
+// Seperti langkah pertama worker: tagihan open yang lewat batas bayar → expired (membebaskan slot tagihan berjalan)
+async function expireOverdue(tenantId: string): Promise<void> {
+  await withTenant(db, { tenantId, userId: null }, (tx) =>
+    tx.update(billingInvoices).set({ status: "expired" }).where(and(eq(billingInvoices.status, "open"), sql`${billingInvoices.dueAt} < now()`)),
+  );
+}
+async function insertInvoice(tenantId: string, dates: { issuedAt?: Date; dueAt?: Date } = {}): Promise<{ id: string; totalAmount: string }> {
+  const uniqueCode = nextCode++;
+  const values = {
+    tenantId,
+    number: `EXA-TEST-${randomUUID().slice(0, 8).toUpperCase()}`,
+    periodStart: "2026-10-10",
+    issuedAt: dates.issuedAt ?? new Date(),
+    dueAt: dates.dueAt ?? new Date(Date.now() + 14 * DAY),
+    pricePerEmployee: "10000",
+    minBilledEmployees: 5,
+    activeEmployees: 3,
+    billedEmployees: 5,
+    baseAmount: "50000",
+    uniqueCode,
+    totalAmount: String(50000 + uniqueCode),
+  };
+  if (dates.issuedAt) {
+    return ownerDb.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
+      const [row] = await tx.insert(billingInvoices).values(values).returning({ id: billingInvoices.id, totalAmount: billingInvoices.totalAmount });
+      if (!row) throw new Error("gagal membuat tagihan");
+      return row;
+    });
+  }
+  const [row] = await withTenant(db, { tenantId, userId: null }, (tx) =>
+    tx.insert(billingInvoices).values(values).returning({ id: billingInvoices.id, totalAmount: billingInvoices.totalAmount }),
+  );
+  if (!row) throw new Error("gagal membuat tagihan");
+  return row;
+}
+
+function claimAs(token: string, invoiceId: string, proof?: { buffer: Buffer; filename: string; contentType: string }): request.Test {
+  const req = request(server).post(`/billing/invoices/${invoiceId}/claim`).set("Authorization", `Bearer ${token}`);
+  return proof ? req.attach("proof", proof.buffer, { filename: proof.filename, contentType: proof.contentType }) : req.field("note", "");
 }
 
 function getAs(token: string, path: string): request.Test {
@@ -175,5 +226,88 @@ describe("GET /billing/status — tahap banner menurut tanggal", () => {
     expect((await getAs(ws.tokens.owner, "/billing/status")).body.data).toMatchObject({ status: "active", notice: null, daysLeft: 2 });
     await setSubscription(ws.tenantId, "complimentary");
     expect((await getAs(ws.tokens.owner, "/billing/status")).body.data).toMatchObject({ status: "complimentary", notice: null, endsAt: null });
+  });
+});
+
+describe("tagihan & pembayaran QRIS (feature 41)", () => {
+  it("GET /billing: tagihan berjalan + riwayat; tagihan lewat batas tampil expired; QRIS tersedia", async () => {
+    const ws = await createWorkspace("Toko Riwayat Tagihan");
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() + 5 * DAY) });
+    const empty = await getAs(ws.tokens.owner, "/billing");
+    expect(empty.body.data).toMatchObject({ invoice: null, invoices: [], qrisAvailable: true });
+
+    // Lewat batas bayar tapi belum ditandai worker → tampil expired, bukan tagihan berjalan
+    await insertInvoice(ws.tenantId, { issuedAt: new Date(Date.now() - 20 * DAY), dueAt: new Date(Date.now() - 6 * DAY) });
+    const overdue = await getAs(ws.tokens.owner, "/billing");
+    expect(overdue.body.data).toMatchObject({ invoice: null, invoices: [{ status: "expired" }] });
+
+    await expireOverdue(ws.tenantId);
+    const current = await insertInvoice(ws.tenantId);
+    const res = await getAs(ws.tokens.owner, "/billing");
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.data.invoice).toMatchObject({ id: current.id, status: "open", totalAmount: current.totalAmount, baseAmount: "50000.00", billedEmployees: 5, proof: null });
+    expect(res.body.data.invoices.map((invoice: { status: string }) => invoice.status)).toEqual(["open", "expired"]);
+  });
+
+  it("QRIS PNG khusus owner untuk tagihan yang masih bisa dibayar; tagihan usaha lain 404", async () => {
+    const ws = await createWorkspace("Toko QRIS");
+    const other = await createWorkspace("Toko QRIS Lain");
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() + 5 * DAY) });
+    const invoice = await insertInvoice(ws.tenantId);
+    const otherInvoice = await insertInvoice(other.tenantId);
+
+    const qr = await getAs(ws.tokens.owner, `/billing/invoices/${invoice.id}/qris`).buffer(true);
+    expect(qr.status).toBe(200);
+    expect(qr.headers["content-type"]).toBe("image/png");
+    expect(Buffer.from(qr.body).subarray(1, 4).toString()).toBe("PNG");
+    expect(qr.headers["content-disposition"]).toMatch(/QRIS-EXA-TEST-/);
+
+    expect((await getAs(ws.tokens.admin, `/billing/invoices/${invoice.id}/qris`)).status).toBe(403);
+    expect((await getAs(ws.tokens.owner, `/billing/invoices/${otherInvoice.id}/qris`)).status).toBe(404);
+    expect((await getAs(ws.tokens.owner, "/billing/invoices/bukan-uuid/qris")).status).toBe(404);
+  });
+
+  it("Saya sudah bayar + bukti → menunggu konfirmasi, audit, QR ditutup; tidak bisa dilaporkan dua kali", async () => {
+    const ws = await createWorkspace("Toko Lapor");
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() + 5 * DAY) });
+    const invoice = await insertInvoice(ws.tenantId);
+
+    expect((await claimAs(ws.tokens.admin, invoice.id)).status).toBe(403);
+    // Bukti bukan PDF/JPG/PNG ditolak; tagihan tetap open
+    const bad = await claimAs(ws.tokens.owner, invoice.id, { buffer: Buffer.from("halo"), filename: "bukti.txt", contentType: "text/plain" });
+    expect(bad.status).toBe(400);
+
+    const res = await claimAs(ws.tokens.owner, invoice.id, { buffer: PNG, filename: "bukti transfer.png", contentType: "image/png" });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.data).toMatchObject({ status: "awaiting_confirmation", proof: { name: "bukti transfer.png", contentType: "image/png", size: PNG.length } });
+    expect(res.body.data.claimedAt).not.toBeNull();
+
+    const overview = await getAs(ws.tokens.owner, "/billing");
+    expect(overview.body.data.invoice).toMatchObject({ id: invoice.id, status: "awaiting_confirmation" });
+    expect((await getAs(ws.tokens.owner, `/billing/invoices/${invoice.id}/qris`)).status).toBe(409);
+    expect((await claimAs(ws.tokens.owner, invoice.id)).status).toBe(409);
+
+    const audits = await withTenant(db, { tenantId: ws.tenantId, userId: null }, (tx) =>
+      tx.select({ action: auditLogs.action, after: auditLogs.after }).from(auditLogs).where(and(eq(auditLogs.entity, "billing_invoice"), eq(auditLogs.entityId, invoice.id))),
+    );
+    expect(audits).toMatchObject([{ action: "claim", after: { status: "awaiting_confirmation", totalAmount: invoice.totalAmount, proof: "(diunggah)" } }]);
+  });
+
+  it("usaha baca-saja tetap bisa melaporkan bayar (tanpa bukti); tagihan kedaluwarsa ditolak", async () => {
+    const ws = await createWorkspace("Toko Baca Saja Bayar");
+    await setSubscription(ws.tenantId, "trialing", { trialEndsAt: new Date(Date.now() - 20 * DAY) });
+    // Mutasi lain tetap 402
+    const blocked = await request(server).put("/company").set("Authorization", `Bearer ${ws.tokens.owner}`).send({ name: "Ganti" });
+    expect(blocked.status).toBe(402);
+
+    const expired = await insertInvoice(ws.tenantId, { issuedAt: new Date(Date.now() - 20 * DAY), dueAt: new Date(Date.now() - DAY) });
+    expect((await claimAs(ws.tokens.owner, expired.id)).status).toBe(409);
+    expect((await getAs(ws.tokens.owner, `/billing/invoices/${expired.id}/qris`)).status).toBe(409);
+
+    await expireOverdue(ws.tenantId);
+    const invoice = await insertInvoice(ws.tenantId);
+    const res = await claimAs(ws.tokens.owner, invoice.id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.data).toMatchObject({ status: "awaiting_confirmation", proof: null });
   });
 });

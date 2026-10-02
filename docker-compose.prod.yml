@@ -120,6 +120,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:?}
+      # Tagihan langganan (feature 41): kosong → QR tidak ditampilkan
+      QRIS_STATIC_PAYLOAD: ${QRIS_STATIC_PAYLOAD:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -159,6 +161,7 @@ services:
       COMPLIANCE_CRON_TZ: ${COMPLIANCE_CRON_TZ:-Asia/Jakarta}
       BILLING_NOTICE_CRON: ${BILLING_NOTICE_CRON:-0 7 * * *}
       BILLING_NOTICE_CRON_TZ: ${BILLING_NOTICE_CRON_TZ:-Asia/Jakarta}
+      BILLING_NOTIFY_EMAIL: ${BILLING_NOTIFY_EMAIL:?}
     depends_on:
       migrate:
         condition: service_completed_successfully

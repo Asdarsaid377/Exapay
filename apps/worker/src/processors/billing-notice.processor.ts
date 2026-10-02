@@ -1,23 +1,14 @@
+import { type Database, memberships, subscriptionNotices, type TenantContext, tenants, tenantSubscriptions, users, withTenant } from "@exapay/db";
 import {
-  billingPrices,
-  type Database,
-  memberships,
-  subscriptionNotices,
-  type TenantContext,
-  tenants,
-  tenantSubscriptions,
-  type Transaction,
-  users,
-  withTenant,
-} from "@exapay/db";
-import {
+  BILLING_CLAIM_NOTIFY_JOB,
+  BILLING_INVOICE_JOB,
   BILLING_NOTICE_JOB,
   BILLING_NOTICE_SCAN_JOB,
   BILLING_QUEUE_NAME,
+  billingClaimNotifyJobDataSchema,
   type BillingNoticeJobData,
   billingNoticeJobDataSchema,
   SUBSCRIPTION_TIME_ZONE,
-  subscriptionDate,
   subscriptionDaysUntil,
   subscriptionNoticeAt,
   type SubscriptionNoticeKind,
@@ -28,12 +19,13 @@ import {
 import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnApplicationShutdown } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { type Job, Queue, UnrecoverableError, Worker } from "bullmq";
-import { and, desc, eq, gte, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { Redis } from "ioredis";
 
 import type { Env } from "../config/env.js";
 import { DRIZZLE } from "../database/database.module.js";
 import { type EmailMessage, Mailer } from "../email/mailer.js";
+import { BillingInvoices, priceAt } from "./billing-invoices.js";
 
 const SCHEDULER_ID = "billing-notice-daily";
 const NOTICE_JOB_OPTIONS = {
@@ -59,6 +51,9 @@ type NoticeContext = {
 //   banner API). Tahap belum tercatat di subscription_notices → baris dicatat lalu email dikirim ke owner terverifikasi
 //   DI TRANSAKSI YANG SAMA: email gagal → rollback → dicoba ulang; job paralel menunggu index unik lalu dilewati.
 //   Hanya tahap paling mendesak yang dikirim (worker mati beberapa hari tidak mengirim pengingat yang sudah basi).
+// Feature 41 — satu Worker untuk seluruh antrean "billing" (dua Worker di antrean yang sama saling merebut job):
+// - billing-invoice (dari scan yang sama): terbitkan/kedaluwarsakan tagihan usaha itu → BillingInvoices.issue
+// - billing-claim-notify (dari API saat owner menekan "Saya sudah bayar") → BillingInvoices.notifyClaim
 @Injectable()
 export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(BillingNoticeProcessor.name);
@@ -70,6 +65,7 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly mailer: Mailer,
     private readonly config: ConfigService<Env, true>,
+    private readonly invoices: BillingInvoices,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -96,6 +92,16 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
       if (!data.success) throw new UnrecoverableError("payload job tidak valid");
       return this.notify(data.data);
     }
+    if (job.name === BILLING_INVOICE_JOB) {
+      const data = billingNoticeJobDataSchema.safeParse(job.data);
+      if (!data.success) throw new UnrecoverableError("payload job tidak valid");
+      return this.invoices.issue(data.data);
+    }
+    if (job.name === BILLING_CLAIM_NOTIFY_JOB) {
+      const data = billingClaimNotifyJobDataSchema.safeParse(job.data);
+      if (!data.success) throw new UnrecoverableError("payload job tidak valid");
+      return this.invoices.notifyClaim(data.data);
+    }
     throw new UnrecoverableError(`job tidak dikenal: ${job.name}`);
   }
 
@@ -106,6 +112,8 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
     const scanId = (job.id ?? "manual").replaceAll(":", "-");
     for (const row of result.rows) {
       const data: BillingNoticeJobData = { tenantId: row.id };
+      // Tagihan dulu: email tagihan (H-7) dan pengingat trial H-7 sama-sama berangkat hari itu
+      await this.queue.add(BILLING_INVOICE_JOB, data, { ...NOTICE_JOB_OPTIONS, jobId: `billing-invoice_${row.id}_${scanId}` });
       await this.queue.add(BILLING_NOTICE_JOB, data, { ...NOTICE_JOB_OPTIONS, jobId: `billing-notice_${row.id}_${scanId}` });
     }
     this.logger.log(`[billing/scan] ${result.rows.length} usaha dijadwalkan`);
@@ -127,7 +135,7 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
         .where(eq(tenantSubscriptions.tenantId, ctx.tenantId));
       if (!row || row.status === "complimentary") return "none";
 
-      const state = subscriptionStateAt(row, await graceDaysAt(tx, now), now);
+      const state = subscriptionStateAt(row, (await priceAt(tx, now)).graceDays, now);
       const kind = subscriptionNoticeAt(state, now);
       if (!kind || !state.endsAt) return "none";
 
@@ -200,17 +208,4 @@ export class BillingNoticeProcessor implements OnApplicationBootstrap, OnApplica
       ].join("\n"),
     };
   }
-}
-
-// Masa tenggang dari harga platform yang berlaku hari ini (pola SubscriptionsService.priceAt di API)
-async function graceDaysAt(tx: Transaction, now: Date): Promise<number> {
-  const date = subscriptionDate(now);
-  const [price] = await tx
-    .select({ graceDays: billingPrices.graceDays })
-    .from(billingPrices)
-    .where(and(lte(billingPrices.effectiveFrom, date), or(isNull(billingPrices.effectiveTo), gte(billingPrices.effectiveTo, date))))
-    .orderBy(desc(billingPrices.effectiveFrom))
-    .limit(1);
-  if (!price) throw new Error(`[billing/price] tidak ada harga berlaku pada ${date}`);
-  return price.graceDays;
 }

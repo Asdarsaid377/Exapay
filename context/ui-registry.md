@@ -716,5 +716,26 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /settings/billing (khusus owner, menu Pengaturan → Langganan)
 - **Referensi desain:** tanpa referensi — pola StatTile (dashboard) + FormSection + ReadFields + EmptyState, feature 40, izin user
 - **Pola kelas kunci:** Banner warning/danger hanya saat tenggang/baca-saja; grid `sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4` 3 StatTile (status: sisa hari + Badge status `SUBSCRIPTION_STATUS_TONES` · Karyawan aktif · Estimasi tagihan prefix Rp, tile ke-3 `sm:col-span-2 xl:col-span-1`); FormSection "Rincian estimasi" (ReadFields, karyawan aktif = Link ke /employees) + "Masa tenggang & baca-saja" (paragraf `text-sm text-text-secondary`); "Riwayat tagihan" judul `px-1.5 font-display text-base font-bold` + EmptyState ReceiptText
-- **Catatan:** server component, `fetchBillingOverview()` (EmptyState CloudOff bila gagal). Riwayat tagihan diisi feature 41
+- **Catatan:** server component, `fetchBillingOverview()` (EmptyState CloudOff bila gagal). Feature 41: InvoicePaymentCard di atas tile (bila ada tagihan berjalan), riwayat = InvoiceHistoryList (EmptyState bila kosong), `?qris=error` dari Route Handler QR
+
+### InvoicePaymentCard
+- **Path:** apps/web/components/billing/InvoicePaymentCard.tsx
+- **Dipakai di:** /settings/billing (tagihan berjalan)
+- **Referensi desain:** tanpa referensi — card glass-strong (pola FormSection) + angka gaya StatTile + ReadFields, feature 41, izin user
+- **Pola kelas kunci:** `glass-strong rounded-card p-4.5 lg:p-7`; header judul "Tagihan <nomor>" + Badge `INVOICE_STATUS_TONES`; open → grid `lg:grid-cols-[260px_minmax(0,1fr)]`: QR `<img>` `size-60 rounded-inner border bg-surface-solid` + tautan "Unduh QR" `buttonClassName({ variant: "secondary" })`; total "Rp" 17px + angka `text-[26px] lg:text-[32px] font-extrabold`; ReadFields rincian/kode unik/periode/batas bayar; baris aksi `border-t pt-5` + ClaimPaymentButton. Menunggu konfirmasi → tanpa QR, FormAlert info
+- **Catatan:** server component; QR lewat Route Handler (`invoiceQrHref` di `lib/billingLabels.ts`), QRIS belum dipasang → FormAlert warning
+
+### ClaimPaymentButton
+- **Path:** apps/web/components/billing/ClaimPaymentButton.tsx
+- **Dipakai di:** InvoicePaymentCard
+- **Referensi desain:** tanpa referensi — pola LeaveRequestFormDialog (Dialog + FileDropzone + baris file terpilih), izin user
+- **Pola kelas kunci:** Button primary "Saya sudah bayar" → Dialog "Laporkan pembayaran" (deskripsi nomor + nominal), bukti opsional, tombol Batal/Laporkan pembayaran
+- **Catatan:** client, Server Action `claimInvoicePayment` (`actions/billing.ts`, multipart ke `POST /billing/invoices/:id/claim`) → `router.refresh()`
+
+### InvoiceHistoryList
+- **Path:** apps/web/components/billing/InvoiceHistoryList.tsx
+- **Dipakai di:** /settings/billing ("Riwayat tagihan")
+- **Referensi desain:** tanpa referensi — pola PayrollRunList (glass-data, baris border-subtle) tanpa tautan, izin user
+- **Pola kelas kunci:** `rounded-card glass-data`, baris grid `[minmax(0,1fr)_auto]` (sm: + kolom badge): nomor 15px bold + caption "Terbit … · N karyawan", total `tabular-nums` rata kanan, Badge status (mobile baris kedua)
+- **Catatan:** server component, label status `INVOICE_STATUS_LABELS`
 

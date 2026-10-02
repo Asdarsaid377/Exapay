@@ -3,6 +3,8 @@ import { CloudOff, ReceiptText } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { InvoiceHistoryList } from "@/components/billing/InvoiceHistoryList";
+import { InvoicePaymentCard } from "@/components/billing/InvoicePaymentCard";
 import { Banner } from "@/components/common/Banner";
 import { Badge } from "@/components/common/Badge";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -25,10 +27,15 @@ export const metadata: Metadata = { title: "Langganan — Exapay" };
 
 const LINK = "font-bold text-accent-strong hover:text-accent-hover hover:underline";
 
-// Langganan usaha (feature 40, khusus owner — proxy + API): status & sisa hari, estimasi tagihan bulan berikutnya,
-// riwayat tagihan (kosong sampai feature 41). Dibangun tanpa referensi visual (turunan pola StatTile + FormSection).
-export default async function SettingsBillingPage() {
-  const result = await fetchBillingOverview();
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+// Langganan usaha (feature 40, khusus owner — proxy + API): status & sisa hari, estimasi tagihan bulan berikutnya.
+// Feature 41: tagihan berjalan + QRIS + "Saya sudah bayar", riwayat tagihan. Dibangun tanpa referensi visual
+// (turunan pola StatTile + FormSection + daftar glass-data, izin user).
+export default async function SettingsBillingPage({ searchParams }: Props) {
+  const [result, params] = await Promise.all([fetchBillingOverview(), searchParams]);
   const header = <PageHeader title="Langganan" description="Status trial atau langganan dan perkiraan tagihan bulanan usaha ini." />;
 
   if (!result.ok) {
@@ -40,13 +47,14 @@ export default async function SettingsBillingPage() {
     );
   }
 
-  const { subscription, estimate } = result.data;
+  const { subscription, estimate, invoice, invoices, qrisAvailable } = result.data;
   const complimentary = subscription.status === "complimentary";
 
   return (
     <>
       {header}
       <StatusBanner overview={result.data} />
+      {invoice ? <InvoicePaymentCard invoice={invoice} qrisAvailable={qrisAvailable} qrisError={params.qris === "error"} /> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3">
         <StatusTile overview={result.data} />
@@ -99,13 +107,22 @@ export default async function SettingsBillingPage() {
         <p className="text-sm text-text-secondary text-pretty">
           Setelah trial atau periode langganan berakhir, usaha tetap bisa dipakai selama {estimate.graceDays} hari masa tenggang. Setelah itu usaha
           masuk mode baca-saja: data masih bisa dilihat dan diekspor, tetapi absen, log tugas, dan perubahan data ditahan sampai langganan aktif
-          kembali. Pengingat dikirim ke email pemilik usaha 7, 3, dan 1 hari sebelum trial berakhir.
+          kembali. Tagihan terbit 7 hari sebelum trial atau periode berakhir dan dikirim ke email pemilik usaha; pengingat trial dikirim 7, 3,
+          dan 1 hari sebelum trial berakhir.
         </p>
       </FormSection>
 
       <section className="flex flex-col gap-3">
         <h2 className="px-1.5 font-display text-base font-bold tracking-[-0.01em] text-text-primary lg:text-[17px]">Riwayat tagihan</h2>
-        <EmptyState icon={ReceiptText} title="Belum ada tagihan" description="Tagihan bulanan dan pembayaran QRIS akan tampil di sini." />
+        {invoices.length > 0 ? (
+          <InvoiceHistoryList invoices={invoices} />
+        ) : (
+          <EmptyState
+            icon={ReceiptText}
+            title="Belum ada tagihan"
+            description={complimentary ? "Usaha pilot tidak ditagih." : "Tagihan pertama terbit 7 hari sebelum trial berakhir dan bisa dibayar dengan QRIS."}
+          />
+        )}
       </section>
     </>
   );

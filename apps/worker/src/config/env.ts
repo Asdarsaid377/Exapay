@@ -31,10 +31,26 @@ export const envSchema = z
     // Pengingat langganan (feature 40): pemindaian harian email trial H-7/H-3/H-1, tenggang, baca-saja
     BILLING_NOTICE_CRON: z.string().trim().min(1).default("0 7 * * *"),
     BILLING_NOTICE_CRON_TZ: z.string().trim().min(1).default("Asia/Jakarta"),
+    // Pemilik platform yang diberi tahu saat owner menekan "Saya sudah bayar" (feature 41) — boleh lebih dari satu,
+    // dipisah koma. Kosong di development → pemberitahuan dilewati (log warn); wajib di production.
+    BILLING_NOTIFY_EMAIL: z
+      .string()
+      .optional()
+      .transform((value) =>
+        (value ?? "")
+          .split(",")
+          .map((email) => email.trim())
+          .filter((email) => email.length > 0),
+      )
+      .pipe(z.array(z.email("BILLING_NOTIFY_EMAIL berisi alamat email yang tidak valid"))),
   })
   .refine((env) => env.NODE_ENV !== "production" || env.ANTHROPIC_API_KEY !== undefined, {
     path: ["ANTHROPIC_API_KEY"],
     message: "ANTHROPIC_API_KEY wajib diisi di production (provider AI palsu hanya untuk development)",
+  })
+  .refine((env) => env.NODE_ENV !== "production" || env.BILLING_NOTIFY_EMAIL.length > 0, {
+    path: ["BILLING_NOTIFY_EMAIL"],
+    message: "BILLING_NOTIFY_EMAIL wajib diisi di production (pemberitahuan pembayaran langganan)",
   });
 
 export type Env = z.infer<typeof envSchema>;

@@ -103,9 +103,76 @@ export const subscriptionSummarySchema = z.object({
 });
 export type SubscriptionSummary = z.infer<typeof subscriptionSummarySchema>;
 
-// Halaman /settings/billing (owner) — GET /billing. Riwayat tagihan menyusul di feature 41.
+// ——— Tagihan & pembayaran QRIS (feature 41) ———
+
+// Status tagihan (disimpan):
+//   open                  → menunggu pembayaran (QRIS ditampilkan) sampai due_at
+//   awaiting_confirmation → owner menekan "Saya sudah bayar"; menunggu konfirmasi super-admin (feature 42)
+//   paid                  → dikonfirmasi lunas (feature 42)
+//   expired               → lewat due_at tanpa klaim bayar; worker menerbitkan tagihan baru bila masih diperlukan
+// Tagihan open yang sudah lewat due_at ditampilkan "expired" walau worker belum menandainya.
+export const BILLING_INVOICE_STATUSES = ["open", "awaiting_confirmation", "paid", "expired"] as const;
+export type BillingInvoiceStatus = (typeof BILLING_INVOICE_STATUSES)[number];
+
+// Tagihan terbit H-7 sebelum trial/periode berakhir (keputusan user 2026-10-02) dan berlaku 14 hari kalender
+// (sampai akhir hari, zona platform) — tagihan H-7 berlaku sampai akhir masa tenggang 7 hari.
+export const BILLING_INVOICE_LEAD_DAYS = 7;
+export const BILLING_INVOICE_DUE_DAYS = 14;
+// Kode unik (rupiah) yang ditambahkan ke nominal agar pembayaran mudah dicocokkan dengan mutasi merchant
+export const BILLING_UNIQUE_CODE_MIN = 1;
+export const BILLING_UNIQUE_CODE_MAX = 999;
+
+// Bukti bayar opsional — jenis & batas sama dengan lampiran izin (PDF/JPG/PNG, maks. 5 MB)
+export const BILLING_PROOF_MAX_BYTES = 5 * 1024 * 1024;
+export const BILLING_PROOF_ACCEPT = ".pdf,.jpg,.jpeg,.png";
+
+// Perlu tagihan baru? Trial/periode berakhir ≤ 7 hari kalender lagi, atau sudah lewat (tenggang/baca-saja).
+// Gratis (pilot) tidak pernah ditagih. Worker hanya menerbitkan bila usaha belum punya tagihan open/menunggu konfirmasi.
+export function billingInvoiceNeededAt(state: SubscriptionState, now: Date): boolean {
+  if (state.status === "complimentary" || !state.endsAt) return false;
+  if (state.status === "past_due" || state.status === "read_only") return true;
+  return subscriptionDaysUntil(state.endsAt, now) <= BILLING_INVOICE_LEAD_DAYS;
+}
+
+// Batas bayar: akhir hari (zona platform) tanggal terbit + 14 hari. Asia/Jakarta tetap UTC+7 (tanpa DST).
+export function billingInvoiceDueAt(issuedAt: Date): Date {
+  const issueDate = Date.parse(`${subscriptionDate(issuedAt)}T00:00:00Z`);
+  const dueDate = new Date(issueDate + BILLING_INVOICE_DUE_DAYS * DAY_MS).toISOString().slice(0, 10);
+  return new Date(`${dueDate}T23:59:59.999+07:00`);
+}
+
+export const billingInvoiceSchema = z.object({
+  id: z.uuid(),
+  number: z.string(),
+  // Status efektif (open yang lewat due_at → expired)
+  status: z.enum(BILLING_INVOICE_STATUSES),
+  // Tanggal mulai periode yang ditagih (akhir trial/periode saat tagihan terbit, atau tanggal terbit bila sudah lewat)
+  periodStart: z.string(),
+  issuedAt: z.string(),
+  dueAt: z.string(),
+  // Snapshot rincian saat tagihan terbit — tidak berubah walau harga/jumlah karyawan berubah
+  pricePerEmployee: z.string(),
+  minBilledEmployees: z.number().int(),
+  activeEmployees: z.number().int(),
+  billedEmployees: z.number().int(),
+  baseAmount: z.string(),
+  uniqueCode: z.number().int(),
+  // Nominal persis yang harus dibayar = baseAmount + uniqueCode
+  totalAmount: z.string(),
+  claimedAt: z.string().nullable(),
+  proof: z.object({ name: z.string(), contentType: z.string(), size: z.number().int() }).nullable(),
+});
+export type BillingInvoice = z.infer<typeof billingInvoiceSchema>;
+
+// Halaman /settings/billing (owner) — GET /billing
 export const billingOverviewSchema = z.object({
   subscription: subscriptionSummarySchema,
+  // Tagihan yang sedang berjalan (open belum lewat batas, atau menunggu konfirmasi) — null bila tidak ada
+  invoice: billingInvoiceSchema.nullable(),
+  // QRIS merchant platform terpasang (env QRIS_STATIC_PAYLOAD). false → QR tidak bisa ditampilkan.
+  qrisAvailable: z.boolean(),
+  // Riwayat tagihan terbaru (termasuk tagihan berjalan), terbaru dulu
+  invoices: z.array(billingInvoiceSchema),
   // Estimasi tagihan bulan berikutnya: max(karyawan aktif, minimum) × harga yang berlaku pada tanggal tagihan berikutnya
   estimate: z.object({
     priceDate: z.string(),
@@ -125,3 +192,10 @@ export const BILLING_NOTICE_SCAN_JOB = "billing-notice-scan";
 export const BILLING_NOTICE_JOB = "billing-notice";
 export const billingNoticeJobDataSchema = z.object({ tenantId: z.uuid() });
 export type BillingNoticeJobData = z.infer<typeof billingNoticeJobDataSchema>;
+
+// Feature 41: pemindaian harian yang sama juga menjadwalkan penerbitan tagihan per usaha (payload { tenantId }),
+// dan API menambah job pemberitahuan ke pemilik platform saat owner menekan "Saya sudah bayar".
+export const BILLING_INVOICE_JOB = "billing-invoice";
+export const BILLING_CLAIM_NOTIFY_JOB = "billing-claim-notify";
+export const billingClaimNotifyJobDataSchema = z.object({ tenantId: z.uuid(), invoiceId: z.uuid() });
+export type BillingClaimNotifyJobData = z.infer<typeof billingClaimNotifyJobDataSchema>;

@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import type { Env } from "../src/config/env.js";
 import { type EmailMessage, Mailer } from "../src/email/mailer.js";
+import { BillingInvoices } from "../src/processors/billing-invoices.js";
 import { BillingNoticeProcessor } from "../src/processors/billing-notice.processor.js";
 
 // Verifikasi feature 40: email pengingat langganan dikirim ke owner pada hari yang tepat (tanggal digeser lewat
@@ -76,7 +77,7 @@ async function setSubscription(tenantId: string, status: SubscriptionStatus, dat
 
 function createProcessor(mailer: FakeMailer): BillingNoticeProcessor {
   const config = new ConfigService<Env, true>({ APP_WEB_URL: "https://app.exapay.test" });
-  return new BillingNoticeProcessor(db, mailer, config);
+  return new BillingNoticeProcessor(db, mailer, config, new BillingInvoices(db, mailer, config));
 }
 
 async function noticesOf(tenantId: string): Promise<string[]> {

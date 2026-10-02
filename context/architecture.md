@@ -79,7 +79,8 @@
 │   │           ├── kpi/              → template KPI per jabatan /kpi/templates (kpi-templates.service/controller, kpi-builtin-templates.ts data bawaan + seed — feature 18); skor ad-hoc /kpi/scores + /kpi/scores/me (kpi-score.ts murni, kpi-scores.service/controller — feature 21); siklus /kpi/settings + penilaian periodik /kpi/reviews (kpi-review-periods.ts murni, kpi-reviews.service/controller — feature 22); ringkasan AI /kpi/reviews/:id/summary (kpi-review-summary.ts, kpi-review-summaries.service/controller — feature 23)
 │   │           ├── payroll/          → komponen gaji (feature 28): katalog /salary-components + kelompok risiko JKK (salary-components.service/controller, salary-builtin-components.ts data bawaan + seed), gaji karyawan berlaku-tanggal /employees/:id/salary (employee-salaries.service/controller), salary-access.ts (owner/admin); run payroll draf /payroll/runs (payroll-draft.ts murni → payroll-engine, payroll-runs.service/controller — feature 29)
 │   │           ├── compliance/       → kalender kepatuhan /compliance (compliance.service/controller — pengingat dari fungsi murni @exapay/shared compliance.ts, feature 33)
-│   │           ├── dashboard/        → ringkasan owner/admin GET /dashboard (dashboard.service/controller — merangkai service rekap absensi, skor KPI, periode gaji, kepatuhan; feature 35)
+│   │           ├── billing/          → langganan & trial (feature 39–40), tagihan + QRIS (qris.ts murni, payment-provider.ts PaymentProvider/qris-manual, klaim bayar — feature 41)
+│           ├── dashboard/        → ringkasan owner/admin GET /dashboard (dashboard.service/controller — merangkai service rekap absensi, skor KPI, periode gaji, kepatuhan; feature 35)
 │   │           └── audit/
 │   ├── worker/                       → Proses BullMQ (NestJS standalone app)
 │   │   └── src/
@@ -87,7 +88,7 @@
 │   │       ├── database/             → pool Postgres app_user + Drizzle (withTenant dari @exapay/db, tenant dari payload job)
 │   │       ├── ai/                   → lapisan abstraksi provider AI: AiProvider, AnthropicAiProvider (Claude), FakeAiProvider (dev), prompt berversi (feature 23)
 │   │       ├── scripts/              → run-compliance-scan.ts (`compliance:scan` — pemindaian kepatuhan manual, feature 33)
-│   │       └── processors/           → kpi-review-summary (feature 23), payslip (feature 31), compliance (job terjadwal email H-7/H-1, feature 33); whatsapp, erp-sync menyusul
+│   │       └── processors/           → kpi-review-summary (feature 23), payslip (feature 31), compliance (job terjadwal email H-7/H-1, feature 33), billing (pengingat langganan feature 40 + billing-invoices.ts tagihan & pemberitahuan klaim feature 41); whatsapp, erp-sync menyusul
 │   └── web/                          → Next.js
 │       ├── app/
 │       │   ├── globals.css           → Import Tailwind + @theme tokens

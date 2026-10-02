@@ -2,6 +2,7 @@ import {
   ABSENCE_DEDUCTION_MODES,
   AI_GENERATION_STATUSES,
   ATTENDANCE_ALLOWANCE_MODES,
+  BILLING_INVOICE_STATUSES,
   BPJS_PROGRAMS,
   COMPLIANCE_DEADLINE_KINDS,
   COMPLIANCE_REMINDER_KINDS,
@@ -1617,4 +1618,66 @@ export const subscriptionNotices = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [unique("subscription_notices_once").on(t.tenantId, t.kind, t.periodEndsAt)],
+);
+
+export const billingInvoiceStatus = pgEnum("billing_invoice_status", BILLING_INVOICE_STATUSES);
+
+// Tagihan langganan (feature 41) — diterbitkan worker H-7 sebelum trial/periode berakhir (atau saat sudah lewat), satu
+// tagihan berjalan (open/awaiting_confirmation) per usaha. Rincian = snapshot saat terbit (harga, minimum, jumlah karyawan
+// aktif); konsistensi nominal dijaga CHECK. Nominal total unik di antara tagihan berjalan SELURUH platform (index unik
+// parsial — pemeriksaan index tidak melewati RLS) agar pembayaran QRIS bisa dicocokkan dari mutasi merchant.
+// app_user: SELECT, INSERT, UPDATE kolom klaim/status saja; transisi dijaga trigger guard_billing_invoice (lunas = super-admin).
+export const billingInvoices = pgTable(
+  "billing_invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    // Nomor tagihan yang tampil ke owner & super-admin, unik seluruh platform
+    number: text("number").notNull(),
+    status: billingInvoiceStatus("status").notNull().default("open"),
+    periodStart: date("period_start", { mode: "string" }).notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    pricePerEmployee: numeric("price_per_employee", { precision: 18, scale: 2 }).notNull(),
+    minBilledEmployees: smallint("min_billed_employees").notNull(),
+    activeEmployees: integer("active_employees").notNull(),
+    billedEmployees: integer("billed_employees").notNull(),
+    baseAmount: numeric("base_amount", { precision: 18, scale: 2 }).notNull(),
+    uniqueCode: smallint("unique_code").notNull(),
+    totalAmount: numeric("total_amount", { precision: 18, scale: 2 }).notNull(),
+    // Implementasi PaymentProvider yang dipakai (feature 41: QRIS statik → dinamis, konfirmasi manual super-admin)
+    paymentMethod: text("payment_method").notNull().default("qris-manual"),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    claimedByUserId: uuid("claimed_by_user_id"),
+    // Bukti bayar opsional di storage S3 (key diawali tenant_id); hanya metadata di sini
+    proofKey: text("proof_key"),
+    proofName: text("proof_name"),
+    proofType: text("proof_type", { enum: LEAVE_ATTACHMENT_TYPES }),
+    proofSize: integer("proof_size"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("billing_invoices_number_key").on(t.number),
+    unique("billing_invoices_tenant_id_key").on(t.tenantId, t.id),
+    index("billing_invoices_tenant_issued_idx").on(t.tenantId, t.issuedAt),
+    uniqueIndex("billing_invoices_live_tenant_key").on(t.tenantId).where(sql`${t.status} IN ('open', 'awaiting_confirmation')`),
+    uniqueIndex("billing_invoices_live_amount_key").on(t.totalAmount).where(sql`${t.status} IN ('open', 'awaiting_confirmation')`),
+    // Akun pengklaim dicabut → kolom user dikosongkan (migration: ON DELETE SET NULL (claimed_by_user_id) — tenant_id tetap)
+    foreignKey({ name: "billing_invoices_claimed_by_fk", columns: [t.tenantId, t.claimedByUserId], foreignColumns: [memberships.tenantId, memberships.userId] }).onDelete(
+      "set null",
+    ),
+    check(
+      "billing_invoices_amounts",
+      sql`${t.pricePerEmployee} >= 0 AND ${t.minBilledEmployees} >= 0 AND ${t.activeEmployees} >= 0 AND ${t.billedEmployees} = GREATEST(${t.activeEmployees}, ${t.minBilledEmployees}) AND ${t.baseAmount} = ${t.pricePerEmployee} * ${t.billedEmployees} AND ${t.uniqueCode} BETWEEN 1 AND 999 AND ${t.totalAmount} = ${t.baseAmount} + ${t.uniqueCode}`,
+    ),
+    check("billing_invoices_due_after_issue", sql`${t.dueAt} > ${t.issuedAt}`),
+    check("billing_invoices_claim", sql`${t.status} <> 'awaiting_confirmation' OR ${t.claimedAt} IS NOT NULL`),
+    check(
+      "billing_invoices_proof",
+      sql`(${t.proofKey} IS NULL) = (${t.proofName} IS NULL) AND (${t.proofKey} IS NULL) = (${t.proofType} IS NULL) AND (${t.proofKey} IS NULL) = (${t.proofSize} IS NULL) AND (${t.proofKey} IS NULL OR ${t.claimedAt} IS NOT NULL)`,
+    ),
+  ],
 );

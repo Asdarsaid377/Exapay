@@ -18,6 +18,8 @@ type Props = {
 export default async function MainLayout({ children }: Props) {
   const session = await getSession();
   const activeTenant = session?.activeTenant;
+  // Super-admin tanpa usaha (mis. membuka path tak dikenal yang jatuh ke catch-all area ini) → panel super-admin, bukan logout
+  if (session?.user.isSuperAdmin && !activeTenant) redirect("/admin/tenants");
   // Token masih terbaca proxy tapi API menolak sesi/usaha (mis. tenant dinonaktifkan) → akhiri sesi
   if (!session || !activeTenant) return <SessionEnded />;
   if (activeTenant.role === "karyawan") redirect("/me");

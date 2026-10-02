@@ -1,4 +1,4 @@
-import { AI_QUEUE_NAME, type AiJobData, PAYSLIP_QUEUE_NAME, type PayslipJobData } from "@exapay/shared";
+import { AI_QUEUE_NAME, type AiJobData, BILLING_QUEUE_NAME, type BillingClaimNotifyJobData, PAYSLIP_QUEUE_NAME, type PayslipJobData } from "@exapay/shared";
 import { Global, Inject, Module, type OnApplicationShutdown } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
@@ -11,11 +11,15 @@ export const REDIS_CLIENT = Symbol("REDIS_CLIENT");
 export const AI_QUEUE = Symbol("AI_QUEUE");
 // Antrean BullMQ "payslips" (feature 31) — buat PDF slip & email pemberitahuan; diproses apps/worker
 export const PAYSLIP_QUEUE = Symbol("PAYSLIP_QUEUE");
+// Antrean BullMQ "billing" (feature 41) — API hanya menambah job pemberitahuan klaim bayar; pemindaian harian
+// (tagihan & pengingat) dijadwalkan worker sendiri
+export const BILLING_QUEUE = Symbol("BILLING_QUEUE");
 
 const QUEUE_CONNECTION = Symbol("QUEUE_CONNECTION");
 
 export type AiQueue = Queue<AiJobData>;
 export type PayslipQueue = Queue<PayslipJobData>;
+export type BillingQueue = Queue<BillingClaimNotifyJobData>;
 
 const DEFAULT_JOB_OPTIONS = {
   attempts: 3,
@@ -55,14 +59,21 @@ const DEFAULT_JOB_OPTIONS = {
       useFactory: (connection: Redis): PayslipQueue =>
         new Queue<PayslipJobData>(PAYSLIP_QUEUE_NAME, { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS }),
     },
+    {
+      provide: BILLING_QUEUE,
+      inject: [QUEUE_CONNECTION],
+      useFactory: (connection: Redis): BillingQueue =>
+        new Queue<BillingClaimNotifyJobData>(BILLING_QUEUE_NAME, { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS }),
+    },
   ],
-  exports: [REDIS_CLIENT, AI_QUEUE, PAYSLIP_QUEUE],
+  exports: [REDIS_CLIENT, AI_QUEUE, PAYSLIP_QUEUE, BILLING_QUEUE],
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     @Inject(AI_QUEUE) private readonly aiQueue: AiQueue,
     @Inject(PAYSLIP_QUEUE) private readonly payslipQueue: PayslipQueue,
+    @Inject(BILLING_QUEUE) private readonly billingQueue: BillingQueue,
     @Inject(QUEUE_CONNECTION) private readonly queueConnection: Redis,
   ) {}
 
@@ -70,6 +81,7 @@ export class RedisModule implements OnApplicationShutdown {
     // Koneksi yang diberikan ke Queue dianggap "shared" oleh BullMQ → tidak ditutup close(); tutup sendiri
     await this.aiQueue.close();
     await this.payslipQueue.close();
+    await this.billingQueue.close();
     await this.queueConnection.quit();
     await this.redis.quit();
   }

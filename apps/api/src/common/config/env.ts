@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseStaticQris } from "../../modules/billing/qris.js";
+
 // Env yang wajib ada agar API bisa start. Tambah variabel di sini saat feature membutuhkannya.
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -30,6 +32,20 @@ export const envSchema = z.object({
   DATA_ENCRYPTION_KEY: z
     .string()
     .refine((value) => /^[A-Za-z0-9+/]+={0,2}$/.test(value) && Buffer.from(value, "base64").length === 32, "DATA_ENCRYPTION_KEY harus 32 byte dalam base64"),
+  // Isi QR QRIS statik merchant platform (teks hasil scan QR, diawali "000201"). Tagihan langganan menampilkan QRIS
+  // dinamis dari payload ini (feature 41). Kosong → QR tidak ditampilkan di /settings/billing.
+  QRIS_STATIC_PAYLOAD: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined)
+    .superRefine((value, context) => {
+      if (value === undefined) return;
+      try {
+        parseStaticQris(value);
+      } catch (error: unknown) {
+        context.addIssue({ code: "custom", message: `QRIS_STATIC_PAYLOAD tidak valid: ${error instanceof Error ? error.message : String(error)}` });
+      }
+    }),
 });
 
 export type Env = z.infer<typeof envSchema>;
