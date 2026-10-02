@@ -258,7 +258,7 @@ Aturan yang berlaku di semua feature: tabel bisnis wajib `tenant_id` + RLS (FORC
 Ditambahkan 2026-10-02 (keputusan user). Model: **harga per karyawan aktif per bulan**; **trial gratis 30 hari** untuk setiap usaha baru; pembayaran **QRIS statik merchant yang dibuat dinamis** (nominal disisipkan ke payload, pola `verssache/qris-dinamis`).
 
 Prinsip phase ini:
-- Harga, minimum karyawan ditagih, lama trial, dan masa tenggang adalah **data platform berlaku-tanggal** yang diubah super-admin — tidak hardcode
+- Harga, minimum karyawan ditagih, lama trial, dan masa tenggang adalah **data platform berlaku-tanggal** yang diubah super-admin — tidak hardcode. **Nilai awal: Rp10.000 per karyawan aktif per bulan, minimum ditagih 5 karyawan** (= tagihan minimum Rp50.000/bulan); bisa diubah kapan saja oleh super-admin — perubahan berlaku untuk tagihan yang dibuat setelah tanggal berlaku, tagihan yang sudah terbit tidak berubah
 - Uang `numeric` + decimal.js; semua perubahan status langganan & konfirmasi pembayaran masuk audit log
 - **QRIS dinamis tidak memberi notifikasi pembayaran** → konfirmasi lewat super-admin (nominal + kode unik dicocokkan dengan mutasi di aplikasi merchant). Dibangun di balik abstraksi `PaymentProvider` (implementasi `qris-manual`) agar gateway dengan webhook bisa dipasang nanti tanpa mengubah alur
 - Data usaha **tidak pernah dihapus otomatis** karena belum bayar
@@ -276,7 +276,7 @@ Prinsip phase ini:
 
 ### 41 Tagihan & Pembayaran QRIS
 **Logic:** tagihan bulanan dibuat worker di akhir trial / awal tiap periode: jumlah karyawan aktif (dihitung saat tagihan dibuat, snapshot rinciannya) × harga, min. minimum ditagih, + **kode unik 1–999 rupiah** agar mudah dicocokkan (unik di antara tagihan terbuka). QRIS dinamis dari payload QRIS statik merchant (env/pengaturan platform): tag 01 → `12`, sisip tag 54 nominal, hitung ulang CRC16 — dengan unit test terhadap payload contoh. Tagihan berlaku N hari; email tagihan ke owner
-**UI:** di `/settings/billing` — detail tagihan + QR (bisa diunduh), nominal persis yang harus dibayar, tombol "Saya sudah bayar" (+ unggah bukti opsional, disimpan di storage) → status `menunggu konfirmasi`
+**UI:** di `/settings/billing` — detail tagihan + QR (bisa diunduh), nominal persis yang harus dibayar, tombol "Saya sudah bayar" (+ unggah bukti opsional, disimpan di storage) → status `menunggu konfirmasi` + **email pemberitahuan ke pemilik platform** (alamat dari env `BILLING_NOTIFY_EMAIL`, bisa lebih dari satu dipisah koma) berisi usaha, nomor tagihan, nominal persis, dan tautan ke `/admin/billing` — tanpa data karyawan
 - **Verifikasi:** QR terbaca aplikasi e-wallet/m-banking dengan nominal benar (uji bayar nyata nominal kecil oleh user); nominal = rincian snapshot; tidak ada dua tagihan terbuka dengan nominal sama
 
 ### 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
