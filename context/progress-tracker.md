@@ -7,9 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 10 — Absensi Lanjutan: Geofence, Selfie & Shift (Phase 1–9 selesai)
-**Terakhir selesai:** 43 Landing Page Marketing (2026-10-02)
-**Sedang dikerjakan:** 44 Lokasi Kerja & Geofence (Peringatan) — API + UI selesai & diverifikasi visual (2026-10-02), **menunggu konfirmasi user**.
-**Berikutnya:** 45 Selfie Absen (setelah 44 dikonfirmasi). Tertunda (menunggu user): sisa landing — kontak resmi, halaman `/privasi` & `/syarat`, uji Lighthouse ≥ 90 di build production. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Terakhir selesai:** 44 Lokasi Kerja & Geofence (Peringatan) (2026-10-02)
+**Berikutnya:** 45 Selfie Absen — wajib referensi desain (Claude Design). Tertunda (menunggu user): sisa landing — kontak resmi, halaman `/privasi` & `/syarat`, uji Lighthouse ≥ 90 di build production. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -80,7 +79,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 43 Landing Page Marketing (Lighthouse belum diuji — butuh build production)
 
 ### Phase 10 — Absensi Lanjutan: Geofence, Selfie & Shift
-- [~] 44 Lokasi Kerja & Geofence (Peringatan) — API + UI selesai, menunggu konfirmasi user
+- [x] 44 Lokasi Kerja & Geofence (Peringatan)
 - [ ] 45 Selfie Absen
 - [ ] 46 Master Shift & Roster
 - [ ] 47 Absensi Berbasis Roster
@@ -311,7 +310,7 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — `GET /attendance/me/today` kini punya `locationCheck` — portal **tidak meminta izin GPS** bila usaha tanpa lokasi kerja atau karyawan dikecualikan (perubahan UI portal menyusul bersama desain). Koreksi absensi mengosongkan status geofence pada jam yang diubah (tanda hilang dari antrean). Menghapus lokasi: karyawan `selected` yang kehilangan semua lokasinya kembali ke `all` (audit per karyawan, `reason: work_location_deleted`).
 - 2026-10-02 — Endpoint feature 44: `/attendance/locations` (GET/POST/PUT/DELETE, owner/admin), `/employees/:id/attendance-settings` (GET owner/admin/atasan bawahan langsung — `canEdit` false; PUT owner/admin), `/attendance/reviews` (GET filter `status`/`flag`/`month`/`page`, tanpa bulan = semua tanggal; `PUT /:recordId/:event` keputusan `accepted`/`follow_up` — catatan wajib untuk tindak lanjut). Tidak ada yang meninjau absensinya sendiri. Antrean memuat semua absen bertanda dalam cakupan lalu menyaring/menghalaman di aplikasi (volume UMKM kecil).
 
-- 2026-10-02 — **UI feature 44** dari export zip Claude Design → snapshot `settings-locations.html`, `employees-attendance-settings.html`, `attendance-review.html`, `me-attendance-location.html`, `geofence-components.html`. Tanpa token baru — warna turunan memakai modifier opasitas token yang ada (`border-info/22`, `bg-warning/10`, `border-warning/45`). Menu baru: Absensi › Tinjauan (`/attendance/review`, semua staf), Pengaturan › Lokasi kerja (`/settings/locations`, owner/admin). Penyimpangan dari desain: filter periode tinjauan = pilihan bulan (desain: rentang tanggal), hitungan di sidebar belum ada, checkbox native. Portal tidak lagi menampilkan "Lokasi dicatat saat absen" dan tidak meminta GPS bila `locationCheck` false.
+- 2026-10-02 — **UI feature 44** dari export zip Claude Design → snapshot `settings-locations.html`, `employees-attendance-settings.html`, `attendance-review.html`, `me-attendance-location.html`, `geofence-components.html`. Tanpa token baru — warna turunan memakai modifier opasitas token yang ada (`border-info/22`, `bg-warning/10`, `border-warning/45`). Menu baru: Absensi › Tinjauan (`/attendance/review`, semua staf), Pengaturan › Lokasi kerja (`/settings/locations`, owner/admin). Dikonfirmasi user ("sudah sesuai"). Penyimpangan dari desain: filter periode tinjauan = pilihan bulan (desain: rentang tanggal), hitungan di sidebar belum ada, checkbox native. Portal tidak lagi menampilkan "Lokasi dicatat saat absen" dan tidak meminta GPS bila `locationCheck` false.
 ---
 
 ## Catatan (Notes)
