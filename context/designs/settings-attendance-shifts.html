@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}input::placeholder{color:#8A7561}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Pengaturan absensi — Shift kerja</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636">/settings/attendance · section baru setelah “Jadwal kerja” · Kopi Nusantara, Budi Santoso (Pemilik)</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="attendance-roster.html">Roster →</a>
+      <a href="employees-attendance-settings.html">Mode jadwal karyawan →</a>
+      <a href="shift-components.html">Komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Desktop · 1440px — Tambah/Ubah shift (coba jam selesai lebih kecil dari mulai), ⋯ → Hapus. Tweak “Shift” untuk kosong/memuat.</div>
+    <div data-screen-label="Shift Desktop" style="position:relative;width:1440px;min-height:1024px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:-260px;right:-180px"></div>
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#EADCCB;top:300px;left:-140px"></div>
+        <div style="position:absolute;width:560px;height:340px;border-radius:56px;background:#FAE0C8;top:760px;right:120px"></div>
+      </div>
+      <div style="position:relative;display:flex;gap:20px;padding:20px;min-height:1024px;box-sizing:border-box">
+        <aside style="width:248px;flex:none;box-sizing:border-box;padding:20px 14px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 10px">
+            <div style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</div>
+            <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+              <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:12px;color:#221208;font:{{ item.font }};cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+                <span style="width:19px;height:19px;flex:none;background:currentColor;-webkit-mask:{{ item.mask }};mask:{{ item.mask }}"></span>
+                <span style="flex:1">{{ item.label }}</span>
+                <sc-if value="{{ item.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ item.count }}</span></sc-if>
+                <sc-if value="{{ item.hasSubs }}"><span style="width:16px;height:16px;flex:none;background:#5B4636;-webkit-mask:{{ item.chev }};mask:{{ item.chev }}"></span></sc-if>
+              </div>
+              <sc-if value="{{ item.open }}">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:2px 0 6px 31px">
+                  <sc-for list="{{ item.subs }}" as="c"><div style="height:38px;padding:0 12px;border-radius:12px;display:flex;align-items:center;background:{{ c.bg }};color:{{ c.fg }};font:{{ c.font }};cursor:pointer">{{ c.label }}</div></sc-for>
+                </div>
+              </sc-if>
+            </sc-for>
+          </nav>
+        </aside>
+
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <header style="height:68px;flex:none;box-sizing:border-box;padding:0 12px 0 10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+            <div style="padding:0 14px;display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:13px;color:#5B4636">Pemilik · Makassar</span></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-size:14px;color:#5B4636">Senin, 5 Oktober 2026</span><span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">BS</span></div>
+          </header>
+
+          <div style="display:flex;flex-direction:column;gap:6px;padding:4px 6px 0">
+            <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Pengaturan absensi</h2>
+            <p style="margin:0;font-size:15px;color:#5B4636">Jadwal, shift, dan hari libur untuk Kopi Nusantara.</p>
+          </div>
+
+          <section style="padding:28px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:280px minmax(0,1fr);gap:40px">
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Jadwal kerja</h3><span style="font-size:13.5px;line-height:1.45;color:#5B4636">Berlaku untuk karyawan yang ikut jadwal usaha.</span><button style="height:34px;padding:0 14px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);font:700 13px 'Plus Jakarta Sans',sans-serif;color:#221208;cursor:pointer">Ubah</button></div>
+            <dl style="margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 24px">
+              <div style="display:flex;flex-direction:column;gap:5px"><dt style="font-size:13px;color:#75604D">Hari kerja</dt><dd style="margin:0;font:500 15px 'DM Sans',sans-serif">Senin–Jumat</dd></div>
+              <div style="display:flex;flex-direction:column;gap:5px"><dt style="font-size:13px;color:#75604D">Jam kerja</dt><dd style="margin:0;font:500 15px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">08:00–17:00</dd></div>
+              <div style="display:flex;flex-direction:column;gap:5px"><dt style="font-size:13px;color:#75604D">Toleransi telat</dt><dd style="margin:0;font:500 15px 'DM Sans',sans-serif">10 menit</dd></div>
+            </dl>
+          </section>
+
+          <section style="padding:28px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:280px minmax(0,1fr);gap:40px">
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+              <h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Shift kerja</h3>
+              <span style="font-size:13.5px;line-height:1.45;color:#5B4636">Untuk karyawan yang bekerja bergiliran.</span>
+              <sc-if value="{{ hasShifts }}" hint-placeholder-val="{{ true }}"><a href="attendance-roster.html" style="display:flex;align-items:center;gap:6px;font:700 14px 'DM Sans',sans-serif">Buka roster<span style="width:15px;height:15px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/arrow-right.svg) center / contain no-repeat"></span></a></sc-if>
+            </div>
+            <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:24px">
+                <span style="font-size:14.5px;line-height:1.5;color:#3D2A1C;max-width:620px;text-wrap:pretty">Usaha Anda memakai jadwal kerja di atas untuk semua karyawan. Aktifkan shift jika karyawan bekerja bergiliran (mis. pagi/siang/malam).</span>
+                <button onClick="{{ openAdd }}" style="flex:none;height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">Aktifkan shift</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasShifts }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column">
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 90px minmax(0,1.2fr) 120px;gap:16px;align-items:center;padding:0 0 10px;border-bottom:1px solid rgba(34,18,8,0.08);font:700 12.5px 'DM Sans',sans-serif;color:#5B4636"><span>Nama</span><span>Jam</span><span>Durasi</span><span>Terjadwal minggu ini</span><span></span></div>
+                <sc-for list="{{ shifts }}" as="s" hint-placeholder-count="3">
+                  <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 140px 90px minmax(0,1.2fr) 120px;gap:16px;align-items:center;min-height:64px;border-top:{{ s.border }}">
+                    <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 15px 'DM Sans',sans-serif">{{ s.name }}</span><sc-if value="{{ s.night }}"><span style="font-size:12.5px;color:#5B4636">Selesai keesokan hari</span></sc-if></div>
+                    <span style="font:500 15px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ s.range }}</span>
+                    <span style="font-size:14.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ s.dur }}</span>
+                    <span style="font-size:14.5px;color:#3D2A1C">{{ s.used }}</span>
+                    <div style="display:flex;justify-content:flex-end;gap:8px">
+                      <button onClick="{{ s.edit }}" style="height:36px;padding:0 16px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.85);color:#221208;font:700 13.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#FFFFFF">Ubah</button>
+                      <button onClick="{{ s.menu }}" aria-label="Aksi lain" style="width:36px;height:36px;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.85);cursor:pointer;display:grid;place-items:center"><span style="width:17px;height:17px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat"></span></button>
+                    </div>
+                    <sc-if value="{{ s.menuOpen }}">
+                      <div style="position:absolute;z-index:6;top:54px;right:0;width:200px;padding:8px;box-sizing:border-box;border-radius:18px;background:rgba(255,253,249,0.97);border:1px solid rgba(255,255,255,0.8);box-shadow:0 20px 50px -16px rgba(74,42,16,0.3)">
+                        <button onClick="{{ s.del }}" style="width:100%;border:none;background:transparent;height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#B91C1C;font:700 14px 'DM Sans',sans-serif" style-hover="background:rgba(220,38,38,0.08)"><span style="width:17px;height:17px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/trash-2.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/trash-2.svg) center / contain no-repeat"></span>Hapus</button>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <div style="padding-top:16px;border-top:1px solid rgba(34,18,8,0.08)"><button onClick="{{ openAdd }}" style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#FFFFFF"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center / contain no-repeat"></span>Tambah shift</button></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+              <div aria-busy="true" style="display:flex;flex-direction:column">
+                <sc-for list="{{ skel }}" as="k" hint-placeholder-count="3">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 90px minmax(0,1.2fr) 120px;gap:16px;align-items:center;height:64px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite"><span style="width:{{ k.w }};height:12px;border-radius:999px;background:rgba(34,18,8,0.1)"></span><span style="width:100px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span><span style="width:50px;height:11px;border-radius:999px;background:rgba(34,18,8,0.08)"></span><span style="width:60%;height:11px;border-radius:999px;background:rgba(34,18,8,0.07)"></span><div style="display:flex;justify-content:flex-end;gap:8px"><span style="width:64px;height:36px;border-radius:999px;background:rgba(34,18,8,0.07)"></span><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.07)"></span></div></div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </section>
+
+          <section style="padding:28px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:280px minmax(0,1fr);gap:40px">
+            <h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Hari libur</h3>
+            <span style="font-size:15px;color:#3D2A1C">16 libur nasional 2026 · 2 libur usaha</span>
+          </section>
+          <section style="padding:28px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:grid;grid-template-columns:280px minmax(0,1fr);gap:40px">
+            <h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Riwayat aturan potongan</h3>
+            <span style="font-size:15px;color:#3D2A1C">Terakhir diubah 1 Sep 2026 oleh Budi Santoso</span>
+          </section>
+        </main>
+      </div>
+
+      <sc-if value="{{ dlgOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:10;background:rgba(34,18,8,0.32);display:flex;justify-content:center;align-items:flex-start;padding-top:220px">
+          <div role="dialog" aria-modal="true" style="width:500px;padding:28px;box-sizing:border-box;border-radius:26px;background:rgba(255,253,249,0.97);border:1px solid rgba(255,255,255,0.8);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:18px">
+            <h3 style="margin:0;font:800 21px/1.25 'Plus Jakarta Sans',sans-serif">{{ dlgTitle }}</h3>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Nama shift<span style="color:#B91C1C"> *</span></span><input onInput="{{ onName }}" defaultValue="{{ dName }}" placeholder="mis. Pagi" style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid {{ nameBorder }};background:#FFFFFF;font:400 15px 'DM Sans',sans-serif;color:#221208;outline:none" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)"><sc-if value="{{ nameErr }}"><span style="font-size:12.5px;color:#B91C1C">Nama shift sudah dipakai</span></sc-if></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Jam mulai<span style="color:#B91C1C"> *</span></span><input type="time" onInput="{{ onStart }}" defaultValue="{{ dStart }}" style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid {{ timeBorder }};background:#FFFFFF;font:400 15px 'DM Sans',sans-serif;color:#221208;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)"></label>
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Jam selesai<span style="color:#B91C1C"> *</span></span><input type="time" onInput="{{ onEnd }}" defaultValue="{{ dEnd }}" style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid {{ timeBorder }};background:#FFFFFF;font:400 15px 'DM Sans',sans-serif;color:#221208;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.28)"></label>
+            </div>
+            <sc-if value="{{ timeErr }}"><span style="margin-top:-8px;font-size:12.5px;color:#B91C1C">Jam mulai dan selesai tidak boleh sama</span></sc-if>
+            <sc-if value="{{ durShow }}"><div style="margin-top:-6px;display:flex;align-items:center;gap:8px;color:{{ durFg }}"><sc-if value="{{ durNight }}"><span style="width:16px;height:16px;flex:none;background:#2563EB;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/info.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/info.svg) center / contain no-repeat"></span></sc-if><span style="font-size:13.5px;font-variant-numeric:tabular-nums">{{ durText }}</span></div></sc-if>
+            <sc-if value="{{ isEdit }}"><span style="font-size:12.5px;color:#75604D">Perubahan jam berlaku untuk roster yang belum terkunci.</span></sc-if>
+            <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:4px">
+              <button onClick="{{ closeDlg }}" style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button>
+              <button onClick="{{ save }}" style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">Simpan</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ delOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:10;background:rgba(34,18,8,0.32);display:flex;justify-content:center;align-items:flex-start;padding-top:260px">
+          <div role="alertdialog" aria-modal="true" style="width:480px;padding:28px;box-sizing:border-box;border-radius:26px;background:rgba(255,253,249,0.97);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;flex-direction:column;gap:6px"><h3 style="margin:0;font:800 21px 'Plus Jakarta Sans',sans-serif">{{ delTitle }}</h3><p style="margin:0;font-size:14.5px;line-height:1.5;color:#5B4636;text-wrap:pretty">{{ delText }}</p></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px"><button onClick="{{ closeDel }}" style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button><button onClick="{{ doDel }}" style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#DC2626;color:#FFFFFF;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#B91C1C">Hapus shift</button></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · 390px</div>
+      <div data-screen-label="Shift Mobile" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+        <div style="position:relative;height:100%;overflow-y:auto;padding:12px 14px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <header style="flex:none;height:60px;padding:0 8px 0 6px;border-radius:20px;background:rgba(255,251,245,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);display:flex;align-items:center;gap:6px"><span style="width:44px;height:44px;display:grid;place-items:center"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></span><div style="flex:1;display:flex;flex-direction:column;padding:0 8px"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Pemilik</span></div><span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">BS</span></header>
+          <h2 style="margin:4px 4px 0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Pengaturan absensi</h2>
+          <section style="flex:none;padding:16px 18px;border-radius:22px;background:rgba(255,253,249,0.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;min-height:36px"><h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Shift kerja</h3><a href="attendance-roster.html" style="font:700 14px 'DM Sans',sans-serif">Buka roster</a></div>
+            <sc-for list="{{ baseShifts }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;min-height:60px;border-top:1px solid rgba(34,18,8,0.07)">
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:700 15px 'DM Sans',sans-serif">{{ s.name }}</span><span style="font-size:13.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ s.range }} · {{ s.dur }}</span><sc-if value="{{ s.night }}"><span style="font-size:12.5px;color:#5B4636">Selesai keesokan hari</span></sc-if></div>
+                <button aria-label="Aksi shift" style="width:44px;height:44px;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.8);display:grid;place-items:center"><span style="width:18px;height:18px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/ellipsis.svg) center / contain no-repeat"></span></button>
+              </div>
+            </sc-for>
+            <button style="margin-top:8px;height:46px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14.5px 'Plus Jakarta Sans',sans-serif">Tambah shift</button>
+          </section>
+          <section style="flex:none;padding:16px 18px;border-radius:22px;background:rgba(255,253,249,0.9);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:10px">
+            <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Shift kerja · belum aktif</h3>
+            <span style="font-size:14px;line-height:1.5;color:#3D2A1C">Usaha Anda memakai jadwal kerja di atas untuk semua karyawan. Aktifkan shift jika karyawan bekerja bergiliran (mis. pagi/siang/malam).</span>
+            <button style="height:46px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14.5px 'Plus Jakarta Sans',sans-serif">Aktifkan shift</button>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · sheet Tambah shift (+1 hari)</div>
+      <div data-screen-label="Shift Mobile Sheet" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+        <div role="dialog" style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 28px;border-radius:28px 28px 0 0;background:#FFFDF9;display:flex;flex-direction:column;gap:16px">
+          <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:rgba(34,18,8,0.18)"></span>
+          <h3 style="margin:0;font:800 20px 'Plus Jakarta Sans',sans-serif">Tambah shift</h3>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Nama shift<span style="color:#B91C1C"> *</span></span><div style="height:48px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;display:flex;align-items:center;font-size:15px">Malam</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Jam mulai<span style="color:#B91C1C"> *</span></span><div style="height:48px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;display:flex;align-items:center;font-size:15px;font-variant-numeric:tabular-nums">22:00</div></div><div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Jam selesai<span style="color:#B91C1C"> *</span></span><div style="height:48px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:#FFFFFF;display:flex;align-items:center;font-size:15px;font-variant-numeric:tabular-nums">06:00</div></div></div>
+          <div style="display:flex;gap:8px"><span style="width:16px;height:16px;flex:none;margin-top:1px;background:#2563EB;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/info.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/info.svg) center / contain no-repeat"></span><span style="font-size:13.5px;color:#1E3A8A">Selesai keesokan hari (+1) — durasi 8 jam</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button style="height:48px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:48px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Simpan</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:560px;display:flex;flex-direction:column;gap:28px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog shift · error &amp; info ubah</div>
+      <div style="position:relative;padding:24px;border-radius:28px;overflow:hidden;background:#FBF8F3"><div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+        <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;display:flex;flex-direction:column;gap:14px">
+          <h3 style="margin:0;font:800 19px 'Plus Jakarta Sans',sans-serif">Ubah shift</h3>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font:700 13px 'DM Sans',sans-serif">Nama shift<span style="color:#B91C1C"> *</span></span><div style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid #DC2626;background:#FFFFFF;display:flex;align-items:center;font-size:15px">Pagi</div><span style="font-size:12.5px;color:#B91C1C">Nama shift sudah dipakai</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid #DC2626;background:#FFFFFF;display:flex;align-items:center;font-size:15px">15:00</div><div style="height:44px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:1px solid #DC2626;background:#FFFFFF;display:flex;align-items:center;font-size:15px">15:00</div></div>
+          <span style="margin-top:-6px;font-size:12.5px;color:#B91C1C">Jam mulai dan selesai tidak boleh sama</span>
+          <span style="font-size:12.5px;color:#75604D">Perubahan jam berlaku untuk roster yang belum terkunci.</span>
+        </div>
+      </div>
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog hapus · shift terpakai / tidak terpakai</div>
+      <div style="padding:24px;border-radius:28px;background:#FBF8F3;display:flex;flex-direction:column;gap:14px">
+        <div role="alertdialog" style="padding:22px;border-radius:26px;background:#FFFDF9;display:flex;flex-direction:column;gap:14px"><div style="display:flex;flex-direction:column;gap:6px"><h3 style="margin:0;font:800 19px 'Plus Jakarta Sans',sans-serif">Hapus shift Malam?</h3><p style="margin:0;font-size:14px;line-height:1.5;color:#5B4636">Shift ini terjadwal untuk 6 hari ke depan. Jadwal itu akan kosong dan perlu diisi ulang.</p></div><div style="display:flex;justify-content:flex-end;gap:10px"><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#DC2626;color:#FFFFFF;font:700 14px 'Plus Jakarta Sans',sans-serif">Hapus shift</button></div></div>
+        <div role="alertdialog" style="padding:22px;border-radius:26px;background:#FFFDF9;display:flex;flex-direction:column;gap:14px"><div style="display:flex;flex-direction:column;gap:6px"><h3 style="margin:0;font:800 19px 'Plus Jakarta Sans',sans-serif">Hapus shift Lembur Sabtu?</h3><p style="margin:0;font-size:14px;line-height:1.5;color:#5B4636">Shift ini belum terjadwal.</p></div><div style="display:flex;justify-content:flex-end;gap:10px"><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#DC2626;color:#FFFFFF;font:700 14px 'Plus Jakarta Sans',sans-serif">Hapus shift</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;shift&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Ada shift&quot;,&quot;Belum ada&quot;,&quot;Memuat&quot;],&quot;default&quot;:&quot;Ada shift&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { list: null, dlg: null, d: {}, err: {}, menu: null, del: null };
+  base() {
+    return [
+      { id: 'p', name: 'Pagi', start: '07:00', end: '15:00', used: '4 karyawan · 14 hari', ahead: 14 },
+      { id: 's', name: 'Siang', start: '15:00', end: '23:00', used: '3 karyawan · 9 hari', ahead: 9 },
+      { id: 'm', name: 'Malam', start: '22:00', end: '06:00', used: '2 karyawan · 3 hari', ahead: 6 },
+    ];
+  }
+  calc(a, b) {
+    if (!a || !b) return null;
+    const t = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+    const s = t(a), e = t(b);
+    if (s === e) return { same: true };
+    const night = e < s; const mins = night ? e + 1440 - s : e - s;
+    const h = Math.floor(mins / 60), mm = mins % 60;
+    return { night, dur: mm ? `${h} jam ${mm} menit` : `${h} jam` };
+  }
+  renderVals() {
+    const st = this.state;
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const D = "'DM Sans',sans-serif";
+    const sub = (label, on) => ({ label, bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#3D2A1C', font: `${on ? 700 : 500} 14px ${D}` });
+    const nav = [['Dashboard','layout-dashboard'],['Karyawan','users'],['Organisasi','network'],['Absensi','calendar-check','5',1],['KPI','target','7',1],['Payroll','wallet','',1],['Kepatuhan','shield-check'],['Pengaturan','settings','',1,[sub('Profil usaha'),sub('Absensi',1),sub('Lokasi kerja'),sub('Pengguna & peran')]]]
+      .map(([label, ic, count, subs, open]) => ({ label, mask: m(ic), font: `${open ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count && !open, hasSubs: !!subs, chev: m(open ? 'chevron-up' : 'chevron-down'), open: !!open, subs: open || [] }));
+    const list = st.list || this.base();
+    const deco = (s, i) => { const c = this.calc(s.start, s.end) || {}; return { ...s, range: `${s.start}–${s.end}`, dur: c.dur || '', night: !!c.night, border: i ? '1px solid rgba(34,18,8,0.07)' : 'none' }; };
+    const shifts = list.map((s, i) => ({ ...deco(s, i), menuOpen: st.menu === s.id,
+      edit: () => this.setState({ dlg: s.id, d: { name: s.name, start: s.start, end: s.end }, err: {}, menu: null }),
+      menu: () => this.setState(x => ({ menu: x.menu === s.id ? null : s.id })), del: () => this.setState({ del: s.id, menu: null }) }));
+    const mode = this.props.shift || 'Ada shift';
+    const c = this.calc(st.d.start, st.d.end);
+    const delS = list.find(s => s.id === st.del);
+    return {
+      nav, shifts, baseShifts: this.base().map(deco),
+      hasShifts: mode === 'Ada shift' && list.length > 0, isEmpty: mode === 'Belum ada' || (mode === 'Ada shift' && !list.length), isLoading: mode === 'Memuat',
+      skel: [0, 1, 2].map(i => ({ w: ['30%', '42%', '36%'][i], border: i ? '1px solid rgba(34,18,8,0.07)' : 'none' })),
+      openAdd: () => this.setState({ dlg: 'new', d: { name: '', start: '', end: '' }, err: {} }),
+      dlgOpen: !!st.dlg, isEdit: st.dlg && st.dlg !== 'new', dlgTitle: st.dlg === 'new' ? 'Tambah shift' : 'Ubah shift',
+      dName: st.d.name || '', dStart: st.d.start || '', dEnd: st.d.end || '',
+      onName: e => { const v = e.target.value; this.setState(s => ({ d: { ...s.d, name: v }, err: { ...s.err, name: false } })); },
+      onStart: e => { const v = e.target.value; this.setState(s => ({ d: { ...s.d, start: v }, err: { ...s.err, time: false } })); },
+      onEnd: e => { const v = e.target.value; this.setState(s => ({ d: { ...s.d, end: v }, err: { ...s.err, time: false } })); },
+      nameErr: !!st.err.name, timeErr: !!st.err.time || !!(c && c.same),
+      nameBorder: st.err.name ? '#DC2626' : 'rgba(34,18,8,0.14)', timeBorder: st.err.time || (c && c.same) ? '#DC2626' : 'rgba(34,18,8,0.14)',
+      durShow: !!(c && !c.same), durNight: !!(c && c.night), durFg: c && c.night ? '#1E3A8A' : '#5B4636',
+      durText: c && !c.same ? (c.night ? `Selesai keesokan hari (+1) — durasi ${c.dur}` : `Durasi ${c.dur}`) : '',
+      closeDlg: () => this.setState({ dlg: null }),
+      save: () => {
+        const d = st.d; const dup = list.some(s => s.name.trim().toLowerCase() === (d.name || '').trim().toLowerCase() && s.id !== st.dlg);
+        const cc = this.calc(d.start, d.end); const err = { name: dup || !d.name, time: !cc || cc.same };
+        if (err.name || err.time) return this.setState({ err });
+        const next = st.dlg === 'new' ? [...list, { id: 'n' + Date.now(), name: d.name.trim(), start: d.start, end: d.end, used: 'Belum terjadwal', ahead: 0 }] : list.map(s => s.id === st.dlg ? { ...s, name: d.name.trim(), start: d.start, end: d.end } : s);
+        this.setState({ list: next, dlg: null });
+      },
+      delOpen: !!delS, delTitle: delS ? `Hapus shift ${delS.name}?` : '',
+      delText: delS ? (delS.ahead ? `Shift ini terjadwal untuk ${delS.ahead} hari ke depan. Jadwal itu akan kosong dan perlu diisi ulang.` : 'Shift ini belum terjadwal.') : '',
+      closeDel: () => this.setState({ del: null }), doDel: () => this.setState(s => ({ del: null, list: list.filter(x => x.id !== s.del) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

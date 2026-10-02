@@ -1,6 +1,6 @@
 "use client";
 
-import { type EmployeeAttendanceSettings, type EmployeeLocationMode, employeeAttendanceSettingsInputSchema } from "@exapay/shared";
+import { type EmployeeAttendanceSettings, type EmployeeLocationMode, type EmployeeScheduleMode, employeeAttendanceSettingsInputSchema } from "@exapay/shared";
 import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useId, useState } from "react";
@@ -22,6 +22,11 @@ const SELFIE_OPTIONS = [
   { value: "optional", label: "Tidak wajib" },
 ] as const;
 
+const SCHEDULE_HINTS: Record<EmployeeScheduleMode, string> = {
+  business: "Mengikuti jadwal kerja usaha di Pengaturan › Absensi.",
+  shift: "Karyawan shift hanya dijadwalkan pada tanggal yang diisi di roster. Hari tanpa shift dihitung libur.",
+};
+
 const SELFIE_HINT = "Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.";
 
 const MODE_OPTIONS = [
@@ -33,6 +38,7 @@ const MODE_OPTIONS = [
 // Section "Pengaturan absen" di tab Data detail karyawan (design employees-attendance-settings "AttendanceSettingsSection"):
 // form-section 2 kolom, baris label | nilai yang nanti bertambah (Wajib selfie — feature 45, Mode jadwal — feature 46).
 // Ubah di tempat (owner/admin); atasan hanya baca. Lokasi yang dipilih di-snapshot API saat absen.
+// Baris "Mode jadwal" (feature 46): Ikut jadwal usaha | Shift (roster); shift nonaktif bila usaha belum punya master shift.
 // Baris "Wajib selfie saat absen" (feature 45): segmented Wajib | Tidak wajib. Usaha tanpa lokasi kerja tetap bisa
 // mengubah selfie — baris lokasi hanya menampilkan "Belum ada lokasi kerja".
 export function EmployeeAttendanceSettingsSection({ employeeId, settings: initial }: Props) {
@@ -42,6 +48,7 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
   const [mode, setMode] = useState<EmployeeLocationMode>(initial.locationMode);
   const [selected, setSelected] = useState<string[]>(initial.locationIds);
   const [selfie, setSelfie] = useState<"required" | "optional">(initial.selfieRequired ? "required" : "optional");
+  const [schedule, setSchedule] = useState<EmployeeScheduleMode>(initial.scheduleMode);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -53,6 +60,7 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
     setMode(settings.locationMode);
     setSelected(settings.locationIds);
     setSelfie(settings.selfieRequired ? "required" : "optional");
+    setSchedule(settings.scheduleMode);
     setSelectionError(null);
     setFormError(null);
     setEditing(true);
@@ -69,6 +77,7 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
       locationMode: mode,
       locationIds: mode === "selected" ? selected : [],
       selfieRequired: selfie === "required",
+      scheduleMode: schedule,
     });
     if (!parsed.success) {
       setSelectionError(parsed.error.issues[0]?.message ?? "Pilih minimal satu lokasi");
@@ -170,6 +179,35 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
               <p className="text-[13.5px] text-pretty text-text-secondary">{SELFIE_HINT}</p>
             </div>
           </div>
+          <div className="grid gap-3 border-t border-border-subtle pt-5 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6">
+            <span className="text-[13px] font-bold text-text-primary lg:pt-2.5">Mode jadwal</span>
+            <div className="flex min-w-0 flex-col items-start gap-2.5">
+              <div className="w-full sm:w-auto">
+                <SegmentedControl
+                  label="Mode jadwal"
+                  options={[
+                    { value: "business", label: "Ikut jadwal usaha" },
+                    // Belum ada master shift → mode shift tidak bisa dipilih (kecuali karyawan ini sudah mode shift)
+                    { value: "shift", label: "Shift (roster)", disabled: !settings.hasShifts && settings.scheduleMode !== "shift" },
+                  ]}
+                  value={schedule}
+                  onChange={setSchedule}
+                  disabled={saving}
+                  fullWidth
+                />
+              </div>
+              {!settings.hasShifts && settings.scheduleMode !== "shift" ? (
+                <p className="text-[13.5px] text-pretty text-text-secondary">
+                  Belum ada shift.{" "}
+                  <Link href="/settings/attendance" className="font-bold text-accent-strong hover:text-accent-hover hover:underline">
+                    Buat shift dulu di Pengaturan › Absensi
+                  </Link>
+                </p>
+              ) : (
+                <p className="text-[13.5px] text-pretty text-text-secondary">{SCHEDULE_HINTS[schedule]}</p>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2.5 border-t border-border-subtle pt-4 sm:flex sm:justify-end">
             <Button variant="secondary" onClick={() => setEditing(false)} disabled={saving}>
               Batal
@@ -196,6 +234,17 @@ export function EmployeeAttendanceSettingsSection({ employeeId, settings: initia
           <div className="mt-2 grid gap-1 border-t border-border-subtle pt-3 pb-1 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6">
             <dt className="text-[13px] text-text-tertiary lg:pt-0.5">Wajib selfie saat absen</dt>
             <dd className="text-[15px] font-medium text-text-primary">{settings.selfieRequired ? "Ya — absen masuk & pulang memakai selfie" : "Tidak"}</dd>
+          </div>
+          <div className="mt-2 grid gap-1 border-t border-border-subtle pt-3 pb-1 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6">
+            <dt className="text-[13px] text-text-tertiary lg:pt-0.5">Mode jadwal</dt>
+            <dd className="flex flex-col items-start gap-1">
+              <span className="text-[15px] font-medium text-text-primary">{settings.scheduleMode === "shift" ? "Shift (roster)" : "Ikut jadwal usaha"}</span>
+              {settings.scheduleMode === "shift" ? (
+                <Link href="/attendance/roster" className="text-sm font-bold text-accent-strong hover:text-accent-hover hover:underline">
+                  Lihat roster
+                </Link>
+              ) : null}
+            </dd>
           </div>
         </dl>
       )}

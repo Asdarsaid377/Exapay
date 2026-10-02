@@ -139,6 +139,7 @@ describe("role runtime app_user", () => {
       "refresh_tokens",
       "regencies",
       "salary_components",
+      "shift_roster_days",
       "subscription_notices",
       "task_logs",
       "tax_rate_brackets",
@@ -148,6 +149,7 @@ describe("role runtime app_user", () => {
       "users",
       "work_locations",
       "work_schedule_days",
+      "work_shifts",
     ]);
     for (const row of rows) {
       expect(row.relrowsecurity, `${row.relname} RLS enabled`).toBe(true);

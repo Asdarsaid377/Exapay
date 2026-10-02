@@ -11,6 +11,7 @@ import {
   COMPLIANCE_REMINDER_KINDS,
   DEFAULT_AI_SUMMARY_MONTHLY_QUOTA,
   EMPLOYEE_LOCATION_MODES,
+  EMPLOYEE_SCHEDULE_MODES,
   EMPLOYMENT_STATUSES,
   GEOFENCE_STATUSES,
   GENDERS,
@@ -406,6 +407,7 @@ export const employmentStatus = pgEnum("employment_status", EMPLOYMENT_STATUSES)
 export const employeeGender = pgEnum("employee_gender", GENDERS);
 export const ptkpStatus = pgEnum("ptkp_status", PTKP_STATUSES);
 export const employeeLocationMode = pgEnum("employee_location_mode", EMPLOYEE_LOCATION_MODES);
+export const employeeScheduleMode = pgEnum("employee_schedule_mode", EMPLOYEE_SCHEDULE_MODES);
 
 // Karyawan (feature 11). Semua relasi memakai FK komposit (tenant_id, …) — pemeriksaan FK tidak melewati RLS,
 // jadi tanpa ini karyawan bisa menunjuk departemen/atasan milik tenant lain.
@@ -448,6 +450,8 @@ export const employees = pgTable(
     locationMode: employeeLocationMode("location_mode").notNull().default("all"),
     // Selfie wajib saat absen masuk/pulang (feature 45) — default aktif untuk karyawan baru & lama
     selfieRequired: boolean("selfie_required").notNull().default(true),
+    // Mode jadwal (feature 46): business = jadwal mingguan usaha (default), shift = dijadwalkan per tanggal di roster
+    scheduleMode: employeeScheduleMode("schedule_mode").notNull().default("business"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -736,6 +740,64 @@ export const employeeWorkLocations = pgTable(
       columns: [t.tenantId, t.workLocationId],
       foreignColumns: [workLocations.tenantId, workLocations.id],
     }).onDelete("cascade"),
+  ],
+);
+
+// Master shift (feature 46): nama + jam mulai–selesai; selesai ≤ mulai = melewati tengah malam. Opsional per usaha.
+export const workShifts = pgTable(
+  "work_shifts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("work_shifts_tenant_id_id_key").on(t.tenantId, t.id),
+    uniqueIndex("work_shifts_tenant_name_key").on(t.tenantId, sql`lower(${t.name})`),
+    check("work_shifts_name", sql`length(${t.name}) BETWEEN 1 AND 40`),
+    check("work_shifts_times", sql`${t.startTime} <> ${t.endTime}`),
+  ],
+);
+
+// Roster (feature 46): satu baris per karyawan per tanggal — shift (snapshot nama & jam saat dijadwalkan, agar absensi &
+// payroll final tidak berubah bila master shift diubah/dihapus) atau libur (semua kolom shift null). Tanpa baris = belum diatur.
+// Master shift dihapus → work_shift_id null, snapshot tetap.
+export const shiftRosterDays = pgTable(
+  "shift_roster_days",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    employeeId: uuid("employee_id").notNull(),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    workShiftId: uuid("work_shift_id"),
+    shiftName: text("shift_name"),
+    startTime: time("start_time"),
+    endTime: time("end_time"),
+    updatedByUserId: uuid("updated_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Juga melayani filter tenant & roster per karyawan per rentang tanggal
+    uniqueIndex("shift_roster_days_tenant_employee_date_key").on(t.tenantId, t.employeeId, t.workDate),
+    index("shift_roster_days_tenant_shift_idx").on(t.tenantId, t.workShiftId),
+    foreignKey({ name: "shift_roster_days_employee_fk", columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete(
+      "restrict",
+    ),
+    // ON DELETE SET NULL (work_shift_id) ditulis manual di migration — Drizzle belum mendukung daftar kolom SET NULL
+    foreignKey({ name: "shift_roster_days_shift_fk", columns: [t.tenantId, t.workShiftId], foreignColumns: [workShifts.tenantId, workShifts.id] }),
+    check(
+      "shift_roster_days_entry",
+      sql`(${t.shiftName} IS NULL) = (${t.startTime} IS NULL) AND (${t.startTime} IS NULL) = (${t.endTime} IS NULL) AND (${t.shiftName} IS NOT NULL OR ${t.workShiftId} IS NULL) AND coalesce(${t.startTime} <> ${t.endTime}, true)`,
+    ),
   ],
 );
 

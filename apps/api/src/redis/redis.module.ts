@@ -1,4 +1,13 @@
-import { AI_QUEUE_NAME, type AiJobData, BILLING_QUEUE_NAME, type BillingClaimNotifyJobData, PAYSLIP_QUEUE_NAME, type PayslipJobData } from "@exapay/shared";
+import {
+  AI_QUEUE_NAME,
+  type AiJobData,
+  BILLING_QUEUE_NAME,
+  type BillingClaimNotifyJobData,
+  PAYSLIP_QUEUE_NAME,
+  type PayslipJobData,
+  ROSTER_QUEUE_NAME,
+  type RosterNotifyJobData,
+} from "@exapay/shared";
 import { Global, Inject, Module, type OnApplicationShutdown } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
@@ -14,12 +23,15 @@ export const PAYSLIP_QUEUE = Symbol("PAYSLIP_QUEUE");
 // Antrean BullMQ "billing" (feature 41) — API hanya menambah job pemberitahuan klaim bayar; pemindaian harian
 // (tagihan & pengingat) dijadwalkan worker sendiri
 export const BILLING_QUEUE = Symbol("BILLING_QUEUE");
+// Antrean BullMQ "roster" (feature 46) — email pemberitahuan perubahan jadwal shift ke karyawan
+export const ROSTER_QUEUE = Symbol("ROSTER_QUEUE");
 
 const QUEUE_CONNECTION = Symbol("QUEUE_CONNECTION");
 
 export type AiQueue = Queue<AiJobData>;
 export type PayslipQueue = Queue<PayslipJobData>;
 export type BillingQueue = Queue<BillingClaimNotifyJobData>;
+export type RosterQueue = Queue<RosterNotifyJobData>;
 
 const DEFAULT_JOB_OPTIONS = {
   attempts: 3,
@@ -65,8 +77,14 @@ const DEFAULT_JOB_OPTIONS = {
       useFactory: (connection: Redis): BillingQueue =>
         new Queue<BillingClaimNotifyJobData>(BILLING_QUEUE_NAME, { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS }),
     },
+    {
+      provide: ROSTER_QUEUE,
+      inject: [QUEUE_CONNECTION],
+      useFactory: (connection: Redis): RosterQueue =>
+        new Queue<RosterNotifyJobData>(ROSTER_QUEUE_NAME, { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS }),
+    },
   ],
-  exports: [REDIS_CLIENT, AI_QUEUE, PAYSLIP_QUEUE, BILLING_QUEUE],
+  exports: [REDIS_CLIENT, AI_QUEUE, PAYSLIP_QUEUE, BILLING_QUEUE, ROSTER_QUEUE],
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(
@@ -74,6 +92,7 @@ export class RedisModule implements OnApplicationShutdown {
     @Inject(AI_QUEUE) private readonly aiQueue: AiQueue,
     @Inject(PAYSLIP_QUEUE) private readonly payslipQueue: PayslipQueue,
     @Inject(BILLING_QUEUE) private readonly billingQueue: BillingQueue,
+    @Inject(ROSTER_QUEUE) private readonly rosterQueue: RosterQueue,
     @Inject(QUEUE_CONNECTION) private readonly queueConnection: Redis,
   ) {}
 
@@ -82,6 +101,7 @@ export class RedisModule implements OnApplicationShutdown {
     await this.aiQueue.close();
     await this.payslipQueue.close();
     await this.billingQueue.close();
+    await this.rosterQueue.close();
     await this.queueConnection.quit();
     await this.redis.quit();
   }

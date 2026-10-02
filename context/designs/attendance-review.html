@@ -85,7 +85,7 @@
             <div style="flex:1"></div>
             <div style="position:relative;width:220px">
               <select onChange="{{ onKind }}" aria-label="Jenis tanda" style="width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 40px 0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;cursor:pointer;outline:none">
-                <option value="">Semua jenis tanda</option><option value="out">Di luar lokasi</option><option value="weak">Lokasi tidak akurat</option><option value="none">Tanpa lokasi</option>
+                <option value="">Semua jenis tanda</option><option value="out">Di luar lokasi</option><option value="weak">Lokasi tidak akurat</option><option value="none">Tanpa lokasi</option><option value="nosched">Tanpa jadwal</option>
               </select>
               <span style="position:absolute;right:14px;top:14px;width:16px;height:16px;pointer-events:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
             </div>
@@ -210,7 +210,7 @@
             <p style="margin:0;font-size:14px;line-height:1.45;color:#5B4636">Absen bertanda tetap tercatat dan tidak mengubah gaji. Koreksi jam lewat menu <a href="#">Koreksi</a>.</p>
           </div>
           <div style="flex:none;display:grid;grid-template-columns:1.25fr 1fr 0.8fr;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
-            <span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Perlu ditinjau (5)</span>
+            <span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Perlu ditinjau (6)</span>
             <span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Sudah ditinjau</span>
             <span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Semua</span>
           </div>
@@ -352,6 +352,7 @@ class Component extends DCLogic {
       { id: 3, ini: 'HW', name: 'Hendra Wijaya', jab: 'Roaster', date: '1 Okt 2026', ev: 'Pulang 17:40', kind: 'out', detail: '1,2 km dari Gudang Roasting Tamalanrea (akurasi ±8 m)' },
       { id: 4, ph: 'none', ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '1 Okt 2026', ev: 'Masuk 08:00', kind: 'weak', detail: 'Akurasi ±450 m, terdekat Kedai Pettarani' },
       { id: 5, ini: 'DL', name: 'Dewi Lestari', jab: 'Barista', date: '30 Sep 2026', ev: 'Pulang 21:05', kind: 'out', detail: '2,4 km dari Kedai Pettarani (akurasi ±15 m)', sub: 1 },
+      { id: 10, ph: 'none', ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '3 Okt 2026', ev: 'Masuk 15:02', kind: 'nosched', detail: 'Tidak ada shift pada Sab 3 Okt' },
       { id: 6, ini: 'RW', name: 'Rina Wulandari', jab: 'Kasir', date: '29 Sep 2026', ev: 'Masuk 08:02', kind: 'out', detail: '540 m dari Kedai Pettarani (akurasi ±12 m)', d: { t: 'ok', by: 'Budi Santoso · 2 Okt 10:15', note: 'Antar pesanan katering ke kantor pelanggan' } },
       { id: 7, ini: 'AP', name: 'Agus Pratama', jab: 'Barista', date: '26 Sep 2026', ev: 'Pulang 16:20', kind: 'none', detail: 'Izin lokasi ditolak', d: { t: 'fu', by: 'Budi Santoso · 29 Sep 09:40', note: 'Pulang sebelum jadwal tanpa izin. Dicek lewat koreksi.' } },
       { id: 8, ph: 'none', ini: 'MS', name: 'Maya Sari', jab: 'Barista', date: '25 Sep 2026', ev: 'Masuk 07:55', kind: 'weak', detail: 'Akurasi ±300 m, terdekat Kedai Pettarani', d: { t: 'ok', by: 'Rudi Hartono · 25 Sep 11:02', note: '' } },
@@ -362,7 +363,7 @@ class Component extends DCLogic {
     const st = this.state;
     const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
     const D = "'DM Sans',sans-serif";
-    const K = { out: ['Di luar lokasi', 'rgba(217,119,6,0.14)', '#92400E'], weak: ['Lokasi tidak akurat', 'rgba(217,119,6,0.14)', '#92400E'], none: ['Tanpa lokasi', 'rgba(34,18,8,0.07)', '#3D2A1C'] };
+    const K = { out: ['Di luar lokasi', 'rgba(217,119,6,0.14)', '#92400E'], weak: ['Lokasi tidak akurat', 'rgba(217,119,6,0.14)', '#92400E'], none: ['Tanpa lokasi', 'rgba(34,18,8,0.07)', '#3D2A1C'], nosched: ['Tanpa jadwal', 'rgba(37,99,235,0.1)', '#1D4ED8'] };
     const DEC = { ok: ['Diterima', 'rgba(21,128,61,0.12)', '#166534'], fu: ['Perlu tindak lanjut', 'rgba(217,119,6,0.14)', '#92400E'] };
     const line = '1px solid rgba(34,18,8,0.07)';
     const all = this.base().map(r => {

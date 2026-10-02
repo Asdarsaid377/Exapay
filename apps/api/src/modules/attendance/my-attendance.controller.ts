@@ -7,6 +7,7 @@ import {
   attendanceHistoryQuerySchema,
   type AttendanceRecord,
   MEMBERSHIP_ROLES,
+  type MySchedule,
   SELFIE_MAX_BYTES,
 } from "@exapay/shared";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
@@ -18,6 +19,7 @@ import { Roles } from "../../common/auth/roles.decorator.js";
 import { ZodValidationPipe } from "../../common/validation/zod-validation.pipe.js";
 import { AttendanceRecapService } from "./attendance-recap.service.js";
 import { AttendanceService, type AttendanceTodayResult, type UploadedSelfie } from "./attendance.service.js";
+import { ShiftRosterService } from "./shift-roster.service.js";
 
 // Selfie (feature 45) disimpan di memori lalu diteruskan ke storage S3; batas ukuran di multer (413)
 const selfieUpload = FileInterceptor("selfie", { limits: { fileSize: SELFIE_MAX_BYTES, files: 1 } });
@@ -29,7 +31,14 @@ export class MyAttendanceController {
   constructor(
     private readonly attendance: AttendanceService,
     private readonly recap: AttendanceRecapService,
+    private readonly roster: ShiftRosterService,
   ) {}
+
+  // "Jadwal saya" (feature 46): hari ini + 6 hari untuk karyawan mode shift; mode business → days kosong
+  @Get("schedule")
+  async schedule(@CurrentUser() user: AuthUser): Promise<ApiResponse<MySchedule>> {
+    return { success: true, data: await this.roster.mySchedule(user) };
+  }
 
   @Get("today")
   async today(@CurrentUser() user: AuthUser): Promise<ApiResponse<AttendanceTodayResult>> {

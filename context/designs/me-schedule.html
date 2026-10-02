@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:40px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Portal /me — Jadwal saya (shift)</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:900px;text-wrap:pretty">Dewi Lestari · mode Shift (roster). Karyawan yang ikut jadwal usaha tidak melihat kartu ini.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px"><a href="attendance-roster.html">← Roster</a><a href="me-attendance-selfie.html">Portal selfie →</a></div>
+  </div>
+  <div style="display:flex;gap:32px">
+    <sc-for list="{{ frames }}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ f.caption }}</div>
+        <div data-screen-label="{{ f.caption }}" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+          <div style="position:absolute;inset:0;overflow:hidden">
+            <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#F7D3B3;top:-110px;right:-150px"></div>
+            <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:#EADCCB;top:200px;left:-130px"></div>
+          </div>
+          <div style="position:relative;height:100%;overflow-y:auto;box-sizing:border-box;padding:12px 14px 100px;display:flex;flex-direction:column;gap:14px">
+            <header style="flex:none;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border-radius:20px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.65);display:flex;align-items:center;justify-content:space-between"><div style="display:flex;flex-direction:column"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Dewi Lestari · Barista</span></div><span style="width:44px;height:44px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">DL</span></header>
+
+            <section style="flex:none;padding:20px;border-radius:24px;background:rgba(255,253,249,0.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 18px 40px -16px rgba(74,42,16,0.24);display:flex;flex-direction:column;gap:16px">
+              <span style="font-size:13.5px;color:#5B4636">Jam server · WITA</span>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font:800 64px/0.95 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">{{ f.time }}</span>
+                <span style="font:700 15px 'DM Sans',sans-serif">{{ f.date }}</span>
+                <span style="font-size:14px;color:{{ f.schedFg }};font-variant-numeric:tabular-nums">{{ f.sched }}</span>
+              </div>
+              <sc-if value="{{ f.done }}">
+                <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(21,128,61,0.1)"><span style="width:18px;height:18px;flex:none;background:#15803D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat"></span><span style="font:700 14.5px 'DM Sans',sans-serif;color:#166534;font-variant-numeric:tabular-nums">Masuk 10:02</span></div>
+                <div role="status" style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.22)"><span style="width:18px;height:18px;flex:none;margin-top:1px;background:#2563EB;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar-x.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar-x.svg) center / contain no-repeat"></span><span style="font-size:14px;line-height:1.45">Absen di luar jadwal — akan ditinjau atasan.</span></div>
+              </sc-if>
+              <button style="height:58px;border:none;border-radius:999px;background:{{ f.btnBg }};color:{{ f.btnFg }};display:flex;align-items:center;justify-content:center;gap:10px;font:800 17px 'Plus Jakarta Sans',sans-serif;cursor:pointer"><span style="width:20px;height:20px;background:currentColor;-webkit-mask:{{ f.btnIcon }};mask:{{ f.btnIcon }}"></span>{{ f.btnLabel }}</button>
+            </section>
+
+            <section style="flex:none;padding:18px 18px 14px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);box-shadow:0 8px 24px -16px rgba(74,42,16,0.2);display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><h2 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif">Jadwal saya</h2><span style="font-size:13px;color:#5B4636">7 hari ke depan</span></div>
+              <sc-if value="{{ f.hasRows }}">
+                <sc-for list="{{ f.rows }}" as="r">
+                  <div style="display:flex;align-items:center;gap:12px;min-height:46px;border-top:{{ r.border }}">
+                    <div style="width:92px;flex:none;display:flex;flex-direction:column"><span style="font:{{ r.dayFont }};font-variant-numeric:tabular-nums">{{ r.day }}</span><sc-if value="{{ r.today }}"><span style="font-size:12px;color:#B34C08">Hari ini</span></sc-if></div>
+                    <span style="flex:1;font:{{ r.valFont }};color:{{ r.valFg }};font-variant-numeric:tabular-nums">{{ r.val }}</span>
+                  </div>
+                </sc-for>
+                <span style="padding-top:10px;border-top:1px solid rgba(34,18,8,0.07);font-size:12.5px;line-height:1.45;color:#75604D">Jadwal bisa berubah — Anda diberi tahu lewat email.</span>
+              </sc-if>
+              <sc-if value="{{ f.noRoster }}"><span style="padding:14px 0 6px;border-top:1px solid rgba(34,18,8,0.07);font-size:14.5px;line-height:1.5;color:#3D2A1C">Jadwal belum diatur — tanyakan atasan Anda.</span></sc-if>
+            </section>
+          </div>
+          <nav style="position:absolute;left:12px;right:12px;bottom:12px;height:72px;box-sizing:border-box;padding:6px;border-radius:24px;background:rgba(255,251,245,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.7);box-shadow:0 14px 34px -12px rgba(74,42,16,0.3);display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+            <sc-for list="{{ tabs }}" as="b" hint-placeholder-count="5"><span style="border-radius:18px;background:{{ b.bg }};color:{{ b.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:{{ b.font }}"><span style="width:22px;height:22px;background:currentColor;-webkit-mask:{{ b.mask }};mask:{{ b.mask }}"></span>{{ b.label }}</span></sc-for>
+          </nav>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const D = "'DM Sans',sans-serif";
+    const S = { p: 'Pagi 07:00–15:00', s: 'Siang 15:00–23:00', m: 'Malam 22:00–06:00 (+1)', l: 'Libur' };
+    const days = [['Sen 5 Okt', 'p'], ['Sel 6 Okt', 'l'], ['Rab 7 Okt', 'm'], ['Kam 8 Okt', 's'], ['Jum 9 Okt', 's'], ['Sab 10 Okt', 'p'], ['Min 11 Okt', 'l'], ['Sen 12 Okt', 'p']];
+    const rows = (from) => days.slice(from, from + 7).map(([day, k], i) => ({ day, today: i === 0, border: i ? '1px solid rgba(34,18,8,0.07)' : '1px solid rgba(34,18,8,0.07)', dayFont: `${i === 0 ? 700 : 500} 14.5px ${D}`, val: S[k], valFg: k === 'l' ? '#75604D' : '#221208', valFont: `${k === 'l' ? 400 : 500} 14.5px ${D}` }));
+    const inBtn = { btnBg: '#F2790F', btnFg: '#221208', btnIcon: m('log-in'), btnLabel: 'Absen Masuk' };
+    const outBtn = { btnBg: '#221208', btnFg: '#FBF8F3', btnIcon: m('log-out'), btnLabel: 'Absen Pulang' };
+    const frames = [
+      { caption: '1 · Hari ber-shift + Jadwal saya', time: '06:52', date: 'Senin, 5 Oktober 2026', sched: 'Shift Pagi · 07:00–15:00', schedFg: '#5B4636', ...inBtn, hasRows: true, rows: rows(0) },
+      { caption: '2 · Hari tanpa shift', time: '10:01', date: 'Selasa, 6 Oktober 2026', sched: 'Tidak ada shift hari ini', schedFg: '#5B4636', ...inBtn, hasRows: true, rows: rows(1) },
+      { caption: '3 · Sudah absen di hari tanpa shift', time: '10:03', date: 'Selasa, 6 Oktober 2026', sched: 'Tidak ada shift hari ini', schedFg: '#5B4636', done: true, ...outBtn, hasRows: true, rows: rows(1) },
+      { caption: '4 · Belum ada roster minggu ini', time: '07:40', date: 'Senin, 12 Oktober 2026', sched: 'Jadwal belum diatur', schedFg: '#5B4636', ...inBtn, noRoster: true },
+    ].map(f => ({ done: false, hasRows: false, noRoster: false, rows: [], ...f }));
+    const tabs = [['Beranda', 'house', true], ['Tugas', 'list-checks'], ['Absensi', 'calendar-days'], ['Slip', 'receipt'], ['Profil', 'user']]
+      .map(([label, icon, on]) => ({ label, mask: m(icon), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#5B4636', font: on ? `700 12px ${D}` : `500 12px ${D}` }));
+    return { frames, tabs };
+  }
+}
+</script>
+</body>
+</html>

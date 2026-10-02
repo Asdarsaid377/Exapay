@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}@keyframes exaPulse{0%,100%{opacity:1}50%{opacity:.5}}@keyframes exaSpin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Roster</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636">/attendance/roster · Absensi › Roster (muncul hanya bila usaha punya shift) · Kopi Nusantara, Budi Santoso (Pemilik)</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="settings-attendance-shifts.html">← Shift kerja</a>
+      <a href="me-schedule.html">Portal jadwal →</a>
+      <a href="shift-components.html">Komponen →</a>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Desktop · 1440px — klik sel untuk memilih shift; sel bergembok (Sen 5, Dewi &amp; Rina) menampilkan alasan; ‹ untuk minggu lalu (terkunci). Tweak “Tampilan”.</div>
+    <div data-screen-label="Roster Desktop" style="position:relative;width:1440px;min-height:1024px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:-260px;right:-180px"></div>
+        <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#EADCCB;top:340px;left:-140px"></div>
+        <div style="position:absolute;width:580px;height:360px;border-radius:56px;background:#FAE0C8;top:720px;right:60px"></div>
+      </div>
+      <div style="position:relative;display:flex;gap:20px;padding:20px;min-height:1024px;box-sizing:border-box">
+        <aside style="width:248px;flex:none;box-sizing:border-box;padding:20px 14px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 10px">
+            <div style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</div>
+            <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+              <div style="height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:12px;color:#221208;font:{{ item.font }};cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+                <span style="width:19px;height:19px;flex:none;background:currentColor;-webkit-mask:{{ item.mask }};mask:{{ item.mask }}"></span>
+                <span style="flex:1">{{ item.label }}</span>
+                <sc-if value="{{ item.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ item.count }}</span></sc-if>
+                <sc-if value="{{ item.hasSubs }}"><span style="width:16px;height:16px;flex:none;background:#5B4636;-webkit-mask:{{ item.chev }};mask:{{ item.chev }}"></span></sc-if>
+              </div>
+              <sc-if value="{{ item.open }}">
+                <div style="display:flex;flex-direction:column;gap:2px;padding:2px 0 6px 31px">
+                  <sc-for list="{{ item.subs }}" as="c"><div style="height:38px;padding:0 12px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;background:{{ c.bg }};color:{{ c.fg }};font:{{ c.font }};cursor:pointer"><span>{{ c.label }}</span><sc-if value="{{ c.hasCount }}"><span style="min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#221208;color:#FBF8F3;font:700 12px/22px 'DM Sans',sans-serif;text-align:center">{{ c.count }}</span></sc-if></div></sc-for>
+                </div>
+              </sc-if>
+            </sc-for>
+          </nav>
+        </aside>
+
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <header style="height:68px;flex:none;box-sizing:border-box;padding:0 12px 0 10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+            <div style="padding:0 14px;display:flex;flex-direction:column;gap:1px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:13px;color:#5B4636">Pemilik · Makassar</span></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-size:14px;color:#5B4636">Senin, 5 Oktober 2026</span><span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">BS</span></div>
+          </header>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:4px 6px 0">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">Roster</h2>
+              <p style="margin:0;font-size:15px;color:#5B4636">Atur shift karyawan per tanggal. Hari tanpa shift dihitung libur.</p>
+            </div>
+            <a href="settings-attendance-shifts.html" style="font:700 14px 'DM Sans',sans-serif">Kelola shift</a>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14)">
+            <div style="display:flex;align-items:center;gap:4px">
+              <button onClick="{{ prev }}" aria-label="Minggu sebelumnya" style="width:40px;height:40px;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.8);cursor:pointer;display:grid;place-items:center" style-hover="background:#FFFFFF"><span style="width:17px;height:17px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat"></span></button>
+              <span style="min-width:150px;text-align:center;font:700 15px 'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums">{{ weekLabel }}</span>
+              <button onClick="{{ next }}" aria-label="Minggu berikutnya" style="width:40px;height:40px;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.8);cursor:pointer;display:grid;place-items:center" style-hover="background:#FFFFFF"><span style="width:17px;height:17px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></button>
+            </div>
+            <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)">
+              <sc-for list="{{ segs }}" as="s" hint-placeholder-count="2"><button onClick="{{ s.click }}" style="height:36px;padding:0 16px;border:none;border-radius:999px;background:{{ s.bg }};box-shadow:{{ s.shadow }};color:{{ s.fg }};font:{{ s.font }};cursor:pointer">{{ s.label }}</button></sc-for>
+            </div>
+            <div style="position:relative;width:210px">
+              <select onChange="{{ onDept }}" aria-label="Departemen" style="width:100%;appearance:none;-webkit-appearance:none;height:44px;padding:0 40px 0 14px;border-radius:14px;border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.8);font:400 15px 'DM Sans',sans-serif;color:#221208;cursor:pointer;outline:none"><option value="">Semua departemen</option><option>Operasional</option><option>Produksi</option></select>
+              <span style="position:absolute;right:14px;top:14px;width:16px;height:16px;pointer-events:none;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+            </div>
+            <div style="flex:1"></div>
+            <button onClick="{{ openCopy }}" style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#FFFFFF"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/copy.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/copy.svg) center / contain no-repeat"></span>Salin minggu lalu</button>
+          </div>
+
+          <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:none;border-radius:22px;background:rgba(255,253,249,0.88);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="display:grid;grid-template-columns:210px repeat(7,minmax(0,1fr)) 60px;gap:8px;align-items:stretch;height:48px;padding:0 16px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08);border-radius:22px 22px 0 0">
+                <span style="align-self:center;font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">Karyawan</span>
+                <sc-for list="{{ days }}" as="d" hint-placeholder-count="7"><span style="display:flex;align-items:center;justify-content:center;box-shadow:{{ d.bar }};color:{{ d.fg }};font:{{ d.font }};font-variant-numeric:tabular-nums">{{ d.label }}</span></sc-for>
+                <span></span>
+              </div>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:210px repeat(7,minmax(0,1fr)) 60px;gap:8px;align-items:center;min-height:72px;padding:8px 16px;box-sizing:border-box;border-top:{{ r.border }}">
+                  <div style="display:flex;align-items:center;gap:12px;min-width:0"><span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span><div style="display:flex;flex-direction:column;gap:1px;min-width:0"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div></div>
+                  <sc-for list="{{ r.cells }}" as="c">
+                    <div style="position:relative">
+                      <button onClick="{{ c.click }}" aria-label="{{ c.aria }}" style="position:relative;width:100%;min-height:52px;box-sizing:border-box;padding:7px 10px;border-radius:12px;border:{{ c.bd }};background:{{ c.bg }};opacity:{{ c.op }};cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-align:left;color:#221208" style-hover="border-color:rgba(242,121,15,0.6)">
+                        <sc-if value="{{ c.isShift }}"><span style="font:700 13px 'DM Sans',sans-serif">{{ c.name }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ c.time }}</span></sc-if>
+                        <sc-if value="{{ c.isOff }}"><span style="font:500 13px 'DM Sans',sans-serif;color:#75604D">Libur</span></sc-if>
+                        <sc-if value="{{ c.isEmpty }}"><span style="font-size:14px;color:#8A7561">—</span></sc-if>
+                        <sc-if value="{{ c.saving }}"><span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B4636"><span style="width:12px;height:12px;box-sizing:border-box;border-radius:50%;border:2px solid rgba(34,18,8,0.2);border-top-color:#221208;animation:exaSpin .8s linear infinite"></span>Menyimpan…</span></sc-if>
+                        <sc-if value="{{ c.locked }}"><span style="position:absolute;top:7px;right:8px;width:12px;height:12px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat"></span></sc-if>
+                      </button>
+                      <sc-if value="{{ c.tipOpen }}"><div role="tooltip" style="position:absolute;z-index:8;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:7px 11px;border-radius:10px;background:#221208;color:#FBF8F3;font:500 12.5px 'DM Sans',sans-serif;white-space:nowrap">{{ c.tip }}</div></sc-if>
+                      <sc-if value="{{ c.open }}">
+                        <div role="listbox" style="position:absolute;z-index:8;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:236px;padding:8px;box-sizing:border-box;border-radius:18px;background:rgba(255,253,249,0.98);border:1px solid rgba(255,255,255,0.8);box-shadow:0 20px 50px -16px rgba(74,42,16,0.35);display:flex;flex-direction:column;gap:2px">
+                          <span style="padding:4px 10px 6px;font-size:12.5px;color:#5B4636">{{ c.popTitle }}</span>
+                          <sc-for list="{{ c.opts }}" as="o">
+                            <button onClick="{{ o.click }}" role="option" style="height:44px;padding:0 10px;border:none;border-top:{{ o.sep }};border-radius:12px;background:transparent;display:flex;align-items:center;gap:10px;cursor:pointer;color:#221208;text-align:left" style-hover="background:rgba(242,121,15,0.1)">
+                              <span style="flex:1;display:flex;align-items:baseline;gap:8px"><span style="font:{{ o.font }}">{{ o.label }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ o.time }}</span></span>
+                              <span style="width:16px;height:16px;background:{{ o.tick }};-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <span style="text-align:right;font-size:13px;color:#5B4636;font-variant-numeric:tabular-nums">{{ r.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 8px;font-size:14px;color:#5B4636"><span>3 karyawan ikut jadwal usaha tidak tampil di roster.</span><a href="employees.html" style="font:700 14px 'DM Sans',sans-serif">Lihat karyawan</a></div>
+          </sc-if>
+
+          <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:64px 32px;border-radius:22px;background:rgba(255,253,249,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+              <span style="font:700 18px 'Plus Jakarta Sans',sans-serif">Belum ada karyawan bermode shift</span>
+              <span style="font-size:15px;color:#5B4636">Ubah mode jadwal di detail karyawan (Pengaturan absen).</span>
+              <a href="employees.html" style="margin-top:8px;font:700 14.5px 'DM Sans',sans-serif">Buka daftar karyawan</a>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showSkel }}" hint-placeholder-val="{{ false }}">
+            <div aria-busy="true" style="border-radius:22px;overflow:hidden;background:rgba(255,253,249,0.86);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2)">
+              <div style="height:48px;background:rgba(34,18,8,0.035);border-bottom:1px solid rgba(34,18,8,0.08)"></div>
+              <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:210px repeat(7,minmax(0,1fr)) 60px;gap:8px;align-items:center;height:72px;padding:0 16px;border-top:{{ k.border }};animation:exaPulse 1.4s ease-in-out infinite">
+                  <div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(34,18,8,0.09)"></span><span style="width:{{ k.w }};height:11px;border-radius:999px;background:rgba(34,18,8,0.1)"></span></div>
+                  <sc-for list="{{ k.cells }}" as="z"><span style="height:52px;border-radius:12px;background:rgba(34,18,8,0.06)"></span></sc-for>
+                  <span style="justify-self:end;width:40px;height:10px;border-radius:999px;background:rgba(34,18,8,0.07)"></span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </main>
+      </div>
+
+      <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="position:absolute;z-index:12;left:50%;bottom:32px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:999px;background:#221208;color:#FBF8F3;box-shadow:0 18px 40px -14px rgba(34,18,8,0.5)"><span style="width:17px;height:17px;background:#86EFAC;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/circle-check.svg) center / contain no-repeat"></span><span style="font:500 14px 'DM Sans',sans-serif">{{ toast }}</span></div>
+      </sc-if>
+
+      <sc-if value="{{ copyOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:10;background:rgba(34,18,8,0.32);display:flex;justify-content:center;align-items:flex-start;padding-top:240px">
+          <div role="dialog" aria-modal="true" style="width:500px;padding:28px;box-sizing:border-box;border-radius:26px;background:rgba(255,253,249,0.97);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font:800 21px/1.25 'Plus Jakarta Sans',sans-serif">Salin roster 28 Sep–4 Okt ke 5–11 Okt?</h3>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+              <li style="padding:10px 0;font-size:14.5px;font-variant-numeric:tabular-nums">33 sel akan diisi</li>
+              <li style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:14.5px;font-variant-numeric:tabular-nums">2 sel terkunci dilewati</li>
+              <li style="padding:10px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:14.5px">Sel yang sudah diisi akan ditimpa</li>
+            </ul>
+            <span style="font-size:12.5px;color:#75604D">Karyawan yang jadwalnya berubah diberi tahu lewat email. Tercatat di log audit.</span>
+            <div style="display:flex;justify-content:flex-end;gap:10px"><button onClick="{{ closeCopy }}" style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button><button onClick="{{ doCopy }}" style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">Salin roster</button></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · per hari (strip 7 hari, interaktif)</div>
+      <div data-screen-label="Roster Mobile" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+        <div style="position:relative;height:100%;overflow-y:auto;padding:12px 14px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <header style="flex:none;height:60px;padding:0 8px 0 6px;border-radius:20px;background:rgba(255,251,245,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);display:flex;align-items:center;gap:6px"><span style="width:44px;height:44px;display:grid;place-items:center"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></span><div style="flex:1;display:flex;flex-direction:column;padding:0 8px"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Pemilik</span></div><span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">BS</span></header>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:4px 4px 0"><h2 style="margin:0;font:800 24px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Roster</h2><p style="margin:0;font-size:14px;line-height:1.45;color:#5B4636">Atur shift karyawan per tanggal. Hari tanpa shift dihitung libur.</p></div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between"><span style="width:44px;height:44px;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.8);display:grid;place-items:center"><span style="width:17px;height:17px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center / contain no-repeat"></span></span><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">5–11 Okt 2026</span><span style="width:44px;height:44px;box-sizing:border-box;border:1px solid rgba(34,18,8,0.14);border-radius:50%;background:rgba(255,255,255,0.8);display:grid;place-items:center"><span style="width:17px;height:17px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></span></div>
+          <div role="tablist" style="flex:none;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:4px;border-radius:20px;background:rgba(34,18,8,0.06)">
+            <sc-for list="{{ mDays }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.click }}" role="tab" style="height:52px;border:none;border-radius:16px;background:{{ d.bg }};box-shadow:{{ d.shadow }};color:{{ d.fg }};cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:11.5px">{{ d.dow }}</span><span style="font:{{ d.font }};font-variant-numeric:tabular-nums">{{ d.num }}</span></button></sc-for>
+          </div>
+          <section style="flex:none;padding:0 16px;border-radius:22px;background:rgba(255,253,249,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75)">
+            <sc-for list="{{ mRows }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px;min-height:68px;border-top:{{ r.border }}">
+                <span style="width:36px;height:36px;flex:none;border-radius:50%;background:#EADCCB;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.ini }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div>
+                <span style="position:relative;width:104px;min-height:48px;box-sizing:border-box;padding:6px 10px;border-radius:12px;border:{{ r.c.bd }};background:{{ r.c.bg }};opacity:{{ r.c.op }};display:flex;flex-direction:column;justify-content:center">
+                  <sc-if value="{{ r.c.isShift }}"><span style="font:700 13px 'DM Sans',sans-serif">{{ r.c.name }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ r.c.time }}</span></sc-if>
+                  <sc-if value="{{ r.c.isOff }}"><span style="font:500 13px 'DM Sans',sans-serif;color:#75604D">Libur</span></sc-if>
+                  <sc-if value="{{ r.c.isEmpty }}"><span style="font-size:14px;color:#8A7561">—</span></sc-if>
+                  <sc-if value="{{ r.c.locked }}"><span style="position:absolute;top:7px;right:8px;width:12px;height:12px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat"></span></sc-if>
+                </span>
+              </div>
+            </sc-for>
+          </section>
+          <button style="flex:none;height:46px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14.5px 'Plus Jakarta Sans',sans-serif">Salin minggu lalu</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Mobile · sheet pilih shift</div>
+      <div data-screen-label="Roster Mobile Sheet" style="position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;inset:0;background:rgba(34,18,8,0.36)"></div>
+        <div role="dialog" style="position:absolute;left:0;right:0;bottom:0;padding:10px 16px 24px;border-radius:28px 28px 0 0;background:#FFFDF9;display:flex;flex-direction:column;gap:8px">
+          <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:rgba(34,18,8,0.18)"></span>
+          <div style="display:flex;flex-direction:column;gap:2px;padding:6px 6px 8px"><h3 style="margin:0;font:800 19px 'Plus Jakarta Sans',sans-serif">Dewi Lestari</h3><span style="font-size:14px;color:#5B4636">Rabu, 7 Okt 2026</span></div>
+          <sc-for list="{{ sheetOpts }}" as="o">
+            <div style="min-height:52px;padding:0 10px;border-top:{{ o.sep }};display:flex;align-items:center;gap:10px"><span style="flex:1;display:flex;align-items:baseline;gap:8px"><span style="font:{{ o.font }}">{{ o.label }}</span><span style="font-size:13px;color:#5B4636;font-variant-numeric:tabular-nums">{{ o.time }}</span></span><span style="width:18px;height:18px;background:{{ o.tick }};-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></div>
+          </sc-for>
+          <span style="padding:6px 10px 0;font-size:12.5px;color:#75604D">Tersimpan langsung. Dewi diberi tahu lewat email.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:560px;display:flex;flex-direction:column;gap:28px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Chip shift · varian</div>
+      <div style="padding:24px;border-radius:28px;background:#FFFDF9;display:grid;grid-template-columns:repeat(3,1fr);gap:20px 14px">
+        <sc-for list="{{ chipDemo }}" as="c" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="position:relative;min-height:52px;box-sizing:border-box;padding:7px 10px;border-radius:12px;border:{{ c.bd }};background:{{ c.bg }};opacity:{{ c.op }};display:flex;flex-direction:column;justify-content:center;gap:1px">
+              <sc-if value="{{ c.isShift }}"><span style="font:700 13px 'DM Sans',sans-serif">{{ c.name }}</span><span style="font-size:12.5px;color:#5B4636;font-variant-numeric:tabular-nums">{{ c.time }}</span></sc-if>
+              <sc-if value="{{ c.isOff }}"><span style="font:500 13px 'DM Sans',sans-serif;color:#75604D">Libur</span></sc-if>
+              <sc-if value="{{ c.isEmpty }}"><span style="font-size:14px;color:#8A7561">—</span></sc-if>
+              <sc-if value="{{ c.saving }}"><span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B4636"><span style="width:12px;height:12px;box-sizing:border-box;border-radius:50%;border:2px solid rgba(34,18,8,0.2);border-top-color:#221208;animation:exaSpin .8s linear infinite"></span>Menyimpan…</span></sc-if>
+              <sc-if value="{{ c.locked }}"><span style="position:absolute;top:7px;right:8px;width:12px;height:12px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat"></span></sc-if>
+            </span>
+            <span style="font-size:12.5px;color:#5B4636">{{ c.caption }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Tooltip sel terkunci · 3 alasan</div>
+      <div style="padding:24px;border-radius:28px;background:#FFFDF9;display:flex;gap:10px;flex-wrap:wrap">
+        <span style="padding:7px 11px;border-radius:10px;background:#221208;color:#FBF8F3;font:500 12.5px 'DM Sans',sans-serif">Sudah lewat</span>
+        <span style="padding:7px 11px;border-radius:10px;background:#221208;color:#FBF8F3;font:500 12.5px 'DM Sans',sans-serif">Sudah absen · koreksi lewat Koreksi absensi</span>
+        <span style="padding:7px 11px;border-radius:10px;background:#221208;color:#FBF8F3;font:500 12.5px 'DM Sans',sans-serif">Periode gaji sudah final</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Tampilan atasan · Rudi Hartono — hanya bawahan langsung, tanpa “Kelola shift”</div>
+      <div data-screen-label="Roster Atasan" style="position:relative;padding:28px;border-radius:28px;overflow:hidden;background:#FBF8F3;display:flex;flex-direction:column;gap:16px">
+        <div style="position:absolute;width:420px;height:420px;border-radius:50%;background:#F7D3B3;top:-200px;right:-120px"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:flex-end"><div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font:800 26px 'Plus Jakarta Sans',sans-serif">Roster</h2><span style="font-size:14.5px;color:#5B4636">Bawahan langsung Anda · 5–11 Okt 2026</span></div><button style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Salin minggu lalu</button></div>
+        <div style="position:relative;border-radius:22px;background:rgba(255,253,249,0.9);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75)">
+          <div style="display:grid;grid-template-columns:150px repeat(7,minmax(0,1fr));gap:6px;height:44px;padding:0 14px;align-items:stretch;border-bottom:1px solid rgba(34,18,8,0.08)"><span style="align-self:center;font:700 12.5px 'DM Sans',sans-serif;color:#5B4636">Karyawan</span><sc-for list="{{ days0 }}" as="d"><span style="display:flex;align-items:center;justify-content:center;box-shadow:{{ d.bar }};color:{{ d.fg }};font:{{ d.font }}">{{ d.label }}</span></sc-for></div>
+          <sc-for list="{{ atasanRows }}" as="r">
+            <div style="display:grid;grid-template-columns:150px repeat(7,minmax(0,1fr));gap:6px;align-items:center;min-height:68px;padding:8px 14px;box-sizing:border-box;border-top:{{ r.border }}">
+              <div style="display:flex;flex-direction:column"><span style="font:700 14px 'DM Sans',sans-serif">{{ r.name }}</span><span style="font-size:12.5px;color:#75604D">{{ r.jab }}</span></div>
+              <sc-for list="{{ r.cells }}" as="c"><span style="position:relative;min-height:50px;box-sizing:border-box;padding:6px 8px;border-radius:12px;border:{{ c.bd }};background:{{ c.bg }};opacity:{{ c.op }};display:flex;flex-direction:column;justify-content:center"><sc-if value="{{ c.isShift }}"><span style="font:700 12.5px 'DM Sans',sans-serif">{{ c.name }}</span><span style="font-size:12px;color:#5B4636">{{ c.time }}</span></sc-if><sc-if value="{{ c.isOff }}"><span style="font:500 12.5px 'DM Sans',sans-serif;color:#75604D">Libur</span></sc-if><sc-if value="{{ c.isEmpty }}"><span style="color:#8A7561">—</span></sc-if><sc-if value="{{ c.locked }}"><span style="position:absolute;top:6px;right:6px;width:11px;height:11px;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/lock.svg) center / contain no-repeat"></span></sc-if></span></sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">Dialog · Salin minggu lalu</div>
+      <div style="position:relative;padding:24px;border-radius:28px;overflow:hidden;background:#FBF8F3"><div style="position:absolute;inset:0;background:rgba(34,18,8,0.32)"></div>
+        <div role="dialog" style="position:relative;padding:24px;border-radius:26px;background:#FFFDF9;display:flex;flex-direction:column;gap:14px">
+          <h3 style="margin:0;font:800 19px/1.3 'Plus Jakarta Sans',sans-serif">Salin roster 28 Sep–4 Okt ke 5–11 Okt?</h3>
+          <div style="display:flex;flex-direction:column"><span style="padding:9px 0;font-size:14px">33 sel akan diisi</span><span style="padding:9px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:14px">2 sel terkunci dilewati</span><span style="padding:9px 0;border-top:1px solid rgba(34,18,8,0.08);font-size:14px">Sel yang sudah diisi akan ditimpa</span></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px"><button style="height:44px;padding:0 20px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:44px;padding:0 20px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Salin roster</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tampilan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Berisi&quot;,&quot;Kosong&quot;,&quot;Memuat&quot;],&quot;default&quot;:&quot;Berisi&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { week: 0, dept: '', ov: {}, open: null, tip: null, saving: null, toast: '', copy: false, mDay: 0 };
+  componentWillUnmount() { clearTimeout(this._a); clearTimeout(this._b); }
+  data() {
+    const S = { p: ['Pagi', '07–15', '07:00–15:00'], s: ['Siang', '15–23', '15:00–23:00'], m: ['Malam', '22–06', '22:00–06:00 (+1)'] };
+    const emps = [
+      { id: 'dl', ini: 'DL', name: 'Dewi Lestari', first: 'Dewi', jab: 'Barista', dept: 'Operasional', sub: 1 },
+      { id: 'rw', ini: 'RW', name: 'Rina Wulandari', first: 'Rina', jab: 'Kasir', dept: 'Operasional' },
+      { id: 'ap', ini: 'AP', name: 'Agus Pratama', first: 'Agus', jab: 'Barista', dept: 'Operasional', sub: 1 },
+      { id: 'ms', ini: 'MS', name: 'Maya Sari', first: 'Maya', jab: 'Barista', dept: 'Operasional' },
+      { id: 'hw', ini: 'HW', name: 'Hendra Wijaya', first: 'Hendra', jab: 'Roaster', dept: 'Produksi' },
+    ];
+    const grid = {
+      '-1': { dl: 'pplsspl', rw: 'ppplssl', ap: 'sspplmm', ms: 'mlsspp_', hw: 'pppppll' },
+      '0': { dl: 'plmsspl', rw: 'ppplssl', ap: 'sspplmm', ms: 'mlsspp_', hw: 'pppppll' },
+      '1': { dl: 'pp_lss_', rw: '_______', ap: 'ss_____', ms: '_______', hw: 'pppppll' },
+    };
+    const weeks = {
+      '-1': { label: '28 Sep–4 Okt 2026', d: [28, 29, 30, 1, 2, 3, 4], mon: ['Sep', 'Sep', 'Sep', 'Okt', 'Okt', 'Okt', 'Okt'] },
+      '0': { label: '5–11 Okt 2026', d: [5, 6, 7, 8, 9, 10, 11], mon: Array(7).fill('Okt') },
+      '1': { label: '12–18 Okt 2026', d: [12, 13, 14, 15, 16, 17, 18], mon: Array(7).fill('Okt') },
+    };
+    return { S, emps, grid, weeks, dow: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'], full: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'] };
+  }
+  chip(v, lockReason, saving) {
+    const { S } = this.data();
+    const sh = S[v];
+    return { isShift: !!sh && !saving, isOff: v === 'l' && !saving, isEmpty: (v === '_' || !v) && !saving, saving: !!saving, locked: !!lockReason && !saving,
+      name: sh ? sh[0] : '', time: sh ? sh[1] : '',
+      bg: sh && !saving ? 'rgba(34,18,8,0.06)' : 'transparent', bd: v === '_' || !v ? '1px dashed rgba(34,18,8,0.2)' : sh ? '1px solid transparent' : '1px solid rgba(34,18,8,0.1)', op: lockReason ? 0.55 : 1 };
+  }
+  renderVals() {
+    const st = this.state;
+    const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
+    const D = "'DM Sans',sans-serif";
+    const { S, emps, grid, weeks, dow, full } = this.data();
+    const w = String(st.week);
+    const wk = weeks[w];
+    const valOf = (wkey, eid, di) => { const k = `${wkey}:${eid}:${di}`; return st.ov[k] !== undefined ? st.ov[k] : grid[wkey][eid][di]; };
+    const lockOf = (wkey, eid, di) => wkey === '-1' ? 'Sudah lewat' : (wkey === '0' && di === 0 && (eid === 'dl' || eid === 'rw')) ? 'Sudah absen · koreksi lewat Koreksi absensi' : '';
+    const dayHead = (wkey) => weeks[wkey].d.map((n, i) => { const today = wkey === '0' && i === 0; return { label: `${dow[i]} ${n}`, bar: today ? 'inset 0 -2px 0 #F2790F' : 'none', fg: today ? '#221208' : '#5B4636', font: `${today ? 700 : 500} 13px ${D}` }; });
+    const opts = (cur, set) => [...['p', 's', 'm'].map(k => [k, S[k][0], S[k][2]]), ['l', 'Libur', ''], ['_', 'Kosongkan', '']].map(([k, label, time], i) => {
+      const on = cur === k && k !== '_';
+      return { label, time, tick: on ? '#B34C08' : 'transparent', font: `${on ? 700 : 500} 14px ${D}`, sep: i === 3 ? '1px solid rgba(34,18,8,0.08)' : 'none', click: () => set(k) };
+    });
+    const list = emps.filter(e => !st.dept || e.dept === st.dept);
+    const rows = list.map((e, ri) => {
+      const cells = wk.d.map((n, di) => {
+        const key = `${w}:${e.id}:${di}`;
+        const v = valOf(w, e.id, di); const lock = lockOf(w, e.id, di);
+        const set = k => {
+          this.setState({ open: null, saving: key });
+          clearTimeout(this._a); clearTimeout(this._b);
+          this._a = setTimeout(() => {
+            this.setState(s => ({ saving: null, ov: { ...s.ov, [key]: k }, toast: `Roster disimpan · ${e.first} diberi tahu lewat email` }));
+            this._b = setTimeout(() => this.setState({ toast: '' }), 2800);
+          }, 700);
+        };
+        return { ...this.chip(v, lock, st.saving === key), aria: `${e.name}, ${full[di]} ${n} ${wk.mon[di]}`,
+          open: st.open === key, tipOpen: st.tip === key && !!lock, tip: lock,
+          popTitle: `${full[di]}, ${n} ${wk.mon[di]}`, opts: opts(v, set),
+          click: () => lock ? this.setState(s => ({ tip: s.tip === key ? null : key, open: null })) : this.setState(s => ({ open: s.open === key ? null : key, tip: null })) };
+      });
+      const count = wk.d.filter((_, di) => S[valOf(w, e.id, di)]).length;
+      return { ...e, border: ri ? '1px solid rgba(34,18,8,0.07)' : 'none', cells, count: `${count} shift` };
+    });
+    const segs = [[0, 'Minggu ini'], [1, 'Minggu depan']].map(([k, label]) => { const on = st.week === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => this.setState({ week: k, open: null, tip: null }) }; });
+    const sub = (label, on) => ({ label, bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#3D2A1C', font: `${on ? 700 : 500} 14px ${D}`, count: '', hasCount: false });
+    const nav = [['Dashboard','layout-dashboard'],['Karyawan','users'],['Organisasi','network'],['Absensi','calendar-check','',1,[sub('Rekap'),sub('Roster',1),sub('Koreksi absensi'),sub('Pengajuan izin'),sub('Tinjauan')]],['KPI','target','7',1],['Payroll','wallet','',1],['Kepatuhan','shield-check'],['Pengaturan','settings','',1]]
+      .map(([label, ic, count, subs, open]) => ({ label, mask: m(ic), font: `${open ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count, hasSubs: !!subs, chev: m(open ? 'chevron-up' : 'chevron-down'), open: !!open, subs: open || [] }));
+    const mode = this.props.tampilan || 'Berisi';
+    const mDays = weeks['0'].d.map((n, i) => { const on = st.mDay === i; return { dow: dow[i], num: String(n), bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on || i === 0 ? 700 : 500} 15px 'Plus Jakarta Sans',sans-serif`, click: () => this.setState({ mDay: i }) }; });
+    const mRows = emps.map((e, i) => ({ ...e, border: i ? '1px solid rgba(34,18,8,0.07)' : 'none', c: this.chip(valOf('0', e.id, st.mDay), lockOf('0', e.id, st.mDay)) }));
+    const chipDemo = [['p', '', 0, 'Shift'], ['l', '', 0, 'Libur'], ['_', '', 0, 'Kosong (belum diatur)'], ['p', 'x', 0, 'Terkunci'], ['m', '', 1, 'Menyimpan'], ['m', '', 0, 'Shift malam (+1)']].map(([v, l, s, caption]) => ({ ...this.chip(v, l, s), caption }));
+    const atasanRows = emps.filter(e => e.sub).map((e, i) => ({ ...e, border: i ? '1px solid rgba(34,18,8,0.07)' : 'none', cells: [0,1,2,3,4,5,6].map(di => this.chip(valOf('0', e.id, di), lockOf('0', e.id, di))) }));
+    return {
+      nav, segs, rows, weekLabel: wk.label, days: dayHead(w), days0: dayHead('0'),
+      prev: () => this.setState(s => ({ week: Math.max(-1, s.week - 1), open: null, tip: null })), next: () => this.setState(s => ({ week: Math.min(1, s.week + 1), open: null, tip: null })),
+      onDept: e => this.setState({ dept: e.target.value }),
+      showTable: mode === 'Berisi', showEmpty: mode === 'Kosong', showSkel: mode === 'Memuat',
+      skel: [0,1,2,3,4].map(i => ({ w: ['55%','40%','62%','48%','35%'][i], border: i ? '1px solid rgba(34,18,8,0.07)' : 'none', cells: [0,1,2,3,4,5,6] })),
+      toastOn: !!st.toast, toast: st.toast,
+      openCopy: () => this.setState({ copy: true, open: null }), closeCopy: () => this.setState({ copy: false }),
+      doCopy: () => { this.setState({ copy: false, toast: 'Roster 28 Sep–4 Okt disalin · 33 sel diisi, 2 terkunci dilewati' }); clearTimeout(this._b); this._b = setTimeout(() => this.setState({ toast: '' }), 3000); },
+      copyOpen: st.copy, mDays, mRows,
+      sheetOpts: opts('m', () => {}), chipDemo, atasanRows,
+    };
+  }
+}
+</script>
+</body>
+</html>

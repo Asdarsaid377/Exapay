@@ -6,9 +6,10 @@ import { SubscriptionBanner } from "@/components/billing/SubscriptionBanner";
 import { AppShell } from "@/components/layout/AppShell";
 import { TenantSwitcher } from "@/components/layout/TenantSwitcher";
 import { fetchSubscriptionStatus } from "@/lib/api/billing";
+import { fetchWorkShifts } from "@/lib/api/shiftRoster";
 import { getSession } from "@/lib/auth/getSession";
 import { formatLongDate } from "@/lib/datetime";
-import { staffMenuFor } from "@/lib/navigation";
+import { ROSTER_HREF, staffMenuFor } from "@/lib/navigation";
 
 type Props = {
   children: ReactNode;
@@ -27,12 +28,15 @@ export default async function MainLayout({ children }: Props) {
   // Pengingat langganan (feature 40) untuk owner/admin. Gagal dimuat → tanpa banner (halaman tetap jalan)
   const canSeeBilling = activeTenant.role === "owner" || activeTenant.role === "admin";
   const subscription = canSeeBilling ? await fetchSubscriptionStatus() : null;
+  // Menu Roster hanya bila usaha punya master shift (feature 46). Gagal dimuat → menu tetap tampil (halaman roster menjelaskan)
+  const shifts = await fetchWorkShifts();
+  const hiddenHrefs = shifts.ok && shifts.data.items.length === 0 ? [ROSTER_HREF] : [];
 
   return (
     <AppShell
       user={session.user}
       headerStart={<TenantSwitcher activeTenant={activeTenant} tenants={session.tenants} />}
-      sections={staffMenuFor(activeTenant.role)}
+      sections={staffMenuFor(activeTenant.role, hiddenHrefs)}
       todayLabel={formatLongDate(new Date())}
       showPortalLink
     >

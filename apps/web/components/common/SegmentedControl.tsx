@@ -2,7 +2,8 @@
 
 import { type KeyboardEvent, useRef } from "react";
 
-type Option<T extends string> = { value: T; label: string };
+// disabled: opsi tidak bisa dipilih (mis. "Shift (roster)" saat usaha belum punya shift — feature 46)
+type Option<T extends string> = { value: T; label: string; disabled?: boolean };
 
 type Props<T extends string> = {
   // Label aksesibel grup (mis. "Status kerja")
@@ -27,9 +28,14 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
     const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const next = (index + step + options.length) % options.length;
+    // Lewati opsi nonaktif
+    let next = index;
+    for (let tries = 0; tries < options.length; tries += 1) {
+      next = (next + step + options.length) % options.length;
+      if (!options[next]?.disabled) break;
+    }
     const option = options[next];
-    if (!option) return;
+    if (!option || option.disabled) return;
     onChange(option.value);
     refs.current[next]?.focus();
   }
@@ -56,10 +62,10 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             aria-checked={selected}
             // Belum ada pilihan (mis. nilai belum diisi) → opsi pertama tetap bisa difokus dengan Tab
             tabIndex={selected || (!hasSelection && index === 0) ? 0 : -1}
-            disabled={disabled}
+            disabled={disabled || option.disabled}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKey(event, index)}
-            className={`rounded-full px-4 text-sm whitespace-nowrap transition-[background-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 disabled:cursor-not-allowed ${
+            className={`rounded-full px-4 text-sm whitespace-nowrap transition-[background-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 disabled:cursor-not-allowed ${option.disabled ? "opacity-45" : ""} ${
               size === "lg" ? "h-10" : "h-9"
             } ${selected ? "bg-surface-solid font-bold text-text-primary shadow-segment" : "font-medium text-text-secondary hover:bg-control/60 hover:text-text-primary"}`}
           >

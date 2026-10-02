@@ -81,10 +81,10 @@
             </div>
             <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
               <div style="display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 110px;gap:16px;align-items:center;min-height:64px;padding:10px 20px;box-sizing:border-box;border-top:{{ r.border }}">
-                <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.date }}</span><span style="font-size:12.5px;color:#75604D">{{ r.day }}</span></div>
+                <div style="display:flex;flex-direction:column;gap:1px"><span style="font:700 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.date }}</span><span style="font-size:12.5px;color:#75604D">{{ r.day }}</span><span style="font-size:12.5px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ r.shift }}</span></div>
                 <sc-for list="{{ r.cells }}" as="x">
                   <div style="display:flex;align-items:center;gap:10px;min-width:0">
-                    <span style="width:44px;font:500 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ x.time }}</span>
+                    <span style="width:62px;flex:none;display:flex;align-items:baseline;gap:3px"><span style="font:500 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ x.time }}</span><sc-if value="{{ x.plus }}"><span style="font:700 11.5px 'DM Sans',sans-serif;color:#5B4636">+1</span></sc-if></span>
                     <sc-if value="{{ x.has }}"><button onClick="{{ x.open }}" aria-label="{{ x.aria }}" style="width:32px;height:32px;flex:none;padding:0;border:1px solid rgba(34,18,8,0.1);border-radius:10px;background:#DCCFC0;cursor:pointer" style-hover="border-color:#F2790F;box-shadow:0 0 0 3px rgba(242,121,15,0.22)"></button></sc-if>
                     <sc-if value="{{ x.loading }}"><span aria-label="Memuat foto" style="width:32px;height:32px;flex:none;border-radius:10px;background:rgba(34,18,8,0.08);animation:exaPulse 1.4s ease-in-out infinite"></span></sc-if>
                     <sc-if value="{{ x.failed }}"><button onClick="{{ x.open }}" aria-label="Foto tidak dapat dibuka, coba lagi" style="width:32px;height:32px;flex:none;padding:0;box-sizing:border-box;border:1px dashed rgba(220,38,38,0.5);border-radius:10px;background:rgba(220,38,38,0.05);cursor:pointer;display:grid;place-items:center"><span style="width:14px;height:14px;background:#B91C1C;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/refresh-cw.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/refresh-cw.svg) center / contain no-repeat"></span></button></sc-if>
@@ -138,7 +138,7 @@
           <section style="flex:none;padding:0 16px;border-radius:22px;background:rgba(255,253,249,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75)">
             <sc-for list="{{ mRows }}" as="r" hint-placeholder-count="6">
               <div style="display:flex;align-items:center;gap:12px;min-height:66px;padding:10px 0;box-sizing:border-box;border-top:{{ r.border }}">
-                <div style="width:54px;flex:none;display:flex;flex-direction:column"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">{{ r.short }}</span><span style="font-size:12px;color:#75604D">{{ r.day }}</span></div>
+                <div style="width:54px;flex:none;display:flex;flex-direction:column"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">{{ r.short }}</span><span style="font-size:12px;color:#75604D">{{ r.day }}</span><span style="font-size:12px;color:#3D2A1C;font-variant-numeric:tabular-nums">{{ r.shift }}</span></div>
                 <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><span style="font:500 14.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ r.span }}</span><div style="display:flex;gap:6px"><span style="height:22px;padding:0 9px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};font:700 12px/22px 'DM Sans',sans-serif">{{ r.badge }}</span><sc-if value="{{ r.fixed }}"><span style="height:22px;padding:0 9px;box-sizing:border-box;border-radius:999px;border:1px solid rgba(34,18,8,0.2);color:#5B4636;font:700 12px/20px 'DM Sans',sans-serif">Dikoreksi</span></sc-if></div></div>
                 <div style="display:flex;gap:6px">
                   <sc-for list="{{ r.cells }}" as="x">
@@ -210,24 +210,24 @@ class Component extends DCLogic {
   state = { view: null };
   data() {
     return [
-      { id: 'd5', date: '5 Okt 2026', short: '5 Okt', day: 'Senin', full: 'Senin, 5 Okt 2026', s: 'ok', in: ['07:58', 'has', 'Di luar lokasi', '320 m dari Kedai Pettarani (akurasi ±10 m)'], out: ['17:06', 'has'] },
-      { id: 'd3', date: '3 Okt 2026', short: '3 Okt', day: 'Sabtu', full: 'Sabtu, 3 Okt 2026', s: 'late', in: ['08:09', 'loading'], out: ['17:02', 'has'] },
-      { id: 'd2', date: '2 Okt 2026', short: '2 Okt', day: 'Jumat', full: 'Jumat, 2 Okt 2026', s: 'ok', in: ['07:58', 'has'], out: ['17:10', 'failed'] },
-      { id: 'd1', date: '1 Okt 2026', short: '1 Okt', day: 'Kamis', full: 'Kamis, 1 Okt 2026', s: 'late', in: ['08:14', 'has'], out: ['17:00', 'has'] },
-      { id: 's30', date: '30 Sep 2026', short: '30 Sep', day: 'Rabu', full: 'Rabu, 30 Sep 2026', s: 'ok', fixed: 1, in: ['08:00', 'none'], out: ['17:00', 'none'] },
-      { id: 's29', date: '29 Sep 2026', short: '29 Sep', day: 'Selasa', s: 'izin', in: ['—', 'blank'], out: ['—', 'blank'] },
-      { id: 's28', date: '28 Sep 2026', short: '28 Sep', day: 'Senin', full: 'Senin, 28 Sep 2026', s: 'ok', in: ['07:57', 'has'], out: ['17:04', 'has'] },
+      { id: 'd5', date: '5 Okt 2026', short: '5 Okt', day: 'Senin', shift: 'Pagi 07–15', full: 'Senin, 5 Okt 2026', s: 'ok', in: ['06:58', 'has', 'Di luar lokasi', '320 m dari Kedai Pettarani (akurasi ±10 m)'], out: ['15:04', 'has'] },
+      { id: 'd3', date: '3 Okt 2026', short: '3 Okt', day: 'Sabtu', shift: 'Siang 15–23', full: 'Sabtu, 3 Okt 2026', s: 'late', in: ['15:09', 'loading'], out: ['23:02', 'has'] },
+      { id: 'd2', date: '2 Okt 2026', short: '2 Okt', day: 'Jumat', shift: 'Malam 22–06', full: 'Jumat, 2 Okt 2026', s: 'ok', in: ['21:58', 'has'], out: ['06:05', 'failed', '', '', 1] },
+      { id: 'd1', date: '1 Okt 2026', short: '1 Okt', day: 'Kamis', shift: 'Pagi 07–15', full: 'Kamis, 1 Okt 2026', s: 'late', in: ['07:14', 'has'], out: ['15:00', 'has'] },
+      { id: 's30', date: '30 Sep 2026', short: '30 Sep', day: 'Rabu', shift: 'Pagi 07–15', full: 'Rabu, 30 Sep 2026', s: 'ok', fixed: 1, in: ['07:00', 'none'], out: ['15:00', 'none'] },
+      { id: 's29', date: '29 Sep 2026', short: '29 Sep', day: 'Selasa', shift: 'Libur', s: 'off', in: ['—', 'blank'], out: ['—', 'blank'] },
+      { id: 's28', date: '28 Sep 2026', short: '28 Sep', day: 'Senin', shift: 'Siang 15–23', full: 'Senin, 28 Sep 2026', s: 'ok', in: ['14:57', 'has'], out: ['23:04', 'has'] },
     ];
   }
   renderVals() {
     const m = n => `url(https://unpkg.com/lucide-static@0.460.0/icons/${n}.svg) center / contain no-repeat`;
     const D = "'DM Sans',sans-serif";
-    const B = { ok: ['Tepat waktu', 'rgba(21,128,61,0.12)', '#166534'], late: ['Telat', 'rgba(242,121,15,0.16)', '#8A3A06'], izin: ['Izin', 'rgba(37,99,235,0.1)', '#1D4ED8'] };
+    const B = { ok: ['Tepat waktu', 'rgba(21,128,61,0.12)', '#166534'], late: ['Telat', 'rgba(242,121,15,0.16)', '#8A3A06'], izin: ['Izin', 'rgba(37,99,235,0.1)', '#1D4ED8'], off: ['Libur', 'rgba(34,18,8,0.07)', '#3D2A1C'] };
     const line = '1px solid rgba(34,18,8,0.07)';
     const cell = (r, which) => { const [time, st, flag] = r[which]; const lbl = which === 'in' ? 'masuk' : 'pulang';
-      return { time, has: st === 'has', loading: st === 'loading', failed: st === 'failed', del: st === 'del', none: st === 'none', hasFlag: !!flag, flag: flag || '', aria: `Lihat selfie absen ${lbl} ${r.date}`, open: () => this.setState({ view: { id: r.id, w: which } }) }; };
+      return { time, plus: !!r[which][4], has: st === 'has', loading: st === 'loading', failed: st === 'failed', del: st === 'del', none: st === 'none', hasFlag: !!flag, flag: flag || '', aria: `Lihat selfie absen ${lbl} ${r.date}`, open: () => this.setState({ view: { id: r.id, w: which } }) }; };
     const all = this.data();
-    const rows = all.map((r, i) => { const b = B[r.s]; return { ...r, border: i ? line : 'none', badge: b[0], bBg: b[1], bFg: b[2], fixed: !!r.fixed, cells: [cell(r, 'in'), cell(r, 'out')], span: r.in[1] === 'blank' ? 'Tidak ada absen' : `${r.in[0]} – ${r.out[0]}` }; });
+    const rows = all.map((r, i) => { const b = B[r.s]; return { ...r, border: i ? line : 'none', badge: b[0], bBg: b[1], bFg: b[2], fixed: !!r.fixed, cells: [cell(r, 'in'), cell(r, 'out')], span: r.in[1] === 'blank' ? 'Tidak ada absen' : `${r.in[0]} – ${r.out[0]}${r.out[4] ? ' +1' : ''}` }; });
     const sub = (label, on) => ({ label, bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#3D2A1C', font: `${on ? 700 : 500} 14px ${D}`, count: '', hasCount: false });
     const nav = [['Dashboard','layout-dashboard'],['Karyawan','users'],['Organisasi','network'],['Absensi','calendar-check','',1,[sub('Rekap'),sub('Koreksi absensi',1),sub('Pengajuan izin'),sub('Tinjauan')]],['KPI','target','7',1],['Payroll','wallet','',1],['Kepatuhan','shield-check'],['Pengaturan','settings','',1]]
       .map(([label, ic, count, subs, open]) => ({ label, mask: m(ic), font: `${open ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count, hasSubs: !!subs, chev: m(open ? 'chevron-up' : 'chevron-down'), open: !!open, subs: open || [] }));
@@ -236,7 +236,7 @@ class Component extends DCLogic {
     let v = {};
     if (r) {
       const e = r[st.w]; const both = ['has', 'failed'].includes(r.in[1]) && ['has', 'failed'].includes(r.out[1]);
-      v = { ok: e[1] === 'has', failed: e[1] === 'failed', both, when: `${st.w === 'in' ? 'Masuk' : 'Pulang'} · ${r.full} · ${e[0]} WITA`, hasFlag: !!e[2], flagDetail: e[3] || '',
+      v = { ok: e[1] === 'has', failed: e[1] === 'failed', both, when: `${st.w === 'in' ? 'Masuk' : 'Pulang'} · ${r.full} · ${e[0]}${e[4] ? ' (+1)' : ''} WITA`, hasFlag: !!e[2], flagDetail: e[3] || '',
         tabs: [['in', 'Masuk'], ['out', 'Pulang']].map(([k, label]) => { const on = st.w === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => this.setState({ view: { id: r.id, w: k } }) }; }) };
     }
     const thumbStates = [['Ada', 'has', 'Klik/ketuk → penampil foto.'], ['Memuat', 'loading', 'Skeleton seukuran thumbnail.'], ['Gagal dimuat', 'failed', 'Klik → “Foto tidak dapat dibuka, coba lagi”.'], ['Sudah dihapus', 'del', 'Lebih dari 90 hari. Teks redup, tidak bisa diklik.'], ['Tanpa selfie', 'none', 'Tidak wajib selfie / hasil koreksi admin.']]

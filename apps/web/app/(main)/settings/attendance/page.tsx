@@ -1,6 +1,7 @@
 import { calendarYearSchema } from "@exapay/shared";
-import { CloudOff } from "lucide-react";
+import { ArrowRight, CloudOff } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { AddCompanyHolidayButton } from "@/components/attendance/AddCompanyHolidayButton";
 import { CompanyHolidayList } from "@/components/attendance/CompanyHolidayList";
@@ -10,12 +11,14 @@ import { HolidayYearSwitch } from "@/components/attendance/HolidayYearSwitch";
 import { NationalHolidayList } from "@/components/attendance/NationalHolidayList";
 import { WorkingDaysSummary } from "@/components/attendance/WorkingDaysSummary";
 import { WorkScheduleForm } from "@/components/attendance/WorkScheduleForm";
+import { WorkShiftList } from "@/components/attendance/WorkShiftList";
 import { EmptyState } from "@/components/common/EmptyState";
 import { FormAlert } from "@/components/common/FormAlert";
 import { FormSection } from "@/components/common/FormSection";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchAttendanceDeductionSettings } from "@/lib/api/attendanceDeductions";
 import { fetchAttendanceRecap } from "@/lib/api/attendanceRecap";
+import { fetchWorkShifts } from "@/lib/api/shiftRoster";
 import { fetchHolidayOverview, fetchWorkSchedule } from "@/lib/api/workCalendar";
 import { todayIso } from "@/lib/datetime";
 
@@ -25,7 +28,7 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-// Jadwal kerja & hari libur (feature 13) + aturan potongan absensi berversi & pratinjau (feature 17).
+// Jadwal kerja & hari libur (feature 13) + shift kerja opsional (feature 46) + aturan potongan absensi berversi & pratinjau (feature 17).
 // Proxy sudah membatasi ke owner/admin; API memeriksa ulang.
 export default async function SettingsAttendancePage({ searchParams }: Props) {
   const raw = await searchParams;
@@ -34,12 +37,13 @@ export default async function SettingsAttendancePage({ searchParams }: Props) {
   const requested = calendarYearSchema.safeParse(typeof raw.year === "string" ? raw.year : undefined);
   const year = requested.success ? requested.data : currentYear;
 
-  const [schedule, holidays, deductions, recap] = await Promise.all([
+  const [schedule, holidays, deductions, recap, shifts] = await Promise.all([
     fetchWorkSchedule(),
     fetchHolidayOverview(year),
     fetchAttendanceDeductionSettings(),
     // Karyawan contoh untuk pratinjau potongan (masa kerja beririsan dengan bulan berjalan)
     fetchAttendanceRecap({}),
+    fetchWorkShifts(),
   ]);
   const header = (
     <PageHeader
@@ -76,6 +80,24 @@ export default async function SettingsAttendancePage({ searchParams }: Props) {
         >
           <WorkScheduleForm schedule={schedule.data} />
         </FormSection>
+
+        {/* Shift kerja (feature 46) — opsional; gagal dimuat → section tidak tampil */}
+        {shifts.ok ? (
+          <FormSection
+            title="Shift kerja"
+            description="Untuk karyawan yang bekerja bergiliran."
+            aside={
+              shifts.data.items.length > 0 ? (
+                <Link href="/attendance/roster" className="inline-flex items-center gap-1.5 text-sm font-bold text-accent-strong hover:text-accent-hover hover:underline">
+                  Buka roster
+                  <ArrowRight aria-hidden className="size-3.75" />
+                </Link>
+              ) : undefined
+            }
+          >
+            <WorkShiftList data={shifts.data} />
+          </FormSection>
+        ) : null}
 
         <FormSection
           title={`Hari libur ${year}`}

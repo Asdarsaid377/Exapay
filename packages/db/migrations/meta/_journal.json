@@ -260,6 +260,13 @@
       "when": 1790956294624,
       "tag": "0036_attendance_selfies",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790982831179,
+      "tag": "0037_shift_roster",
+      "breakpoints": true
     }
   ]
 }

@@ -837,3 +837,26 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### AttendanceDayList (diperbarui feature 45)
 - **Pola baru:** client. Desktop = grid tabel `lg:grid-cols-[150px_1fr_1fr_1.2fr_110px]` (kepala `bg-table-head h-11`), sel jam `w-11` + SelfieThumb `sm` + Badge tanda lokasi; mobile = tanggal teks `w-13.5` + "08:00 – 17:00" + badge + thumbnail berdampingan + Koreksi. "Dikoreksi" jadi pill outline `border-border-outline`. Klik thumbnail → SelfieViewer (judul nama karyawan). Data rincian harian kini memuat `id`, `checkIn/OutSelfie`, `checkIn/OutGeofence`.
+
+### WorkShiftList / WorkShiftFormDialog / DeleteWorkShiftDialog
+- **Path:** apps/web/components/attendance/WorkShiftList.tsx, WorkShiftFormDialog.tsx, DeleteWorkShiftDialog.tsx; label `lib/shiftLabels.ts`
+- **Dipakai di:** /settings/attendance (FormSection "Shift kerja" setelah Jadwal kerja, aside "Buka roster")
+- **Referensi desain:** context/designs/settings-attendance-shifts.html, shift-components.html ("ShiftMasterSection", "ShiftDialog")
+- **Pola kelas kunci:** kosong = paragraf `text-[14.5px] text-neutral-text max-w-155` + Button secondary "Aktifkan shift"; tabel `lg:grid-cols-[minmax(0,1fr)_140px_90px_minmax(0,1.2fr)_120px]` baris `min-h-16 border-t`, nama `text-[15px] font-bold` + "Selesai keesokan hari" caption, jam `tabular-nums`; mobile = nama + "jam · durasi" + ⋯ (Ubah/Hapus). Dialog: TextField nama + grid 2 kolom `type="time"`, keterangan durasi (`text-info-text` + Info untuk +1 hari), catatan ubah `text-caption text-text-tertiary`
+- **Catatan:** client, Server Action `saveWorkShift`/`deleteWorkShift` (revalidate layout → menu Roster muncul/hilang)
+
+### RosterBoard / RosterToolbar / CopyRosterWeekDialog
+- **Path:** apps/web/components/attendance/RosterBoard.tsx, RosterToolbar.tsx, CopyRosterWeekDialog.tsx
+- **Dipakai di:** /attendance/roster (+ loading.tsx)
+- **Referensi desain:** context/designs/attendance-roster.html, shift-components.html ("ShiftChip", "ShiftPickerPopover", "LockedCellTooltip", "WeekNavigator", "CopyWeekDialog")
+- **Pola kelas kunci:** tabel `glass-data rounded-card` grid `grid-cols-[210px_repeat(7,minmax(0,1fr))_60px] gap-2`, header hari ini `font-bold shadow-[inset_0_-2px_0_var(--color-accent)]`; chip `min-h-13 rounded-[12px] px-2.5 py-1.75` — shift `bg-segment-track` (nama `text-[13px] font-bold` + "07–15" caption), libur `border-border-subtle text-text-tertiary`, kosong `border-dashed border-border-outline` "—", terkunci `opacity-55` + Lock `size-3` kanan atas, menyimpan spinner; popover = DropdownMenu `w-59` (judul tanggal, shift + jam, pemisah, Libur, Kosongkan, Check `text-accent-strong`); tooltip `bg-inverse text-on-inverse rounded-[10px] text-[12.5px]`; toast `fixed bottom-6 rounded-full bg-inverse shadow-overlay`. Mobile: strip 7 hari `grid-cols-7 bg-segment-track rounded-[20px]` + daftar `glass-data` chip `w-26` → Dialog (sheet) pilihan. Toolbar `lg:glass` ‹ minggu › + SegmentedControl Minggu ini/depan + SelectField departemen + "Salin minggu lalu"
+- **Catatan:** client; data minggu dari server (URL `?week=&departmentId=`), perubahan sel disimpan langsung lewat `setRosterCell` lalu state lokal diperbarui. Dialog salin memanggil API dryRun untuk hitungan. Menu Roster disembunyikan bila usaha belum punya shift (`staffMenuFor(role, hiddenHrefs)` di layout (main)); halaman menampilkan EmptyState "Shift belum diaktifkan".
+
+### MyScheduleCard
+- **Path:** apps/web/components/attendance/MyScheduleCard.tsx
+- **Dipakai di:** /me (di bawah kartu absen, hanya karyawan mode shift)
+- **Referensi desain:** context/designs/me-schedule.html ("MyScheduleCard")
+- **Pola kelas kunci:** `surface-solid rounded-card px-4.5 pt-4.5`, baris `min-h-11.5 border-t` hari `w-23` (+ "Hari ini" `text-xs text-accent-strong`), libur/belum diatur `text-text-tertiary`, catatan email caption; kosong = "Jadwal belum diatur — tanyakan atasan Anda."
+
+### EmployeeAttendanceSettingsSection (diperbarui feature 46)
+- Baris ketiga "Mode jadwal": baca "Ikut jadwal usaha" / "Shift (roster)" + "Lihat roster"; ubah SegmentedControl Ikut jadwal usaha | Shift (roster) — opsi shift nonaktif (`opacity-45`) + tautan "Buat shift dulu di Pengaturan › Absensi" bila usaha belum punya shift. SegmentedControl kini menerima `disabled` per opsi. Section bisa diubah walau usaha belum punya lokasi kerja (feature 45).

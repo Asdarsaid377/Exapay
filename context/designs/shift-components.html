@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:40px;width:1280px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Komponen baru — Shift &amp; roster</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:860px;text-wrap:pretty">Tanpa token warna baru: shift dibedakan lewat teks di chip netral (fill-subtle), bukan warna per shift. Satu-satunya tambahan adalah tooltip gelap yang memakai ink #221208.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px"><a href="settings-attendance-shifts.html">Shift kerja</a><a href="attendance-roster.html">Roster</a><a href="me-schedule.html">Portal</a><a href="employees-attendance-settings.html">Mode jadwal</a></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px">
+    <sc-for list="{{ comps }}" as="c" hint-placeholder-count="9">
+      <section style="padding:24px;border-radius:22px;background:#FFFDF9;border:1px solid rgba(34,18,8,0.07);display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">{{ c.name }}</h3><a href="{{ c.href }}" style="font:700 13px 'DM Sans',sans-serif">Lihat di halaman</a></div>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#5B4636;text-wrap:pretty">{{ c.desc }}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ c.variants }}" as="v"><span style="height:26px;padding:0 10px;border-radius:999px;background:rgba(34,18,8,0.06);font:500 12.5px/26px 'DM Sans',sans-serif;color:#3D2A1C">{{ v }}</span></sc-for></div>
+        <code style="display:block;padding:10px 12px;border-radius:12px;background:rgba(34,18,8,0.04);font:400 12.5px/1.5 ui-monospace,Menlo,monospace;color:#3D2A1C;white-space:pre-wrap">{{ c.tw }}</code>
+      </section>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const K = 'settings-attendance-shifts.html', R = 'attendance-roster.html', P = 'me-schedule.html', A = 'employees-attendance-settings.html';
+    const comps = [
+      { name: 'ShiftMasterSection', href: K, desc: 'Form-section "Shift kerja" di Pengaturan › Absensi. Kosong = satu baris penjelasan + "Aktifkan shift". Ada = tabel ringan (nama, jam, durasi, terjadwal minggu ini, Ubah/⋯).', variants: ['kosong', 'ada shift', 'skeleton', 'mobile list'], tw: 'grid grid-cols-[1fr_140px_90px_1.2fr_120px] · baris min-h-16 border-t border-border-subtle' },
+      { name: 'ShiftDialog', href: K, desc: 'Nama + jam mulai/selesai (input time). Keterangan info otomatis untuk +1 hari dan durasi. Sheet di mobile.', variants: ['tambah', 'ubah (+ info roster terkunci)', '+1 hari', 'nama dipakai', 'jam sama'], tw: 'grid grid-cols-2 gap-3 · info text-info-ink + ikon info' },
+      { name: 'ShiftChip', href: R, desc: 'Sel roster. Shift = latar fill-subtle, nama + jam pendek. Tanpa warna per shift.', variants: ['shift', 'libur (teks redup)', 'kosong (garis putus "—")', 'terkunci (gembok + 55%)', 'menyimpan (spinner)'], tw: 'min-h-13 rounded-[12px] px-2.5 bg-ink/6 · kosong border-dashed border-ink/20 · locked opacity-55' },
+      { name: 'ShiftPickerPopover', href: R, desc: 'Popover di bawah sel: judul tanggal, daftar shift (nama + jam), pemisah, Libur, Kosongkan. Pilihan aktif dicentang; tersimpan langsung + toast.', variants: ['desktop popover', 'mobile sheet'], tw: 'absolute top-full w-59 rounded-[18px] p-2 surface-glass-overlay' },
+      { name: 'LockedCellTooltip', href: R, desc: 'Tooltip gelap kecil pada sel terkunci.', variants: ['Sudah lewat', 'Sudah absen', 'Periode gaji sudah final'], tw: 'bg-ink text-cream rounded-[10px] px-3 py-2 text-[12.5px]' },
+      { name: 'WeekNavigator', href: R, desc: '‹ rentang minggu › + segmented Minggu ini | Minggu depan. Header hari ini: tebal + garis aksen 2px di bawah.', variants: ['minggu lalu (terkunci)', 'minggu ini', 'minggu depan', 'strip 7 hari (mobile)'], tw: 'today: font-bold shadow-[inset_0_-2px_0_var(--color-accent)]' },
+      { name: 'CopyWeekDialog', href: R, desc: 'Konfirmasi salin minggu lalu: jumlah sel diisi, sel terkunci dilewati, timpa sel terisi.', variants: ['default'], tw: 'dialog · list divide-y divide-border-subtle' },
+      { name: 'MyScheduleCard', href: P, desc: 'Kartu solid "Jadwal saya" di beranda portal: 7 baris hari + shift, hari ini ditandai, catatan email. Kosong = "Jadwal belum diatur".', variants: ['ada jadwal', 'belum ada roster', 'kartu absen: shift / tanpa shift / absen di luar jadwal'], tw: 'surface-solid rounded-card · baris min-h-11.5 border-t' },
+      { name: 'AttendanceSettingsSection · Mode jadwal', href: A, desc: 'Baris ketiga. Baca + tautan "Lihat roster". Ubah: segmented; "Shift (roster)" nonaktif bila usaha belum punya shift + tautan buat shift.', variants: ['baca', 'ubah', 'nonaktif (tanpa shift)', 'atasan read-only'], tw: 'disabled:opacity-45 · row grid-cols-[200px_1fr]' },
+    ];
+    return { comps };
+  }
+}
+</script>
+</body>
+</html>

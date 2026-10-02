@@ -312,8 +312,8 @@ describe("pengaturan wajib selfie", () => {
     expect(audit).toEqual(
       expect.arrayContaining([
         {
-          before: { locationMode: "exempt", locationIds: [], selfieRequired: true },
-          after: { locationMode: "exempt", locationIds: [], selfieRequired: false },
+          before: { locationMode: "exempt", locationIds: [], selfieRequired: true, scheduleMode: "business" },
+          after: { locationMode: "exempt", locationIds: [], selfieRequired: false, scheduleMode: "business" },
         },
       ]),
     );

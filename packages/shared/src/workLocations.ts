@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { attendanceMonthSchema, type GeofenceStatus, SELFIE_STATES } from "./attendance.js";
+import { EMPLOYEE_SCHEDULE_MODES } from "./shiftRoster.js";
 
 // Lokasi kerja & geofence peringatan (feature 44): owner/admin menyimpan titik + radius; absen di luar radius tetap
 // diterima tetapi bertanda dan masuk antrean tinjauan (/attendance/review). Tanda tidak pernah mengubah gaji.
@@ -71,6 +72,8 @@ export const employeeAttendanceSettingsInputSchema = z
     locationIds: z.array(z.uuid()).max(WORK_LOCATIONS_MAX).default([]),
     // Wajib selfie saat absen (feature 45) — tidak dikirim = tidak diubah
     selfieRequired: z.boolean().optional(),
+    // Mode jadwal (feature 46) — tidak dikirim = tidak diubah; "shift" butuh minimal satu master shift
+    scheduleMode: z.enum(EMPLOYEE_SCHEDULE_MODES).optional(),
   })
   .refine((input) => input.locationMode !== "selected" || input.locationIds.length > 0, { path: ["locationIds"], message: "Pilih minimal satu lokasi" });
 export type EmployeeAttendanceSettingsInput = z.input<typeof employeeAttendanceSettingsInputSchema>;
@@ -83,6 +86,9 @@ export const employeeAttendanceSettingsSchema = z.object({
   // Semua lokasi kerja usaha (pilihan checkbox + nama untuk tampilan baca)
   locations: z.array(z.object({ id: z.string(), name: z.string(), radiusM: z.number().int() })),
   selfieRequired: z.boolean(),
+  scheduleMode: z.enum(EMPLOYEE_SCHEDULE_MODES),
+  // false = usaha belum punya master shift → pilihan "Shift (roster)" nonaktif
+  hasShifts: z.boolean(),
   // owner/admin; atasan hanya baca
   canEdit: z.boolean(),
 });

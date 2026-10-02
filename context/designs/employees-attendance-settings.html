@@ -103,7 +103,7 @@
                       <dd style="margin:0;display:flex;flex-direction:column;gap:4px">
                         <span style="font:500 15px 'DM Sans',sans-serif">{{ r.value }}</span>
                         <sc-if value="{{ r.hasSub }}"><span style="font-size:13.5px;color:#5B4636">{{ r.sub }}</span></sc-if>
-                        <sc-if value="{{ r.hasLink }}"><a href="settings-locations.html" style="font:700 14px 'DM Sans',sans-serif">Atur lokasi kerja</a></sc-if>
+                        <sc-if value="{{ r.hasLink }}"><a href="{{ r.linkHref }}" style="font:700 14px 'DM Sans',sans-serif">{{ r.linkLabel }}</a></sc-if>
                       </dd>
                     </div>
                   </sc-for>
@@ -141,6 +141,10 @@
                       <span style="font-size:13.5px;line-height:1.45;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span>
                     </div>
                   </div>
+                  <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding-top:20px;border-top:1px solid rgba(34,18,8,0.07)">
+                    <span style="font:700 13px 'DM Sans',sans-serif;padding-top:10px">Mode jadwal</span>
+                    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><div role="radiogroup" style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><sc-for list="{{ c.schOpts }}" as="o"><button onClick="{{ o.click }}" disabled="{{ o.dis }}" role="radio" style="height:36px;padding:0 18px;border:none;border-radius:999px;background:{{ o.bg }};box-shadow:{{ o.shadow }};color:{{ o.fg }};opacity:{{ o.op }};font:{{ o.font }};cursor:pointer">{{ o.label }}</button></sc-for></div><sc-if value="{{ c.schNoShift }}"><span style="font-size:13.5px;line-height:1.45;color:#5B4636">Belum ada shift. <a href="settings-attendance-shifts.html" style="font-weight:700">Buat shift dulu di Pengaturan › Absensi</a></span></sc-if><sc-if value="{{ c.schShiftHint }}"><span style="font-size:13.5px;line-height:1.45;color:#5B4636;text-wrap:pretty">Karyawan shift hanya dijadwalkan pada tanggal yang diisi di roster. Hari tanpa shift dihitung libur.</span></sc-if><sc-if value="{{ c.schBizHint }}"><span style="font-size:13.5px;line-height:1.45;color:#5B4636">Mengikuti jadwal kerja usaha: Sen–Jum 08:00–17:00.</span></sc-if></div>
+                  </div>
                   <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid rgba(34,18,8,0.07)">
                     <button onClick="{{ c.onCancel }}" style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Batal</button>
                     <button onClick="{{ c.onSave }}" style="height:40px;padding:0 18px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer" style-hover="background:#D9600A">Simpan</button>
@@ -168,6 +172,7 @@
               <div style="display:flex;align-items:center;justify-content:space-between;min-height:36px"><h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Pengaturan absen</h3><button style="height:36px;padding:0 14px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:rgba(255,255,255,0.8);font:700 13px 'Plus Jakarta Sans',sans-serif;color:#221208">Ubah</button></div>
               <div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.07)"><span style="font-size:12.5px;color:#75604D">Lokasi absen</span><span style="font:500 15px 'DM Sans',sans-serif">Lokasi tertentu: Gudang Roasting Tamalanrea</span></div>
               <div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.07)"><span style="font-size:12.5px;color:#75604D">Wajib selfie saat absen</span><span style="font:500 15px 'DM Sans',sans-serif">Ya — absen masuk &amp; pulang memakai selfie</span></div>
+              <div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid rgba(34,18,8,0.07)"><span style="font-size:12.5px;color:#75604D">Mode jadwal</span><span style="font:500 15px 'DM Sans',sans-serif">Shift (roster)</span><a href="attendance-roster.html" style="font:700 14px 'DM Sans',sans-serif">Lihat roster</a></div>
             </section>
             <section style="padding:16px 18px;border-radius:22px;background:rgba(255,253,249,0.9);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:6px">
               <h3 style="margin:0;min-height:36px;display:flex;align-items:center;font:700 16px 'Plus Jakarta Sans',sans-serif">Pekerjaan</h3>
@@ -188,6 +193,7 @@
                 <div style="min-height:48px;display:flex;align-items:center;gap:12px"><span style="width:20px;height:20px;box-sizing:border-box;border-radius:6px;background:#F2790F;display:grid;place-items:center"><span style="width:14px;height:14px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span><span style="font:500 15px 'DM Sans',sans-serif">Gudang Roasting Tamalanrea</span></div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid rgba(34,18,8,0.07)"><span style="font:700 13px 'DM Sans',sans-serif">Wajib selfie saat absen</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Wajib</span><span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Tidak wajib</span></div><span style="font-size:12.5px;line-height:1.45;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid rgba(34,18,8,0.07)"><span style="font:700 13px 'DM Sans',sans-serif">Mode jadwal</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><span style="height:36px;font:500 13px/36px 'DM Sans',sans-serif;color:#5B4636;text-align:center">Ikut jadwal usaha</span><span style="height:36px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(74,42,16,0.16);font:700 13px/36px 'DM Sans',sans-serif;text-align:center">Shift (roster)</span></div><span style="font-size:12.5px;line-height:1.45;color:#5B4636">Karyawan shift hanya dijadwalkan pada tanggal yang diisi di roster. Hari tanpa shift dihitung libur.</span></div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:4px"><button style="height:46px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:46px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Simpan</button></div>
             </section>
           </div>
@@ -214,7 +220,7 @@
                   <span style="font-size:13px;color:#75604D">{{ r.label }}</span>
                   <span style="font:500 15px 'DM Sans',sans-serif">{{ r.value }}</span>
                   <sc-if value="{{ r.hasSub }}"><span style="font-size:13.5px;color:#5B4636">{{ r.sub }}</span></sc-if>
-                  <sc-if value="{{ r.hasLink }}"><a href="settings-locations.html" style="font:700 14px 'DM Sans',sans-serif">Atur lokasi kerja</a></sc-if>
+                  <sc-if value="{{ r.hasLink }}"><a href="{{ r.linkHref }}" style="font:700 14px 'DM Sans',sans-serif">{{ r.linkLabel }}</a></sc-if>
                 </div>
               </sc-for>
               </div>
@@ -231,6 +237,7 @@
                 <span style="font:700 13px 'DM Sans',sans-serif;padding-top:4px">Wajib selfie saat absen</span>
                 <div style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><sc-for list="{{ c.selOpts }}" as="o"><span style="height:34px;padding:0 14px;border-radius:999px;background:{{ o.bg }};box-shadow:{{ o.shadow }};color:{{ o.fg }};font:{{ o.font }};line-height:34px">{{ o.label }}</span></sc-for></div>
                 <span style="font-size:13px;color:#5B4636">Foto hanya bukti kehadiran, disimpan 90 hari. Tanpa pengenalan wajah.</span>
+                <span style="font:700 13px 'DM Sans',sans-serif;padding-top:4px">Mode jadwal</span><div role="radiogroup" style="display:flex;gap:2px;padding:4px;border-radius:999px;background:rgba(34,18,8,0.06)"><sc-for list="{{ c.schOpts }}" as="o"><button onClick="{{ o.click }}" disabled="{{ o.dis }}" role="radio" style="height:34px;padding:0 14px;border:none;border-radius:999px;background:{{ o.bg }};box-shadow:{{ o.shadow }};color:{{ o.fg }};opacity:{{ o.op }};font:{{ o.font }};cursor:pointer">{{ o.label }}</button></sc-for></div><sc-if value="{{ c.schNoShift }}"><span style="font-size:13px;line-height:1.45;color:#5B4636">Belum ada shift. <a href="settings-attendance-shifts.html" style="font-weight:700">Buat shift dulu di Pengaturan › Absensi</a></span></sc-if><sc-if value="{{ c.schShiftHint }}"><span style="font-size:13px;line-height:1.45;color:#5B4636;text-wrap:pretty">Karyawan shift hanya dijadwalkan pada tanggal yang diisi di roster. Hari tanpa shift dihitung libur.</span></sc-if><sc-if value="{{ c.schBizHint }}"><span style="font-size:13px;line-height:1.45;color:#5B4636">Mengikuti jadwal kerja usaha: Sen–Jum 08:00–17:00.</span></sc-if>
                 <div style="align-self:stretch;display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid rgba(34,18,8,0.07)"><button style="height:40px;padding:0 18px;border:1px solid rgba(34,18,8,0.14);border-radius:999px;background:#FFFFFF;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button><button style="height:40px;padding:0 18px;border:none;border-radius:999px;background:#F2790F;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Simpan</button></div>
               </div>
             </sc-if>
@@ -241,21 +248,21 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;karyawan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Dewi Lestari&quot;,&quot;Hendra Wijaya&quot;,&quot;Fajar Nugroho&quot;],&quot;default&quot;:&quot;Dewi Lestari&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;peran&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Pemilik&quot;,&quot;Atasan&quot;],&quot;default&quot;:&quot;Pemilik&quot;,&quot;tsType&quot;:&quot;'Pemilik'|'Atasan'&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;karyawan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Dewi Lestari&quot;,&quot;Hendra Wijaya&quot;,&quot;Fajar Nugroho&quot;],&quot;default&quot;:&quot;Dewi Lestari&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;peran&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Pemilik&quot;,&quot;Atasan&quot;],&quot;default&quot;:&quot;Pemilik&quot;,&quot;tsType&quot;:&quot;'Pemilik'|'Atasan'&quot;},&quot;shiftUsaha&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Ada&quot;,&quot;Belum ada&quot;],&quot;default&quot;:&quot;Ada&quot;,&quot;tsType&quot;:&quot;'Ada'|'Belum ada'&quot;}}">
 class Component extends DCLogic {
   state = { editing: false, draft: null, saved: {}, err: false };
   people() {
     return {
-      'Dewi Lestari': { ini: 'DL', name: 'Dewi Lestari', line: 'Barista · Operasional · KN-0012', mode: 'all', sel: [], selfie: true, job: [['Departemen','Operasional'],['Jabatan','Barista'],['Atasan langsung','Rudi Hartono'],['Tanggal masuk','3 Feb 2024']] },
-      'Hendra Wijaya': { ini: 'HW', name: 'Hendra Wijaya', line: 'Roaster · Produksi · KN-0006', mode: 'some', sel: ['gr'], selfie: true, job: [['Departemen','Produksi'],['Jabatan','Roaster'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','8 Jan 2022']] },
-      'Fajar Nugroho': { ini: 'FN', name: 'Fajar Nugroho', line: 'Kurir · Logistik · KN-0015', mode: 'excl', sel: [], selfie: false, job: [['Departemen','Logistik'],['Jabatan','Kurir'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','14 Mar 2025']] },
+      'Dewi Lestari': { ini: 'DL', name: 'Dewi Lestari', line: 'Barista · Operasional · KN-0012', mode: 'all', sel: [], selfie: true, sched: 'shift', job: [['Departemen','Operasional'],['Jabatan','Barista'],['Atasan langsung','Rudi Hartono'],['Tanggal masuk','3 Feb 2024']] },
+      'Hendra Wijaya': { ini: 'HW', name: 'Hendra Wijaya', line: 'Roaster · Produksi · KN-0006', mode: 'some', sel: ['gr'], selfie: true, sched: 'shift', job: [['Departemen','Produksi'],['Jabatan','Roaster'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','8 Jan 2022']] },
+      'Fajar Nugroho': { ini: 'FN', name: 'Fajar Nugroho', line: 'Kurir · Logistik · KN-0015', mode: 'excl', sel: [], selfie: false, sched: 'biz', job: [['Departemen','Logistik'],['Jabatan','Kurir'],['Atasan langsung','Bayu Saputra'],['Tanggal masuk','14 Mar 2025']] },
     };
   }
-  card({ mode, sel, editing, canEdit, err, noLoc, caption, selfie = true, handlers = {} }) {
+  card({ mode, sel, editing, canEdit, err, noLoc, caption, selfie = true, sched = 'biz', noShift = false, handlers = {} }) {
     const D = "'DM Sans',sans-serif";
     const L = [{ id: 'kp', label: 'Kedai Pettarani', meta: 'Radius 100 m' }, { id: 'gr', label: 'Gudang Roasting Tamalanrea', meta: 'Radius 150 m' }];
     const names = L.filter(l => sel.includes(l.id)).map(l => l.label).join(', ');
-    const row = noLoc ? { label: 'Lokasi absen', value: 'Belum ada lokasi kerja', sub: 'Absen tidak dicek lokasinya.', hasSub: true, hasLink: canEdit }
+    const row = noLoc ? { label: 'Lokasi absen', value: 'Belum ada lokasi kerja', sub: 'Absen tidak dicek lokasinya.', hasSub: true, hasLink: canEdit, linkLabel: 'Atur lokasi kerja', linkHref: 'settings-locations.html' }
       : mode === 'all' ? { label: 'Lokasi absen', value: 'Semua lokasi kerja (2)', hasSub: false, hasLink: false }
       : mode === 'some' ? { label: 'Lokasi absen', value: `Lokasi tertentu: ${names || '—'}`, hasSub: false, hasLink: false }
       : { label: 'Lokasi absen', value: 'Dikecualikan — absen dari mana saja tanpa tanda', hasSub: false, hasLink: false };
@@ -263,7 +270,9 @@ class Component extends DCLogic {
     const checks = L.map(l => { const on = sel.includes(l.id); return { label: l.label, meta: l.meta, box: on ? 'none' : `1.5px solid ${err ? '#DC2626' : 'rgba(34,18,8,0.35)'}`, bg: on ? '#F2790F' : '#FFFFFF', tick: on ? '#221208' : 'transparent', click: () => handlers.toggle && handlers.toggle(l.id) }; });
     const selRow = { label: 'Wajib selfie saat absen', value: selfie ? 'Ya — absen masuk & pulang memakai selfie' : 'Tidak', hasSub: false, hasLink: false, border: '1px solid rgba(34,18,8,0.07)' };
     const selOpts = [[true, 'Wajib'], [false, 'Tidak wajib']].map(([k, label]) => { const on = selfie === k; return { label, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => handlers.setSelfie && handlers.setSelfie(k) }; });
-    return { caption, selOpts, rows: [{ ...row, border: 'none' }, selRow], reading: !editing, editing, showEdit: canEdit && !editing && !noLoc, frame: editing ? 'rgba(242,121,15,0.45)' : 'rgba(255,255,255,0.75)',
+    const schRow = { label: 'Mode jadwal', value: sched === 'shift' ? 'Shift (roster)' : 'Ikut jadwal usaha (Sen–Jum 08:00–17:00)', hasSub: false, hasLink: sched === 'shift', linkLabel: 'Lihat roster', linkHref: 'attendance-roster.html', border: '1px solid rgba(34,18,8,0.07)' };
+    const schOpts = [['biz', 'Ikut jadwal usaha'], ['shift', 'Shift (roster)']].map(([k, label]) => { const on = sched === k; const dis = k === 'shift' && noShift; return { label, dis, op: dis ? 0.45 : 1, bg: on ? '#FFFFFF' : 'transparent', shadow: on ? '0 1px 3px rgba(74,42,16,0.16)' : 'none', fg: on ? '#221208' : '#5B4636', font: `${on ? 700 : 500} 14px ${D}`, click: () => !dis && handlers.setSched && handlers.setSched(k) }; });
+    return { caption, selOpts, schOpts, schNoShift: noShift, schShiftHint: !noShift && sched === 'shift', schBizHint: !noShift && sched === 'biz', rows: [{ ...row, border: 'none' }, selRow, schRow], reading: !editing, editing, showEdit: canEdit && !editing && !noLoc, frame: editing ? 'rgba(242,121,15,0.45)' : 'rgba(255,255,255,0.75)',
       opts, checks, showAll: mode === 'all', showChecks: mode === 'some', showExcl: mode === 'excl', checkErr: !!err,
       onEdit: handlers.edit, onCancel: handlers.cancel, onSave: handlers.save };
   }
@@ -275,27 +284,30 @@ class Component extends DCLogic {
     const P = this.people();
     const key = this.props.karyawan || 'Dewi Lestari';
     const p = P[key] || P['Dewi Lestari'];
-    const cur = st.saved[key] || { mode: p.mode, sel: p.sel, selfie: p.selfie };
+    const cur = st.saved[key] || { mode: p.mode, sel: p.sel, selfie: p.selfie, sched: p.sched };
     const d = st.editing && st.draft ? st.draft : cur;
     const handlers = {
       edit: () => this.setState({ editing: true, draft: { ...cur, sel: [...cur.sel] }, err: false }),
       cancel: () => this.setState({ editing: false, err: false }),
       save: () => { const dr = this.state.draft; if (dr.mode === 'some' && !dr.sel.length) return this.setState({ err: true }); this.setState(s => ({ editing: false, err: false, saved: { ...s.saved, [key]: dr } })); },
+      setSched: v => this.setState(s => ({ draft: { ...s.draft, sched: v } })),
       setSelfie: v => this.setState(s => ({ draft: { ...s.draft, selfie: v } })),
       setMode: k => this.setState(s => ({ draft: { ...s.draft, mode: k, sel: k === 'some' && !s.draft.sel.length ? [] : s.draft.sel }, err: false })),
       toggle: id => this.setState(s => ({ draft: { ...s.draft, sel: s.draft.sel.includes(id) ? s.draft.sel.filter(x => x !== id) : [...s.draft.sel, id] }, err: false })),
     };
-    const live = [this.card({ ...d, editing: st.editing && !atasan, canEdit: !atasan, err: st.err, handlers })];
+    const live = [this.card({ ...d, editing: st.editing && !atasan, canEdit: !atasan, err: st.err, noShift: this.props.shiftUsaha === 'Belum ada', sched: this.props.shiftUsaha === 'Belum ada' ? 'biz' : d.sched, handlers })];
     const nav = (atasan ? [['Dashboard','layout-dashboard'],['Bawahan saya','users',1],['Absensi','calendar-check',0,'3',1],['KPI','target',0,'3',1]]
       : [['Dashboard','layout-dashboard'],['Karyawan','users',1],['Organisasi','network'],['Absensi','calendar-check',0,'5',1],['KPI','target',0,'7',1],['Payroll','wallet',0,'',1],['Kepatuhan','shield-check'],['Pengaturan','settings',0,'',1]])
       .map(([label, ic, on, count, subs]) => ({ label, mask: m(ic), bg: on ? 'rgba(242,121,15,0.16)' : 'transparent', fg: on ? '#B34C08' : '#221208', font: `${on ? 700 : 500} 14.5px ${D}`, count: count || '', hasCount: !!count, hasSubs: !!subs && !on }));
     const gallery = [
-      this.card({ caption: 'Baca · Dewi Lestari — semua lokasi', mode: 'all', sel: [], canEdit: true }),
+      this.card({ caption: 'Baca · Dewi Lestari — semua lokasi, shift', mode: 'all', sel: [], canEdit: true, sched: 'shift' }),
       this.card({ caption: 'Baca · Hendra Wijaya — lokasi tertentu', mode: 'some', sel: ['gr'], canEdit: true }),
       this.card({ caption: 'Baca · Fajar Nugroho — dikecualikan, tidak wajib selfie', mode: 'excl', sel: [], canEdit: true, selfie: false }),
       this.card({ caption: 'Baca · usaha belum punya lokasi kerja', mode: 'all', sel: [], canEdit: true, noLoc: true }),
       this.card({ caption: 'Ubah · lokasi tertentu, belum dipilih (error)', mode: 'some', sel: [], canEdit: true, editing: true, err: true }),
       this.card({ caption: 'Ubah · dikecualikan, tidak wajib selfie', mode: 'excl', sel: [], canEdit: true, editing: true, selfie: false }),
+      this.card({ caption: 'Ubah · mode jadwal Shift (roster)', mode: 'all', sel: [], canEdit: true, editing: true, sched: 'shift' }),
+      this.card({ caption: 'Ubah · usaha belum punya shift — pilihan Shift nonaktif', mode: 'all', sel: [], canEdit: true, editing: true, noShift: true }),
       this.card({ caption: 'Tampilan atasan · hanya baca, tanpa Ubah', mode: 'some', sel: ['gr'], canEdit: false }),
       this.card({ caption: 'Tampilan atasan · belum ada lokasi (tanpa tautan atur)', mode: 'all', sel: [], canEdit: false, noLoc: true }),
     ];

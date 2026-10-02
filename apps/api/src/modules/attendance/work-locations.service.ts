@@ -1,8 +1,9 @@
-import { employees, employeeWorkLocations, workLocations } from "@exapay/db";
+import { employees, employeeWorkLocations, workLocations, workShifts } from "@exapay/db";
 import {
   type EmployeeAttendanceSettings,
   type EmployeeAttendanceSettingsData,
   type EmployeeLocationMode,
+  type EmployeeScheduleMode,
   WORK_LOCATIONS_MAX,
   type WorkLocation,
   type WorkLocationData,
@@ -29,7 +30,7 @@ const locationColumns = {
 };
 
 type LocationRow = { id: string; name: string; address: string | null; latitude: number; longitude: number; radiusM: number };
-type SettingsEmployee = { id: string; locationMode: EmployeeLocationMode; selfieRequired: boolean };
+type SettingsEmployee = { id: string; locationMode: EmployeeLocationMode; selfieRequired: boolean; scheduleMode: EmployeeScheduleMode };
 
 const auditOf = (row: LocationRow): Omit<LocationRow, "id"> => ({
   name: row.name,
@@ -161,7 +162,7 @@ export class WorkLocationsService {
     return withTenant(this.db, ctx, async (tx) => {
       await this.requireManager(tx, ctx);
       const [employee] = await tx
-        .select({ id: employees.id, locationMode: employees.locationMode, selfieRequired: employees.selfieRequired })
+        .select({ id: employees.id, locationMode: employees.locationMode, selfieRequired: employees.selfieRequired, scheduleMode: employees.scheduleMode })
         .from(employees)
         .where(eq(employees.id, employeeId))
         .for("update");
@@ -174,9 +175,13 @@ export class WorkLocationsService {
       }
       const beforeIds = await this.selectedIds(tx, employee.id);
 
-      // selfieRequired tidak dikirim = tidak diubah
+      // selfieRequired / scheduleMode tidak dikirim = tidak diubah
       const selfieRequired = input.selfieRequired ?? employee.selfieRequired;
-      await tx.update(employees).set({ locationMode: input.locationMode, selfieRequired }).where(eq(employees.id, employee.id));
+      const scheduleMode = input.scheduleMode ?? employee.scheduleMode;
+      if (scheduleMode === "shift" && employee.scheduleMode !== "shift" && !(await this.hasShifts(tx))) {
+        throw new BadRequestException("Buat shift dulu di Pengaturan › Absensi sebelum memakai mode shift");
+      }
+      await tx.update(employees).set({ locationMode: input.locationMode, selfieRequired, scheduleMode }).where(eq(employees.id, employee.id));
       await tx.delete(employeeWorkLocations).where(eq(employeeWorkLocations.employeeId, employee.id));
       if (locationIds.length > 0) {
         await tx
@@ -187,10 +192,10 @@ export class WorkLocationsService {
         entity: "employee",
         entityId: employee.id,
         action: "update_attendance_settings",
-        before: { locationMode: employee.locationMode, locationIds: employee.locationMode === "selected" ? beforeIds : [], selfieRequired: employee.selfieRequired },
-        after: { locationMode: input.locationMode, locationIds, selfieRequired },
+        before: { locationMode: employee.locationMode, locationIds: employee.locationMode === "selected" ? beforeIds : [], selfieRequired: employee.selfieRequired, scheduleMode: employee.scheduleMode },
+        after: { locationMode: input.locationMode, locationIds, selfieRequired, scheduleMode },
       });
-      return this.settingsOf(tx, { id: employee.id, locationMode: input.locationMode, selfieRequired }, true);
+      return this.settingsOf(tx, { id: employee.id, locationMode: input.locationMode, selfieRequired, scheduleMode }, true);
     });
   }
 
@@ -211,6 +216,11 @@ export class WorkLocationsService {
     return tx.select(siteColumns).from(workLocations);
   }
 
+  private async hasShifts(tx: Transaction): Promise<boolean> {
+    const [row] = await tx.select({ id: workShifts.id }).from(workShifts).limit(1);
+    return row !== undefined;
+  }
+
   async hasLocations(tx: Transaction): Promise<boolean> {
     const [row] = await tx.select({ id: workLocations.id }).from(workLocations).limit(1);
     return row !== undefined;
@@ -227,6 +237,8 @@ export class WorkLocationsService {
       locationIds: mode === "selected" ? await this.selectedIds(tx, employee.id) : [],
       locations,
       selfieRequired: employee.selfieRequired,
+      scheduleMode: employee.scheduleMode,
+      hasShifts: await this.hasShifts(tx),
       canEdit,
     };
   }
@@ -247,7 +259,13 @@ export class WorkLocationsService {
   ): Promise<SettingsEmployee> {
     if (!viewer) throw new ForbiddenException("Anda tidak memiliki akses ke halaman ini");
     const [employee] = await tx
-      .select({ id: employees.id, supervisorId: employees.supervisorId, locationMode: employees.locationMode, selfieRequired: employees.selfieRequired })
+      .select({
+        id: employees.id,
+        supervisorId: employees.supervisorId,
+        locationMode: employees.locationMode,
+        selfieRequired: employees.selfieRequired,
+        scheduleMode: employees.scheduleMode,
+      })
       .from(employees)
       .where(eq(employees.id, employeeId));
     if (!employee || !viewerCanSee(viewer, employee.supervisorId)) throw new NotFoundException("Karyawan tidak ditemukan");

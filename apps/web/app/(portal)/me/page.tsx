@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { AttendanceCard } from "@/components/attendance/AttendanceCard";
 import { AttendanceMonthTile } from "@/components/attendance/AttendanceMonthTile";
+import { MyScheduleCard } from "@/components/attendance/MyScheduleCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { KpiScoreTile } from "@/components/kpi/KpiScoreTile";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -13,6 +14,7 @@ import { TaskSummaryCard } from "@/components/tasks/TaskSummaryCard";
 import { fetchAttendanceHistory, fetchAttendanceToday } from "@/lib/api/attendance";
 import { fetchMyKpiScore } from "@/lib/api/kpiScores";
 import { fetchMyPayslips } from "@/lib/api/payslips";
+import { fetchMySchedule } from "@/lib/api/shiftRoster";
 import { fetchMyTaskDay } from "@/lib/api/taskLogs";
 import { getSession } from "@/lib/auth/getSession";
 import { DEFAULT_TIME_ZONE, firstNameOf, formatLongDate, greetingFor } from "@/lib/datetime";
@@ -21,17 +23,18 @@ import { requireActiveEmployee } from "@/lib/portalAccess";
 export const metadata: Metadata = { title: "Beranda — Exapay" };
 
 // Beranda portal karyawan mengikuti snapshot context/designs/me.html. Kartu absen (feature 14) + tugas hari ini (feature 19)
-// + grid tile (feature 37): "Skor bulan ini" (tampil jika jabatan punya template KPI), "Kehadiran bulan ini", "Slip gaji
+// + "Jadwal saya" untuk karyawan shift (feature 46) + grid tile (feature 37): "Skor bulan ini" (tampil jika jabatan punya template KPI), "Kehadiran bulan ini", "Slip gaji
 // terakhir" (tampil jika ada slip terbit). Tile yang gagal dimuat dilewati — kartu utama tetap tampil.
 export default async function PortalHomePage() {
   await requireActiveEmployee();
-  const [session, today, tasks, score, history, payslips] = await Promise.all([
+  const [session, today, tasks, score, history, payslips, schedule] = await Promise.all([
     getSession(),
     fetchAttendanceToday(),
     fetchMyTaskDay(null),
     fetchMyKpiScore(null),
     fetchAttendanceHistory(null),
     fetchMyPayslips(),
+    fetchMySchedule(),
   ]);
   const timeZone = today.ok ? today.data.timeZone : DEFAULT_TIME_ZONE;
   const now = today.ok ? new Date(today.data.serverTime) : new Date();
@@ -47,6 +50,8 @@ export default async function PortalHomePage() {
       ) : (
         <EmptyState icon={CloudOff} title="Kartu absen belum bisa dimuat" description={today.error} />
       )}
+      {/* Jadwal saya (feature 46) — hanya karyawan mode shift; gagal dimuat → dilewati */}
+      {schedule.ok && schedule.data.mode === "shift" ? <MyScheduleCard schedule={schedule.data} /> : null}
       {tasks.ok ? (
         tasks.data.access === "ok" ? (
           <TaskSummaryCard

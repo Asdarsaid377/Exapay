@@ -39,6 +39,8 @@ export const STAFF_MENU: readonly NavSection[] = [
     roles: ALL,
     children: [
       { label: "Rekap", href: "/attendance", roles: ALL },
+      // Hanya tampil bila usaha punya master shift (feature 46) — lihat `hiddenHrefs` di staffMenuFor
+      { label: "Roster", href: "/attendance/roster", roles: ALL },
       { label: "Pengajuan izin", href: "/attendance/requests", roles: ALL },
       // Absen bertanda lokasi (feature 44) — atasan untuk bawahan langsung
       { label: "Tinjauan", href: "/attendance/review", roles: ALL },
@@ -133,12 +135,15 @@ export function findStaffLink(pathname: string): NavLink | null {
   return best;
 }
 
-// Menu yang terlihat untuk peran ini; href grup = child pertama yang terlihat
-export function staffMenuFor(role: StaffRole): NavSection[] {
+// Menu opsional per usaha: Roster hanya bila usaha punya master shift (feature 46)
+export const ROSTER_HREF = "/attendance/roster";
+
+// Menu yang terlihat untuk peran ini; href grup = child pertama yang terlihat. hiddenHrefs = menu opsional yang tidak dipakai usaha.
+export function staffMenuFor(role: StaffRole, hiddenHrefs: readonly string[] = []): NavSection[] {
   return STAFF_MENU.flatMap((section) => {
     if (!section.roles.includes(role)) return [];
     if (!section.children) return [section];
-    const children = section.children.filter((child) => child.roles.includes(role));
+    const children = section.children.filter((child) => child.roles.includes(role) && !hiddenHrefs.includes(child.href));
     const first = children[0];
     return first ? [{ ...section, href: first.href, children }] : [];
   });
