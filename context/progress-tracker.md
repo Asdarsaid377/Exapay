@@ -8,7 +8,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 **Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
 **Terakhir selesai:** 41 Tagihan & Pembayaran QRIS (2026-10-02)
-**Berikutnya:** 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin). Paralel (langkah user): uji bayar QRIS nyata nominal kecil setelah `QRIS_STATIC_PAYLOAD` diisi QR merchant asli; Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Berikutnya:** 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin). Paralel (langkah user): Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -74,7 +74,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ### Phase 9 — Monetisasi: Trial, Langganan & Landing Page
 - [x] 39 Fondasi Langganan & Trial
 - [x] 40 Halaman Langganan & Pengingat Trial
-- [x] 41 Tagihan & Pembayaran QRIS (uji bayar nyata menunggu QR merchant user)
+- [x] 41 Tagihan & Pembayaran QRIS (uji bayar nyata lolos 2026-10-02)
 - [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
 - [ ] 43 Landing Page Marketing
 
@@ -286,6 +286,7 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Tagihan (feature 41):** migration `0032_billing_invoices` — tabel tenant `billing_invoices` (status `open/awaiting_confirmation/paid/expired`, snapshot harga/minimum/karyawan aktif, `unique_code` 1–999, CHECK konsistensi nominal, bukti bayar opsional di storage `billing-invoices/<id>/…`). Index unik parsial: **satu tagihan berjalan per usaha** dan **nominal total unik di antara tagihan berjalan seluruh platform** (index tidak melewati RLS → tanpa membaca data usaha lain; worker memilih kode acak + `ON CONFLICT DO NOTHING` + coba ulang). app_user SELECT/INSERT + UPDATE per kolom (status & klaim); trigger `guard_billing_invoice`: INSERT hanya open, open→awaiting_confirmation (≤ due_at), open→expired (> due_at, jam DB); lunas/tolak hanya super-admin/app_owner (feature 42). Tagihan open lewat batas tampil `expired` di API walau worker belum menandai.
 - 2026-10-02 — Worker antrean `billing` (satu Worker untuk semua job — dua Worker di satu antrean saling merebut job): scan harian kini juga menjadwalkan `billing-invoice` per usaha (`BillingInvoices.issue`: expire → terbitkan + email ke owner terverifikasi di transaksi yang sama) dan memproses `billing-claim-notify` dari API (email ke `BILLING_NOTIFY_EMAIL`, dipisah koma, wajib di production; tanpa data karyawan). Nomor tagihan `EXA-YYMM-XXXXXX`.
 - 2026-10-02 — **QRIS:** `apps/api/src/modules/billing/qris.ts` (murni) mengurai TLV EMVCo — bukan ganti-teks seperti verssache — cek CRC16/CCITT-FALSE, tag 01 → 12, sisip/ganti tag 54, **buang tag tip 55–57** agar nominal persis, CRC ulang; diuji terhadap vektor yang dihitung terpisah dengan cara verssache. Env API `QRIS_STATIC_PAYLOAD` (opsional, divalidasi saat start; kosong → QR tidak tampil). `PaymentProvider` (abstrak) + `QrisManualPaymentProvider` (`qrcode` 1.5.4, PNG). API: `GET /billing` (+ `invoice`, `invoices` 24 terakhir, `qrisAvailable`), `GET /billing/invoices/:id/qris` (PNG, owner, hanya tagihan yang masih bisa dibayar), `POST /billing/invoices/:id/claim` (multipart `proof` opsional, owner dibaca ulang dari memberships, `@AllowWhenReadOnly`, audit `billing_invoice/claim`, enqueue pemberitahuan setelah commit — gagal enqueue tidak membatalkan klaim). Web: Route Handler `/settings/billing/invoices/[id]/qris` (`?download=1` → lampiran).
+- 2026-10-02 — **Uji bayar QRIS nyata lolos** (feature 41): QR merchant user (QRIS statis, NMID ada, tanpa tag tip) di `.env` lokal; tagihan uji dev `EXA-UJI-0771DD` Rp1.245 (Rp200 × 5 + kode unik 245, dibuat manual sebagai app_owner di DB dev) — QR terbaca e-wallet, nominal terisi otomatis dan masuk ke merchant sesuai sistem.
 - 2026-10-02 — Perbaikan di luar scope (laporan user): path `/admin/*` yang belum ada jatuh ke catch-all area usaha `(main)` yang me-logout super-admin (tanpa usaha aktif). Kini `app/(admin)/admin/[...slug]` → 404 di panel super-admin, dan layout `(main)` mengarahkan super-admin tanpa usaha ke `/admin/tenants`. 404 bawaan Next (tak terbaca di tema krem) diganti `NotFoundState` (turunan EmptyState, izin user) lewat `not-found.tsx` per area: `(main)` → Ke dashboard, `(admin)/admin` → Ke daftar tenant, `(portal)/me` → Ke beranda (surface solid). Tampil di dalam kerangka area.
 ---
 
