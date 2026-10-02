@@ -2,6 +2,7 @@ import { type ApiResponse, EMPLOYEE_IMPORT_MAX_BYTES, type EmployeeImportPreview
 import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Post, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
+import { AllowWhenReadOnly } from "../../common/auth/allow-when-read-only.decorator.js";
 import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
@@ -33,6 +34,8 @@ export class EmployeeImportController {
     return new StreamableFile(buffer, { type: XLSX_TYPE, disposition: 'attachment; filename="template-impor-karyawan.xlsx"' });
   }
 
+  // Validasi file tanpa menyimpan — tetap boleh saat baca-saja
+  @AllowWhenReadOnly()
   @Post("preview")
   @Roles("owner", "admin")
   @HttpCode(HttpStatus.OK)

@@ -8,6 +8,7 @@ import {
 } from "@exapay/shared";
 import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 
+import { AllowWhenReadOnly } from "../../common/auth/allow-when-read-only.decorator.js";
 import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
@@ -42,6 +43,8 @@ export class UsersController {
     return { success: true, data: null };
   }
 
+  // Aksi pengamanan — tetap boleh saat baca-saja
+  @AllowWhenReadOnly()
   @Post("invitations/:id/cancel")
   @HttpCode(HttpStatus.OK)
   async cancelInvitation(@CurrentUser() user: AuthUser, @Param("id", INVITATION_ID) id: string): Promise<ApiResponse<null>> {
@@ -60,6 +63,8 @@ export class UsersController {
     return { success: true, data: null };
   }
 
+  // Aksi pengamanan (cabut akses) — tetap boleh saat baca-saja
+  @AllowWhenReadOnly()
   @Post(":membershipId/revoke")
   @HttpCode(HttpStatus.OK)
   async revoke(@CurrentUser() user: AuthUser, @Param("membershipId", MEMBERSHIP_ID) membershipId: string): Promise<ApiResponse<null>> {

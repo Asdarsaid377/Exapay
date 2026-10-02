@@ -1,6 +1,6 @@
 "use client";
 
-import { type CreateTenantInput, createTenantSchema } from "@exapay/shared";
+import { type CreateTenantInput, createTenantSchema, TENANT_SUBSCRIPTION_STARTS, type TenantSubscriptionStart } from "@exapay/shared";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -9,11 +9,21 @@ import { createTenant } from "@/actions/adminTenants";
 import { Button } from "@/components/common/Button";
 import { Dialog } from "@/components/common/Dialog";
 import { FormAlert } from "@/components/common/FormAlert";
+import { SelectField } from "@/components/common/SelectField";
 import { TextField } from "@/components/common/TextField";
 
 type FieldErrors = Partial<Record<keyof CreateTenantInput, string>>;
 
-const EMPTY: CreateTenantInput = { name: "", ownerFullName: "", ownerEmail: "" };
+const EMPTY: CreateTenantInput = { name: "", ownerFullName: "", ownerEmail: "", subscription: "trial" };
+
+const SUBSCRIPTION_LABELS: Record<TenantSubscriptionStart, string> = {
+  trial: "Trial gratis (seperti pendaftaran mandiri)",
+  complimentary: "Gratis — pilot / klien uji coba",
+};
+
+function isSubscriptionStart(value: string): value is TenantSubscriptionStart {
+  return TENANT_SUBSCRIPTION_STARTS.some((start) => start === value);
+}
 
 // Tombol "Buat tenant" + dialog form. Sukses → buka detail tenant (undangan pemilik sudah dikirim).
 export function CreateTenantDialog() {
@@ -24,7 +34,7 @@ export function CreateTenantDialog() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function update(field: keyof CreateTenantInput, value: string) {
+  function update(field: Exclude<keyof CreateTenantInput, "subscription">, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
@@ -114,6 +124,27 @@ export function CreateTenantDialog() {
             hint="Undangan berlaku 7 hari. Jika email ini sudah punya akun Exapay, usaha ditambahkan ke akun tersebut."
             disabled={submitting}
           />
+          <SelectField
+            id="tenant-subscription"
+            label="Langganan"
+            value={values.subscription}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (isSubscriptionStart(value)) setValues((current) => ({ ...current, subscription: value }));
+            }}
+            hint={
+              values.subscription === "trial"
+                ? "Trial berakhir sesuai lama trial harga berlaku, lalu tenggang sebelum mode baca-saja."
+                : "Tidak pernah ditagih dan tidak pernah terkunci sampai diubah super-admin."
+            }
+            disabled={submitting}
+          >
+            {TENANT_SUBSCRIPTION_STARTS.map((start) => (
+              <option key={start} value={start}>
+                {SUBSCRIPTION_LABELS[start]}
+              </option>
+            ))}
+          </SelectField>
           <div className="mt-1 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={close} disabled={submitting}>
               Batal

@@ -7,8 +7,8 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 ## Status Saat Ini
 
 **Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
-**Terakhir selesai:** 38 Backup & Deploy VPS — diverifikasi di Docker lokal (2026-10-02)
-**Berikutnya:** 39 Fondasi Langganan & Trial. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
+**Terakhir selesai:** 39 Fondasi Langganan & Trial (2026-10-02)
+**Berikutnya:** 40 Halaman Langganan & Pengingat Trial. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -72,7 +72,7 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 38 Backup & Deploy VPS (diverifikasi lokal; deploy VPS nyata menunggu VPS user — keputusan user 2026-10-02)
 
 ### Phase 9 — Monetisasi: Trial, Langganan & Landing Page
-- [ ] 39 Fondasi Langganan & Trial
+- [x] 39 Fondasi Langganan & Trial
 - [ ] 40 Halaman Langganan & Pengingat Trial
 - [ ] 41 Tagihan & Pembayaran QRIS
 - [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
@@ -274,6 +274,10 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Phase 9 Monetisasi ditambahkan** (keputusan user): billing langganan, trial gratis 30 hari, landing page marketing — dipindah dari "Fase Berikutnya". Harga **per karyawan aktif per bulan** (angka harga, minimum ditagih, lama trial, tenggang = data platform berlaku-tanggal, diubah super-admin). Trial habis → **tenggang 7 hari → baca-saja** (data tidak pernah dihapus otomatis; baca & ekspor tetap bisa). Tenant lama/klien uji coba → **gratis (pilot)**, super-admin atur manual.
 - 2026-10-02 — Pembayaran: **QRIS statik merchant dibuat dinamis** (pola `verssache/qris-dinamis`, MIT: tag 01 → 12, sisip tag 54 nominal, CRC16 ulang) — pilihan user. Karena QRIS ini **tanpa notifikasi pembayaran**, aktivasi = konfirmasi super-admin (nominal + kode unik 1–999 dicocokkan dengan mutasi merchant) setelah owner menekan "Saya sudah bayar". Dibangun di balik abstraksi `PaymentProvider` (`qris-manual`) agar gateway ber-webhook bisa menyusul. Notifikasi "Saya sudah bayar" → email ke pemilik platform (env `BILLING_NOTIFY_EMAIL`, diisi email user di `.env`/`.env.production` — tidak di-commit).
 - 2026-10-02 — Harga awal (keputusan user): **Rp10.000 per karyawan aktif per bulan, minimum ditagih 5 karyawan** (tagihan minimum Rp50.000). Harus bisa diubah kapan saja → disimpan sebagai versi harga berlaku-tanggal (seed di migration feature 39, ubah lewat `/admin/billing` feature 42); tagihan yang sudah terbit memakai snapshot harga saat dibuat.
+- 2026-10-02 — **Langganan (feature 39):** migration `0030` — `billing_prices` (data platform berlaku-tanggal, pola regulasi: RLS + FORCE + `reference_read`, app_user SELECT, exclusion `billing_prices_no_overlap`; seed Rp10.000 / min 5 / trial 30 / tenggang 7 berlaku 2024-01-01) dan `tenant_subscriptions` (PK `tenant_id`, enum `subscription_status` trialing/active/complimentary, `trial_ends_at`, `current_period_ends_at`; RLS `tenant_isolation`; app_user SELECT + INSERT saja). Trigger `guard_tenant_subscription`: selain super-admin/app_owner hanya boleh INSERT trial standar (≤ trial_days harga berlaku + 1 hari), UPDATE ditolak. Tenant lama dibackfill `complimentary`.
+- 2026-10-02 — Status efektif **dihitung dari tanggal saat dibaca** (`subscriptionStateAt`, tanpa cron): sebelum akhir → trialing/active; ≤ grace_days → `past_due` (tetap bisa dipakai); lewat → `read_only`; tanggal hilang → read_only (gagal aman). Menyimpang dari build-plan "dicatat saat berubah": transisi otomatis tidak ditulis ke audit (tanpa cron); audit hanya untuk aksi eksplisit (`subscription/start`, nanti pembayaran & super-admin). Feature 40 (email pengingat) yang mendeteksi transisi.
+- 2026-10-02 — **Mode baca-saja:** `SubscriptionGuard` = APP_GUARD ketiga di AuthModule (setelah JwtAuthGuard, RolesGuard). Hanya POST/PUT/DELETE dari anggota usaha (bukan super-admin, bukan @Public) → 402 + code `SUBSCRIPTION_READ_ONLY` (pesan owner/admin vs atasan/karyawan). Pengecualian `@AllowWhenReadOnly` (`common/auth/`): seluruh `auth/*`, `employees/:id/reveal`, pratinjau impor & potongan, cabut akses, batalkan undangan. Tenant tanpa baris langganan → diizinkan + log warn sekali per tenant (test lama membuat tenant langsung tanpa baris). Harga & tanggal di zona platform `Asia/Jakarta`.
+- 2026-10-02 — Signup → `SubscriptionsService.start(tx, ctx, "trial")` di transaksi yang sama; super-admin memilih `subscription: "trial" | "complimentary"` di `createTenantSchema` (bawaan trial) + SelectField di dialog (tanpa desain baru — komponen terdaftar).
 ---
 
 ## Catatan (Notes)
@@ -347,3 +351,5 @@ _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat ses
 - **Jangan menjalankan `pnpm deploy` di mesin dev** — menulis `node_modules/.pnpm-workspace-state-v1.json` dengan `production: true` sehingga `pnpm test` mencoba reinstall prod dan gagal (no TTY). Pulihkan dengan `pnpm install --frozen-lockfile`. Di Dockerfile aman (stage build).
 - Uji stack production lokal: `docker compose -p exapay-prod -f docker-compose.prod.yml --env-file <env> up -d` (port 80/443 host). Data uji = seed-trial Roti Sinar Pagi + super-admin `superadmin@exapay.local`. Hapus: `docker compose -p exapay-prod down -v`. Uji restore lokal butuh override agar container `restore` bergabung ke jaringan offsite lokal — **nama service instance uji wajib unik** (sempat menunjuk Postgres production karena sama-sama `postgres`; ditolak karena password beda).
 - Image production sekali build ±5 menit; `migrate` 2,2 GB (stage build penuh) — hanya one-shot.
+- Total test API 302 per feature 39 (`subscription-status.test.ts` 5 unit; `subscriptions.e2e.test.ts` 8 — signup trial, baca-saja 402 per peran, tenggang, transisi waktu dengan fake timers + login ulang, aktif/pilot, pilihan super-admin, trigger, isolasi; `tenant-isolation` + 2 tabel). Guard berjalan sebelum pipe → path salah pun dapat 402 di tenant terkunci (pastikan path benar di test). Data dev: 10 tenant lama `complimentary`; "Bengkel Uji Pilot" (complimentary) dari verifikasi dialog.
+- Belum ada: UI status langganan/banner (feature 40), email pengingat transisi (40), tagihan (41), ubah langganan/harga oleh super-admin (42). Mengubah langganan sementara hanya lewat SQL `app_owner` + `set_config('app.tenant_id')`.

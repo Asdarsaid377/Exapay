@@ -19,6 +19,7 @@ import type { AuthUser } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
 import { type Database, type TenantContext, type Transaction, withTenant, withUser } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
+import { SubscriptionsService } from "../billing/subscriptions.service.js";
 import { InvitationsService } from "../invitations/invitations.service.js";
 import { seedTenantDefaults } from "./tenant-defaults.js";
 
@@ -103,6 +104,7 @@ export class TenantsAdminService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly invitationsService: InvitationsService,
     private readonly audit: AuditService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   // Filter & paginasi di aplikasi: jumlah tenant platform masih kecil (MVP). Pindahkan ke SQL jika sudah ribuan.
@@ -153,11 +155,12 @@ export class TenantsAdminService {
       await this.assertSuperAdmin(tx);
       await tx.insert(tenants).values({ id: ctx.tenantId, name: input.name });
       await seedTenantDefaults(tx, ctx);
+      await this.subscriptions.start(tx, ctx, input.subscription);
       await this.audit.record(tx, ctx, {
         entity: "tenant",
         entityId: ctx.tenantId,
         action: "create_by_super_admin",
-        after: { name: input.name, ownerEmail: input.ownerEmail },
+        after: { name: input.name, ownerEmail: input.ownerEmail, subscription: input.subscription },
       });
       const { token } = await this.invitationsService.create(tx, ctx, { email: input.ownerEmail, fullName: input.ownerFullName, role: "owner" });
       return token;

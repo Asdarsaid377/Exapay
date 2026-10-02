@@ -9,6 +9,7 @@ import {
 } from "@exapay/shared";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 
+import { AllowWhenReadOnly } from "../../common/auth/allow-when-read-only.decorator.js";
 import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
@@ -35,6 +36,8 @@ export class AttendanceDeductionRulesController {
   }
 
   // Tidak menyimpan apa pun — 200, bukan 201
+  // Pratinjau hitungan tanpa menyimpan — tetap boleh saat baca-saja
+  @AllowWhenReadOnly()
   @Post("preview")
   @HttpCode(HttpStatus.OK)
   async preview(

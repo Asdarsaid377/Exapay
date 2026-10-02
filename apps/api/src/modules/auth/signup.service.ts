@@ -14,6 +14,7 @@ import { type Database, type TenantContext, withTenant } from "../../database/te
 import { REDIS_CLIENT } from "../../redis/redis.module.js";
 import { AuditService } from "../audit/audit.service.js";
 import { EmailService } from "../email/email.service.js";
+import { SubscriptionsService } from "../billing/subscriptions.service.js";
 import { seedTenantDefaults } from "../tenants/tenant-defaults.js";
 import { AuthService } from "./auth.service.js";
 import { EmailVerificationService } from "./email-verification.service.js";
@@ -35,6 +36,7 @@ export class SignupService {
     private readonly audit: AuditService,
     private readonly email: EmailService,
     private readonly config: ConfigService<Env, true>,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   // Selalu selesai dengan respons yang sama agar tidak membocorkan apakah email sudah terdaftar:
@@ -64,6 +66,8 @@ export class SignupService {
         await tx.insert(tenants).values({ id: ctx.tenantId, name: input.companyName });
         await tx.insert(memberships).values({ tenantId: ctx.tenantId, userId, role: "owner" });
         await seedTenantDefaults(tx, ctx);
+        // Signup mandiri selalu mulai trial gratis (lama dari harga platform berlaku, feature 39)
+        await this.subscriptions.start(tx, ctx, "trial");
         await this.audit.record(tx, ctx, {
           entity: "tenant",
           entityId: ctx.tenantId,

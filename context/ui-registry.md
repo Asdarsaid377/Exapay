@@ -212,7 +212,7 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Dipakai di:** /admin/tenants, /admin/tenants/[id]
 - **Referensi desain:** diturunkan dari pola snapshot glassmorphism (tanpa snapshot halaman ini — feature 07, izin user)
 - **Pola kelas kunci:** Dialog + form `flex flex-col gap-4` (TextField) + tombol Batal (secondary) / aksi (primary; nonaktifkan = `dark`); hasil aksi = FormAlert success/danger
-- **Catatan:** client; memanggil Server Action `actions/adminTenants.ts` lalu `router.refresh()` / `router.push`. Buat tenant sukses → detail `?created=1` (alert sukses). Konfirmasi wajib untuk nonaktifkan & aktifkan kembali
+- **Catatan:** client; memanggil Server Action `actions/adminTenants.ts` lalu `router.refresh()` / `router.push`. Buat tenant sukses → detail `?created=1` (alert sukses). Konfirmasi wajib untuk nonaktifkan & aktifkan kembali. Feature 39: SelectField "Langganan" (Trial gratis / Gratis — pilot, `TENANT_SUBSCRIPTION_STARTS`) dengan hint per pilihan, bawaan trial
 
 ### AcceptInvitationForm
 - **Path:** apps/web/components/auth/AcceptInvitationForm.tsx

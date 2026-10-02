@@ -31,6 +31,7 @@ import {
   PERMIT_SICK_DEDUCTION_MODES,
   PRORATE_BASES,
   PTKP_STATUSES,
+  SUBSCRIPTION_STATUSES,
   TASK_LOG_STATUSES,
   TAX_RATE_KINDS,
   TASK_PHOTO_TYPES,
@@ -1543,5 +1544,57 @@ export const complianceReminders = pgTable(
     index("compliance_reminders_tenant_due_idx").on(t.tenantId, t.dueDate),
     check("compliance_reminders_done", sql`(${t.doneAt} IS NULL) = (${t.doneByName} IS NULL)`),
     check("compliance_reminders_key_kind", sql`split_part(${t.key}, ':', 1) = ${t.kind}::text`),
+  ],
+);
+
+// ——— Langganan & trial (Phase 9, feature 39) ———
+
+export const subscriptionStatus = pgEnum("subscription_status", SUBSCRIPTION_STATUSES);
+
+// Harga platform berlaku-tanggal (pola data regulasi feature 24, tanpa tenant_id): harga per karyawan aktif per bulan,
+// minimum karyawan ditagih, lama trial & masa tenggang. Versi tidak beririsan (exclusion billing_prices_no_overlap).
+// Nilai awal di migration 0030; diubah super-admin mulai feature 42 (versi baru, bukan menimpa). Tagihan menyimpan snapshot.
+export const billingPrices = pgTable(
+  "billing_prices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pricePerEmployee: numeric("price_per_employee", { precision: 18, scale: 2 }).notNull(),
+    minBilledEmployees: smallint("min_billed_employees").notNull(),
+    trialDays: smallint("trial_days").notNull(),
+    graceDays: smallint("grace_days").notNull(),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveTo: date("effective_to", { mode: "string" }),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("billing_prices_date_order", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} >= ${t.effectiveFrom}`),
+    check(
+      "billing_prices_values",
+      sql`${t.pricePerEmployee} >= 0 AND ${t.minBilledEmployees} >= 0 AND ${t.trialDays} BETWEEN 0 AND 365 AND ${t.graceDays} BETWEEN 0 AND 90`,
+    ),
+  ],
+);
+
+// Satu baris per tenant. Status efektif (past_due/read_only) dihitung dari tanggal saat dibaca — lihat
+// apps/api/src/modules/billing/subscription-status.ts. Hanya super-admin/app_owner yang boleh membuat selain
+// trial (trigger guard_tenant_subscription); app_user tanpa UPDATE/DELETE sampai feature 41/42.
+export const tenantSubscriptions = pgTable(
+  "tenant_subscriptions",
+  {
+    tenantId: uuid("tenant_id")
+      .primaryKey()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    status: subscriptionStatus("status").notNull(),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    currentPeriodEndsAt: timestamp("current_period_ends_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check(
+      "tenant_subscriptions_dates",
+      sql`(${t.status} <> 'trialing' OR ${t.trialEndsAt} IS NOT NULL) AND (${t.status} <> 'active' OR ${t.currentPeriodEndsAt} IS NOT NULL)`,
+    ),
   ],
 );

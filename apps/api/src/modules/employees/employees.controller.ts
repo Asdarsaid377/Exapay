@@ -16,6 +16,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query } from "@nestjs/common";
 import { z } from "zod";
 
+import { AllowWhenReadOnly } from "../../common/auth/allow-when-read-only.decorator.js";
 import type { AuthUser } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Roles } from "../../common/auth/roles.decorator.js";
@@ -90,6 +91,8 @@ export class EmployeesController {
   }
 
   // POST (bukan GET): membuka data sensitif adalah aksi yang dicatat, tidak boleh di-prefetch/di-cache
+  // Hanya membuka data (audit dicatat) — tetap boleh saat baca-saja
+  @AllowWhenReadOnly()
   @Post(":id/reveal")
   @Roles("owner", "admin")
   @HttpCode(HttpStatus.OK)

@@ -26,6 +26,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, Unauthoriz
 import { ConfigService } from "@nestjs/config";
 import type { CookieOptions, Request, Response } from "express";
 
+import { AllowWhenReadOnly } from "../../common/auth/allow-when-read-only.decorator.js";
 import { ACCESS_COOKIE, type AuthUser, readCookie, REFRESH_COOKIE } from "../../common/auth/auth-user.js";
 import { CurrentUser } from "../../common/auth/current-user.decorator.js";
 import { Public } from "../../common/auth/public.decorator.js";
@@ -37,6 +38,8 @@ import { EmailVerificationService } from "./email-verification.service.js";
 import { PasswordResetService } from "./password-reset.service.js";
 import { SignupService } from "./signup.service.js";
 
+// Login, ganti tenant, ganti password, logout tetap jalan walau usaha baca-saja (feature 39)
+@AllowWhenReadOnly()
 @Controller("auth")
 export class AuthController {
   constructor(

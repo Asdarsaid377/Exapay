@@ -125,11 +125,17 @@ describe("signup owner", () => {
     expect(session.activeTenant).toMatchObject({ tenantName: "Warung Maju Jaya", role: "owner" });
     expect(session.tenants).toHaveLength(1);
 
-    // Audit log pembuatan tenant tercatat di tenant tersebut
+    // Audit log pembuatan tenant + mulai trial (feature 39) tercatat di tenant tersebut
     const logs = await withTenant(db, { tenantId: session.activeTenant.tenantId, userId: session.user.id }, (tx) =>
       tx.select({ entity: auditLogs.entity, action: auditLogs.action, actor: auditLogs.actorUserId }).from(auditLogs),
     );
-    expect(logs).toEqual([{ entity: "tenant", action: "signup", actor: session.user.id }]);
+    expect(logs).toHaveLength(2);
+    expect(logs).toEqual(
+      expect.arrayContaining([
+        { entity: "tenant", action: "signup", actor: session.user.id },
+        { entity: "subscription", action: "start", actor: session.user.id },
+      ]),
+    );
   });
 
   it("memvalidasi input", async () => {

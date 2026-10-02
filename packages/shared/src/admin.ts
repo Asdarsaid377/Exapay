@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { TENANT_SUBSCRIPTION_STARTS } from "./billing.js";
 import type { MembershipRole } from "./roles.js";
 
 // Panel super-admin (feature 07). Super-admin hanya melihat data tingkat platform:
@@ -25,6 +26,8 @@ export const createTenantSchema = z.object({
   name: z.string().trim().min(2, "Nama usaha minimal 2 karakter").max(120, "Nama usaha maksimal 120 karakter"),
   ownerFullName: z.string().trim().min(2, "Nama pemilik minimal 2 karakter").max(100, "Nama pemilik maksimal 100 karakter"),
   ownerEmail: z.email("Format email tidak valid").trim(),
+  // trial = trial gratis seperti signup mandiri; complimentary = gratis (pilot) tanpa batas
+  subscription: z.enum(TENANT_SUBSCRIPTION_STARTS, "Pilih jenis langganan").default("trial"),
 });
 export type CreateTenantInput = z.infer<typeof createTenantSchema>;
 
