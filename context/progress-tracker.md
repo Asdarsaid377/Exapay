@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 8 — Siap Produksi
+**Phase:** 9 — Monetisasi: Trial, Langganan & Landing Page
 **Terakhir selesai:** 38 Backup & Deploy VPS — diverifikasi di Docker lokal (2026-10-02)
-**Berikutnya:** semua feature build-plan selesai. Langkah user: deploy ke VPS sungguhan mengikuti `docker/production/README.md` + `restore-test.sh` di VPS, lalu uji coba klien
+**Berikutnya:** 39 Fondasi Langganan & Trial. Paralel (langkah user): deploy VPS nyata mengikuti `docker/production/README.md` + `restore-test.sh`
 
 ---
 
@@ -70,6 +70,13 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ### Phase 8 — Siap Produksi
 - [x] 38 Backup & Deploy VPS (diverifikasi lokal; deploy VPS nyata menunggu VPS user — keputusan user 2026-10-02)
+
+### Phase 9 — Monetisasi: Trial, Langganan & Landing Page
+- [ ] 39 Fondasi Langganan & Trial
+- [ ] 40 Halaman Langganan & Pengingat Trial
+- [ ] 41 Tagihan & Pembayaran QRIS
+- [ ] 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
+- [ ] 43 Landing Page Marketing
 
 ---
 
@@ -264,13 +271,15 @@ _Format: tanggal — keputusan — alasan._
 - 2026-10-02 — **Rate limit auth** (keputusan user: masuk feature 38) — detail di `database-standards.md`. Env baru API `TRUST_PROXY_HOPS` (default 0, production 1). Server Action auth web meneruskan `X-Forwarded-For`. Tanpa rate limit di Caddy (butuh plugin custom build).
 - 2026-10-02 — SMTP: `secure` otomatis untuk port 465; production `requireTLS` (API & worker) — relay tanpa TLS ditolak. Provider relay belum dipilih (Brevo/Resend/Mailjet di runbook).
 
+- 2026-10-02 — **Phase 9 Monetisasi ditambahkan** (keputusan user): billing langganan, trial gratis 30 hari, landing page marketing — dipindah dari "Fase Berikutnya". Harga **per karyawan aktif per bulan** (angka harga, minimum ditagih, lama trial, tenggang = data platform berlaku-tanggal, diubah super-admin). Trial habis → **tenggang 7 hari → baca-saja** (data tidak pernah dihapus otomatis; baca & ekspor tetap bisa). Tenant lama/klien uji coba → **gratis (pilot)**, super-admin atur manual.
+- 2026-10-02 — Pembayaran: **QRIS statik merchant dibuat dinamis** (pola `verssache/qris-dinamis`, MIT: tag 01 → 12, sisip tag 54 nominal, CRC16 ulang) — pilihan user. Karena QRIS ini **tanpa notifikasi pembayaran**, aktivasi = konfirmasi super-admin (nominal + kode unik 1–999 dicocokkan dengan mutasi merchant) setelah owner menekan "Saya sudah bayar". Dibangun di balik abstraksi `PaymentProvider` (`qris-manual`) agar gateway ber-webhook bisa menyusul. Harga angka & minimum karyawan ditagih belum ditentukan — ditanyakan di feature 39.
 ---
 
 ## Catatan (Notes)
 
 _Workaround, pola yang menyimpang dari context files, hal yang perlu diingat session berikutnya._
 
-- Belum diputuskan (tidak memblokir MVP): model harga & paket, nama produk final & domain.
+- Belum diputuskan: angka harga per karyawan & minimum ditagih (feature 39), nama produk final & domain. Model harga sudah diputuskan (per karyawan aktif, Phase 9).
 - `context/designs/` berisi snapshot glassmorphism (dashboard, portal `/me`, token & komponen). Halaman lain belum punya desain — turunkan dari pola snapshot + `ui-rules.md`, tetap lewat cek referensi `ui-workflow.md` (tawarkan prompt Claude Design untuk halaman yang polanya belum ada, mis. tabel data, form panjang, halaman auth versi kaca).
 - Elemen di desain yang belum didukung fitur: "Daftarkan usaha baru" di dropdown tenant (signup saat ini hanya untuk email baru), hitungan tertunda di sidebar (butuh data feature 15/20), kota di sub-judul tenant (feature 09). Logo di desain berupa placeholder "e" + wordmark "exapay" (huruf kecil) — berbeda dari `ExapayLogo` sekarang; putuskan saat redesign.
 - Folder di luar struktur `architecture.md` (feature 01): `apps/api/src/common/config/` (skema env zod) dan `apps/api/src/redis/` (koneksi Redis global, analog `src/database/`). Sudah ditambahkan ke architecture.md.

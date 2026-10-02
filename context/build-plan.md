@@ -250,3 +250,41 @@ Aturan yang berlaku di semua feature: tabel bisnis wajib `tenant_id` + RLS (FORC
 - Backup Postgres + storage terjadwal ke luar server; uji restore
 - Konfigurasi SMTP relay tier gratis untuk production
 - **Verifikasi:** deploy ke VPS berjalan; restore backup ke instance uji berhasil
+
+---
+
+## Phase 9 — Monetisasi: Trial, Langganan & Landing Page
+
+Ditambahkan 2026-10-02 (keputusan user). Model: **harga per karyawan aktif per bulan**; **trial gratis 30 hari** untuk setiap usaha baru; pembayaran **QRIS statik merchant yang dibuat dinamis** (nominal disisipkan ke payload, pola `verssache/qris-dinamis`).
+
+Prinsip phase ini:
+- Harga, minimum karyawan ditagih, lama trial, dan masa tenggang adalah **data platform berlaku-tanggal** yang diubah super-admin — tidak hardcode
+- Uang `numeric` + decimal.js; semua perubahan status langganan & konfirmasi pembayaran masuk audit log
+- **QRIS dinamis tidak memberi notifikasi pembayaran** → konfirmasi lewat super-admin (nominal + kode unik dicocokkan dengan mutasi di aplikasi merchant). Dibangun di balik abstraksi `PaymentProvider` (implementasi `qris-manual`) agar gateway dengan webhook bisa dipasang nanti tanpa mengubah alur
+- Data usaha **tidak pernah dihapus otomatis** karena belum bayar
+- Tenant lama (sebelum phase ini, termasuk klien uji coba) → status **gratis (pilot)**; super-admin mengatur manual
+
+### 39 Fondasi Langganan & Trial
+**Logic:** tabel langganan per tenant — status `trialing` → `active` / `past_due` (masa tenggang) → `read_only`, plus `complimentary` (gratis/pilot, diatur super-admin); tanggal trial berakhir, periode berjalan. Harga platform berlaku-tanggal (harga per karyawan aktif, minimum karyawan ditagih, lama trial 30 hari, tenggang 7 hari). Signup owner → trial 30 hari otomatis; tenant buatan super-admin → pilih trial atau gratis. Migration: tenant lama → `complimentary`. Transisi status dihitung dari tanggal (tidak bergantung cron), dicatat saat berubah.
+**Enforcement:** mode **baca-saja** di API (guard global) — semua mutasi ditolak 402 + kode error `SUBSCRIPTION_READ_ONLY`, kecuali auth, ganti password, billing, dan ekspor/unduh (laporan, slip). Berlaku juga untuk absen & log tugas karyawan (portal menampilkan "hubungi pemilik usaha"). Super-admin tidak terpengaruh.
+- **Verifikasi:** test — signup → trialing 30 hari; tanggal digeser → past_due lalu read_only; mutasi ditolak 402, baca & ekspor tetap jalan; complimentary tidak pernah terkunci; isolasi tenant
+
+### 40 Halaman Langganan & Pengingat Trial
+**UI:** `/settings/billing` (owner saja) — status & sisa hari trial, estimasi tagihan bulan depan (karyawan aktif × harga, minimum), riwayat tagihan; banner di AppShell untuk owner/admin (trial H-7/H-3/H-1, masa tenggang, baca-saja) dengan tombol ke halaman billing
+**Logic:** email pengingat ke owner via worker (H-7, H-3, H-1 trial berakhir; awal masa tenggang; masuk baca-saja), tanpa duplikat
+- **Verifikasi:** angka estimasi = jumlah karyawan aktif di `/employees` × harga berlaku; banner & email muncul di hari yang tepat (tanggal digeser di test)
+
+### 41 Tagihan & Pembayaran QRIS
+**Logic:** tagihan bulanan dibuat worker di akhir trial / awal tiap periode: jumlah karyawan aktif (dihitung saat tagihan dibuat, snapshot rinciannya) × harga, min. minimum ditagih, + **kode unik 1–999 rupiah** agar mudah dicocokkan (unik di antara tagihan terbuka). QRIS dinamis dari payload QRIS statik merchant (env/pengaturan platform): tag 01 → `12`, sisip tag 54 nominal, hitung ulang CRC16 — dengan unit test terhadap payload contoh. Tagihan berlaku N hari; email tagihan ke owner
+**UI:** di `/settings/billing` — detail tagihan + QR (bisa diunduh), nominal persis yang harus dibayar, tombol "Saya sudah bayar" (+ unggah bukti opsional, disimpan di storage) → status `menunggu konfirmasi`
+- **Verifikasi:** QR terbaca aplikasi e-wallet/m-banking dengan nominal benar (uji bayar nyata nominal kecil oleh user); nominal = rincian snapshot; tidak ada dua tagihan terbuka dengan nominal sama
+
+### 42 Konfirmasi Pembayaran & Kelola Langganan (Super-admin)
+**UI:** `/admin/billing` — antrean tagihan menunggu konfirmasi (nominal unik, usaha, bukti), konfirmasi / tolak dengan alasan; di `/admin/tenants/[id]` — status langganan, perpanjang trial, jadikan gratis/pilot, harga khusus per tenant; pengaturan harga platform (versi baru berlaku-tanggal)
+**Logic:** konfirmasi → tagihan lunas → langganan `active` diperpanjang satu periode (dari akhir periode sebelumnya, atau dari hari ini jika sudah baca-saja) + email kuitansi ke owner; semua aksi masuk audit log. Super-admin tetap tidak melihat data karyawan/gaji (hanya jumlah karyawan aktif yang ditagih)
+- **Verifikasi:** alur ujung-ke-ujung trial → tagihan → bayar → konfirmasi → aktif; tenant baca-saja kembali normal seketika setelah konfirmasi; tolak → owner mendapat email + bisa ajukan ulang
+
+### 43 Landing Page Marketing
+**UI:** `/` publik untuk tamu (pengguna login tetap diarahkan ke dashboard/portal) — hero + CTA "Coba gratis 30 hari" → `/signup`, masalah yang diselesaikan, fitur utama (payroll & PPh 21 TER, absensi, tugas harian → KPI, kepatuhan, portal karyawan), cara kerja, **harga per karyawan diambil dari data harga berlaku** (bukan hardcode) + kalkulator estimasi, FAQ, footer (kontak, kebijakan privasi, syarat layanan). **Wajib referensi desain** (Claude Design — prompt disusun saat feature dimulai)
+**Logic:** halaman statis/ISR yang cepat; meta SEO, Open Graph, `sitemap.xml`, `robots.txt`; tanpa pelacak pihak ketiga kecuali disetujui user
+- **Verifikasi:** visual desktop & mobile sesuai desain; Lighthouse performa & SEO ≥ 90; harga di landing = harga berlaku di database; CTA membuka signup dan trial langsung aktif
