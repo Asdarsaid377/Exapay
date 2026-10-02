@@ -739,3 +739,10 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** `rounded-card glass-data`, baris grid `[minmax(0,1fr)_auto]` (sm: + kolom badge): nomor 15px bold + caption "Terbit … · N karyawan", total `tabular-nums` rata kanan, Badge status (mobile baris kedua)
 - **Catatan:** server component, label status `INVOICE_STATUS_LABELS`
 
+
+### NotFoundState
+- **Path:** apps/web/components/common/NotFoundState.tsx
+- **Dipakai di:** `app/(main)/not-found.tsx` (Ke dashboard), `app/(admin)/admin/not-found.tsx` (Ke daftar tenant), `app/(portal)/me/not-found.tsx` (Ke beranda, surface solid)
+- **Referensi desain:** tanpa referensi — turunan EmptyState, izin user 2026-10-02
+- **Pola kelas kunci:** EmptyState ikon SearchX + judul "Halaman tidak ditemukan" + tombol Link `buttonClassName({ variant: "secondary" })` ke halaman awal area
+- **Catatan:** server component; 404 tampil di dalam kerangka area (sidebar/bottom nav tetap) menggantikan 404 bawaan Next.js
