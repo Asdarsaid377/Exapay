@@ -37,7 +37,7 @@ import { localClock, monthRange } from "./attendance-clock.js";
 import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmployeeScope } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
 import { ATTACHMENT_EXTENSIONS, detectAttachmentType, safeAttachmentName } from "./leave-attachment.js";
-import { countWorkingDays, type WorkCalendar, workingDatesBetween } from "./work-calendar.js";
+import { countPlannedWorkingDays, type WorkCalendar, workingDatesBetween } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
 // Bagian file multipart yang dipakai (multer memory storage)
@@ -82,13 +82,15 @@ type RequestRow = {
   decisionNote: string | null;
 };
 
+// Hari kerja pengajuan: perkiraan (karyawan mode shift: hari ber-shift + tanggal roster belum diatur mengikuti jadwal usaha,
+// feature 47b); karyawan ikut jadwal usaha = hari kerja jadwal seperti sebelumnya
 function toLeaveRequest(row: RequestRow, calendar: WorkCalendar | null): LeaveRequest {
   return {
     id: row.id,
     type: row.type,
     startDate: row.startDate,
     endDate: row.endDate,
-    workingDays: calendar ? countWorkingDays(calendar, row.startDate, row.endDate) : 0,
+    workingDays: calendar ? countPlannedWorkingDays(calendar, row.startDate, row.endDate) : 0,
     reason: row.reason,
     status: row.status,
     attachment:
@@ -141,7 +143,9 @@ export class LeaveRequestsService {
         .from(leaveRequests)
         .where(and(eq(leaveRequests.employeeId, employee.id), eq(leaveRequests.status, "approved"), overlapsMonth));
 
-      const calendar = await this.calendarFor(tx, rows, { from, to });
+      const calendar = (await this.calendarsFor(tx, [employee.id], rows, { from, to })).get(employee.id) ?? null;
+      if (!calendar) throw new Error("[leave-requests/mine] kalender karyawan tidak terbentuk");
+      // Hari izin per tanggal mengikuti rekap absensi (mode shift: hanya hari ber-shift)
       const leaveDays = approvedInMonth
         .flatMap((leave) =>
           workingDatesBetween(calendar, leave.startDate < from ? from : leave.startDate, leave.endDate > to ? to : leave.endDate).map((date) => ({
@@ -171,9 +175,14 @@ export class LeaveRequestsService {
         const employee = await this.attendance.requireEmployee(tx, user.userId, today);
         if (input.startDate < employee.joinDate) throw new BadRequestException("Tanggal mulai tidak boleh sebelum tanggal masuk kerja Anda");
 
-        const calendar = await this.workCalendar.loadCalendar(tx, input.startDate, input.endDate);
-        if (countWorkingDays(calendar, input.startDate, input.endDate) === 0)
-          throw new BadRequestException("Rentang tanggal tidak berisi hari kerja — tidak perlu mengajukan untuk hari libur");
+        const range = { from: input.startDate, to: input.endDate };
+        const calendar = (await this.calendarsFor(tx, [employee.id], [], range)).get(employee.id) ?? null;
+        if (!calendar || countPlannedWorkingDays(calendar, input.startDate, input.endDate) === 0)
+          throw new BadRequestException(
+            employee.scheduleMode === "shift"
+              ? "Rentang tanggal tidak berisi shift — tidak perlu mengajukan untuk hari libur"
+              : "Rentang tanggal tidak berisi hari kerja — tidak perlu mengajukan untuk hari libur",
+          );
 
         const [row] = await tx
           .insert(leaveRequests)
@@ -260,9 +269,9 @@ export class LeaveRequestsService {
         .limit(LEAVE_REQUESTS_PAGE_SIZE)
         .offset((query.page - 1) * LEAVE_REQUESTS_PAGE_SIZE);
 
-      const calendar = rows.length > 0 ? await this.calendarFor(tx, rows, null) : null;
+      const calendars = rows.length > 0 ? await this.calendarsFor(tx, [...new Set(rows.map((row) => row.employeeId))], rows, null) : new Map<string, WorkCalendar>();
       const items: LeaveRequestListItem[] = rows.map((row) => ({
-        ...toLeaveRequest(row, calendar),
+        ...toLeaveRequest(row, calendars.get(row.employeeId) ?? null),
         employee: { id: row.employeeId, fullName: row.employeeName, positionName: row.positionName },
         canDecide: row.status === "pending" && row.employeeId !== viewer.ownEmployeeId,
       }));
@@ -370,19 +379,21 @@ export class LeaveRequestsService {
     }
   }
 
-  // Kalender kerja yang mencakup semua pengajuan (+ rentang tambahan, mis. bulan terpilih)
-  private async calendarFor(
+  // Kalender kerja per karyawan (mode shift: roster, feature 47b) yang mencakup semua pengajuan (+ rentang tambahan, mis. bulan terpilih)
+  private async calendarsFor(
     tx: Transaction,
+    employeeIds: readonly string[],
     rows: readonly { startDate: string; endDate: string }[],
     extra: { from: string; to: string } | null,
-  ): Promise<WorkCalendar> {
+  ): Promise<Map<string, WorkCalendar>> {
     let from = extra?.from ?? rows[0]?.startDate ?? "";
     let to = extra?.to ?? rows[0]?.endDate ?? "";
     for (const row of rows) {
       if (row.startDate < from) from = row.startDate;
       if (row.endDate > to) to = row.endDate;
     }
-    return this.workCalendar.loadCalendar(tx, from, to);
+    const base = await this.workCalendar.loadCalendar(tx, from, to);
+    return this.workCalendar.employeeCalendars(tx, base, employeeIds, from, to);
   }
 
   private async requireViewer(tx: Transaction, ctx: TenantContext): Promise<AttendanceViewer> {

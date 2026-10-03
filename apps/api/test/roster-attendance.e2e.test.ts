@@ -19,7 +19,7 @@ import { type Database, withTenant, withUser } from "../src/database/tenant-tran
 import { AttendanceDeductionRulesService } from "../src/modules/attendance/attendance-deduction-rules.service.js";
 import { seedTenantDefaults } from "../src/modules/tenants/tenant-defaults.js";
 
-// Verifikasi feature 47 (API): absen karyawan mode shift dicocokkan ke roster — dibuka 2 jam sebelum mulai, telat dari jam
+// Verifikasi feature 47 & 47b (API): absen karyawan mode shift dicocokkan ke roster — dibuka 2 jam sebelum mulai, telat dari jam
 // shift, shift malam di tanggal mulai (pulang keesokan hari), hari tanpa shift = tanda "Tanpa jadwal" di antrean tinjauan;
 // rekap & potongan memakai hari roster; karyawan ikut jadwal usaha tidak berubah. Jam dipalsukan (hanya Date), login ulang
 // setelah digeser. WITA = UTC+8.
@@ -228,5 +228,57 @@ describe("absensi berbasis roster", () => {
     expect(record).toEqual([{ checkOutAt: new Date("2026-10-06T22:30:00Z"), lateMinutes: 5 }]);
     const badFix = await post(owner, "/attendance/corrections", { employeeId: dewi, workDate: "2026-10-05", checkIn: "07:00", checkOut: "06:00", reason: "Salah" });
     expect(badFix.status).toBe(400);
+  });
+});
+
+describe("pengajuan izin/cuti karyawan shift (feature 47b)", () => {
+  it("hari kerja pengajuan = hari ber-shift + perkiraan jadwal usaha untuk tanggal belum diatur; jadwal usaha tetap", async () => {
+    const ws = await createWorkspace("Roster Cuti");
+    const dewi = ws.employeeIds.karyawan;
+    // Minggu 4 Okt 2026 10:00 WITA
+    const owner = await at(ws, "2026-10-04T10:00:00", "owner");
+    const pagi = (await post(owner, "/attendance/shifts", { name: "Pagi", startTime: "07:00", endTime: "15:00" })).body.data.id;
+    expect((await put(owner, `/employees/${dewi}/attendance-settings`, { locationMode: "all", scheduleMode: "shift" })).status).toBe(200);
+    // Sab 10 libur, Min 11 Pagi, Sen 12 libur; selebihnya belum diatur
+    for (const [date, body] of [
+      ["2026-10-10", { kind: "off" }],
+      ["2026-10-11", { kind: "shift", shiftId: pagi }],
+      ["2026-10-12", { kind: "off" }],
+    ] as const) {
+      expect((await put(owner, `/attendance/roster/${dewi}/${date}`, body)).status).toBe(200);
+    }
+
+    const karyawan = await tokenOf(ws, "karyawan");
+    const request_ = (startDate: string, endDate: string, type = "leave") =>
+      post(karyawan, "/attendance/me/leave-requests", { type, startDate, endDate, reason: "Keperluan keluarga" });
+
+    // Minggu ber-shift (bukan hari kerja usaha) → diterima, 1 hari
+    const sunday = await request_("2026-10-11", "2026-10-11");
+    expect(sunday.status, JSON.stringify(sunday.body)).toBe(201);
+    expect(sunday.body.data.workingDays).toBe(1);
+    // Hanya hari libur roster → ditolak
+    const offOnly = await request_("2026-10-10", "2026-10-10", "permit");
+    expect(offOnly.status).toBe(400);
+    expect(offOnly.body.error).toBe("Rentang tanggal tidak berisi shift — tidak perlu mengajukan untuk hari libur");
+    // Sen 12 libur roster + Sel 13 belum diatur (hari kerja usaha) = 1
+    expect((await request_("2026-10-12", "2026-10-13", "permit")).body.data.workingDays).toBe(1);
+    // Bulan depan tanpa roster: Sen–Rab perkiraan jadwal usaha = 3
+    expect((await request_("2026-11-02", "2026-11-04")).body.data.workingDays).toBe(3);
+
+    // Karyawan jadwal usaha (Budi = akun owner): Minggu tetap ditolak
+    const budiSunday = await post(owner, "/attendance/me/leave-requests", { type: "leave", startDate: "2026-10-11", endDate: "2026-10-11", reason: "Keperluan keluarga" });
+    expect(budiSunday.status).toBe(400);
+    expect(budiSunday.body.error).toBe("Rentang tanggal tidak berisi hari kerja — tidak perlu mengajukan untuk hari libur");
+    expect((await post(owner, "/attendance/me/leave-requests", { type: "leave", startDate: "2026-10-09", endDate: "2026-10-12", reason: "Keperluan keluarga" })).body.data.workingDays).toBe(2);
+
+    // Daftar persetujuan atasan: jumlah hari per karyawan; setujui cuti Minggu → rekap izin portal Oktober 1 hari
+    const atasan = await tokenOf(ws, "atasan");
+    const list = await get(atasan, "/attendance/leave-requests?status=all");
+    const days = Object.fromEntries(list.body.data.items.map((item: { startDate: string; workingDays: number }) => [item.startDate, item.workingDays]));
+    expect(days).toEqual({ "2026-10-11": 1, "2026-10-12": 1, "2026-11-02": 3 });
+    expect((await post(atasan, `/attendance/leave-requests/${sunday.body.data.id}/decision`, { decision: "approve" })).status).toBe(200);
+    const mine = await get(karyawan, "/attendance/me/leave-requests?month=2026-10");
+    expect(mine.body.data.leaveDays).toEqual([{ date: "2026-10-11", type: "leave" }]);
+    expect(mine.body.data.summary).toEqual({ permit: 0, sick: 0, leave: 1 });
   });
 });
