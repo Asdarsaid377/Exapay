@@ -1,0 +1,29 @@
+# Server block Nginx host untuk Exapay di VPS yang juga menjalankan ERPNext (2026-10-03).
+# File terpisah dari config bench (bench setup nginx menulis ulang frappe-bench.conf, bukan file ini).
+#   sudo cp docker/production/nginx/exapay.conf.example /etc/nginx/conf.d/exapay.conf
+#   (ganti hr.solvexaerp.tech bila domain lain) → sudo nginx -t && sudo systemctl reload nginx
+#   sudo certbot --nginx -d hr.solvexaerp.tech   → menambah blok 443 + sertifikat + redirect HTTP→HTTPS otomatis
+# Diteruskan ke Caddy stack Exapay di 127.0.0.1:8090 (docker-compose.behind-proxy.yml).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name hr.solvexaerp.tech;
+
+    # Sembunyikan versi Nginx di header Server
+    server_tokens off;
+
+    # Lampiran izin 5 MB (Caddy membatasi 8 MB)
+    client_max_body_size 8m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        # Ganti (bukan tambah) X-Forwarded-For dengan IP klien asli — kiriman klien diabaikan (dasar rate limit auth)
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+}

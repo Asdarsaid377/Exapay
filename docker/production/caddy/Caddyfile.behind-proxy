@@ -1,0 +1,43 @@
+# Mode di belakang reverse proxy lain (VPS yang sudah menjalankan Nginx di 80/443, mis. ERPNext — 2026-10-03).
+# Nginx host memegang HTTPS (certbot) lalu meneruskan ke Caddy di 127.0.0.1:8090 (docker-compose.behind-proxy.yml).
+# Routing & header sama dengan Caddyfile utama; tanpa HTTPS/ACME di sini.
+# X-Forwarded-For: Nginx menulis IP klien asli; Caddy hanya mempercayai peer jaringan privat (Nginx lewat gateway
+# Docker) lalu menambahkan IP peer → API memakai TRUST_PROXY_HOPS=2 (Nginx + Caddy) untuk rate limit auth.
+{
+	auto_https off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
+		-X-Powered-By
+	}
+
+	# Upload terbesar: lampiran izin 5 MB via Server Action (bodySizeLimit 6mb di next.config.ts)
+	request_body {
+		max_size 8MB
+	}
+
+	handle_path /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

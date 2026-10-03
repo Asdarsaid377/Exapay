@@ -117,6 +117,45 @@ docker compose -f docker-compose.prod.yml --env-file .env.production run --rm ba
 
 Lalu langsung **uji restore** (bagian 7) sebelum ada data klien.
 
+## 5b. VPS yang sudah menjalankan ERPNext / Nginx di 80/443
+
+Bench ERPNext (`bench setup production`) memasang **Nginx + supervisor** di port 80/443. Caddy Exapay tidak boleh
+memakai port itu — jalankan mode **di belakang proxy**: Nginx host memegang HTTPS (certbot), Caddy Exapay hanya
+mendengar di `127.0.0.1:8090`.
+
+```
+Internet ──443──▶ Nginx host (ERPNext + exapay.conf) ──hr.solvexaerp.tech──▶ 127.0.0.1:8090 Caddy ──▶ web / api
+                         └── situs ERPNext seperti biasa
+```
+
+Perbedaan dari bagian 1 dan 5:
+
+1. **Firewall:** port 80/443 sudah dipakai ERPNext — tidak perlu menambah aturan ufw.
+2. **DNS:** record A `hr.solvexaerp.tech` → IP VPS. Di Cloudflare set **DNS only** (awan abu-abu) minimal sampai
+   sertifikat terbit.
+3. **Port 8090 bebas?** `sudo ss -ltnp | grep 8090` harus kosong (ERPNext memakai 8000, 9000, 11000–13000, 3306).
+4. **Start** selalu dengan dua file compose (juga saat update versi, backup manual, dan membuat super-admin):
+   ```bash
+   docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.production up -d --build
+   curl -s http://127.0.0.1:8090/api/health
+   ```
+   Agar tidak salah ketik, buat alias: `alias exa='docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.production'`
+   lalu pakai `exa ps`, `exa logs -f api`, `exa run --rm backup backup.sh`, dst.
+5. **Nginx host + sertifikat:**
+   ```bash
+   sudo cp docker/production/nginx/exapay.conf.example /etc/nginx/conf.d/exapay.conf
+   sudo nginx -t && sudo systemctl reload nginx
+   sudo certbot --nginx -d hr.solvexaerp.tech      # tambah HTTPS + redirect otomatis; perpanjangan otomatis dari certbot
+   curl -s https://hr.solvexaerp.tech/api/health
+   ```
+   File ini terpisah dari `frappe-bench.conf`, jadi tidak tertimpa `bench setup nginx`. Bila certbot belum terpasang:
+   `sudo apt install certbot python3-certbot-nginx`.
+6. **Build pertama makan CPU ±10–15 menit** di 2 vCPU — jalankan di luar jam sibuk ERPNext. Update berikutnya lebih
+   cepat (cache layer Docker).
+
+Rate limit auth tetap memakai IP klien asli: Nginx mengganti `X-Forwarded-For` dengan `$remote_addr`, Caddy
+mempercayai Nginx (jaringan privat) dan menambah IP-nya, API memakai `TRUST_PROXY_HOPS=2` (diatur override).
+
 ## 6. Update versi
 
 ```bash

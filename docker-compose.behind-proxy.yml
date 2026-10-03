@@ -1,0 +1,18 @@
+# Override production untuk VPS yang sudah punya reverse proxy di port 80/443 (mis. ERPNext: Nginx + supervisor).
+# Pakai bersama file utama:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.production up -d --build
+# Caddy hanya mendengar di 127.0.0.1:8090 (tidak terbuka ke internet); HTTPS dipegang Nginx host
+# (docker/production/nginx/exapay.conf.example). ACME_EMAIL tetap wajib diisi di env (tidak dipakai di mode ini).
+services:
+  caddy:
+    ports: !override
+      - "127.0.0.1:8090:80"
+    volumes: !override
+      - ./docker/production/caddy/Caddyfile.behind-proxy:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  api:
+    environment:
+      # Nginx host + Caddy
+      TRUST_PROXY_HOPS: "2"
