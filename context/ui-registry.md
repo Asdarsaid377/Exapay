@@ -860,3 +860,8 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 
 ### EmployeeAttendanceSettingsSection (diperbarui feature 46)
 - Baris ketiga "Mode jadwal": baca "Ikut jadwal usaha" / "Shift (roster)" + "Lihat roster"; ubah SegmentedControl Ikut jadwal usaha | Shift (roster) — opsi shift nonaktif (`opacity-45`) + tautan "Buat shift dulu di Pengaturan › Absensi" bila usaha belum punya shift. SegmentedControl kini menerima `disabled` per opsi. Section bisa diubah walau usaha belum punya lokasi kerja (feature 45).
+
+### Absensi berbasis roster (diperbarui feature 47)
+- **Path:** apps/web/components/attendance/AttendanceCard.tsx, AttendanceDayList.tsx, AttendanceFlag.tsx, AttendanceReviewTable.tsx, AttendanceReviewActions.tsx; apps/web/lib/shiftLabels.ts (`dayShiftLabel`), lib/workLocationLabels.ts
+- **Referensi desain:** context/designs/me-schedule.html (kartu absen shift), attendance-selfie-detail.html (shift per hari), attendance-review.html (tanda "Tanpa jadwal")
+- **Pola kelas kunci:** AttendanceCard: baris jadwal `text-sm text-text-secondary tabular-nums` = `scheduleLine(today)`; kotak "Absen di luar jadwal" `rounded-[14px] border border-info/22 bg-info/6 px-3.5 py-3` + ikon CalendarX `text-info`; sebelum jendela shift tombol Absen Masuk `disabled` + catatan `text-[13px] text-text-secondary`. AttendanceDayList: shift di bawah hari `text-caption text-neutral-text tabular-nums` (mobile `text-xs whitespace-nowrap`, kolom tanggal `min-w-13.5`) + Badge info "Tanpa jadwal". AttendanceFlag kini butuh prop `workDate`; `FLAG_TONES.no_schedule = "info"`; kunci item tinjauan = record-event-subject, keputusan mengirim `subject: reviewSubjectOf(kind)`
