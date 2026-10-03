@@ -1,93 +1,67 @@
-# Prompt Claude Design — Master Shift & Roster
+# Prompt Claude Design — Panduan Setup Awal
 
-_Disusun 2026-10-03 untuk feature 46 (plus tampilan kecil feature 47). Salin seluruh isi di bawah garis ke Claude Design **di project/percakapan yang sama dengan desain glassmorphism, geofence & selfie sebelumnya** (agar token & komponen dipakai ulang), lalu export zip ke `context/designs/` (atau kirim link) ke Claude Code. Prompt sebelumnya (selfie absen, feature 45) ada di riwayat git._
+_Disusun 2026-10-03 untuk feature 48. Salin seluruh isi di bawah garis ke Claude Design **di project/percakapan yang sama dengan desain glassmorphism sebelumnya** (Dashboard, Portal, Karyawan, Lokasi, Selfie, Shift — agar token & komponen dipakai ulang), lalu export zip ke `context/designs/` (atau kirim link) ke Claude Code. Prompt sebelumnya (shift & roster, feature 46) ada di riwayat git._
 
 ---
 
-# Brief Desain UI — Exapay: Master Shift & Roster
+# Brief Desain UI — Exapay: Panduan Setup Awal ("Siapkan Exapay")
 
 ## 1. Konteks
-Lanjutan dari desain **Exapay tema Glassmorphism** yang sudah disetujui (Dashboard, Portal `/me`, Karyawan, Lokasi Kerja & Tinjauan Absensi, Selfie Absen). **Pakai ulang persis** token, sidebar, header, card kaca, tombol pill, input, select, badge, segmented control, data-table kaca, form-section 2 kolom, read-field, banner, dialog/sheet, dropdown, **section "Pengaturan absen"** (sudah berisi Lokasi absen & Wajib selfie), **kartu absen portal**, dan **rincian absensi (tabel Tanggal | Masuk | Pulang | Status)**. Gaya baru hanya untuk pola yang belum ada (lihat bagian 5).
+Lanjutan dari desain **Exapay tema Glassmorphism** yang sudah disetujui. **Pakai ulang persis** token, sidebar, header (TenantSwitcher kiri, avatar + menu akun kanan), card kaca, stat tile, tombol pill, badge, progress bar (bila sudah ada), dialog, dropdown menu akun, dan **layout Dashboard owner** yang sudah ada. Gaya baru hanya untuk pola yang belum ada (lihat bagian 5).
 
-Exapay: SaaS yang membantu tugas HRD di **UMKM Indonesia, karyawan < 50 orang**, tanpa staf HR. Semua teks **Bahasa Indonesia**, nada lugas untuk pemilik usaha. Tanggal contoh **Senin 5 Okt 2026**, zona waktu **WITA**.
+Exapay: SaaS yang membantu tugas HRD di **UMKM Indonesia, karyawan < 50 orang**, tanpa staf HR — payroll lengkap dengan BPJS & PPh 21, absensi dari HP, tugas harian → KPI. Semua teks **Bahasa Indonesia**, nada lugas & ramah untuk pemilik usaha yang bukan orang HR. Usaha contoh **"Kopi Nusantara"**, pemilik **Budi**, tanggal **Senin 5 Okt 2026**.
 
 Ringkasan token: aksen oranye `#F2790F` (hover `#D9600A`, teks aksen `#B34C08`), latar krem `#FBF8F3` dengan bentuk warna flat lembut, teks `#221208` / `#5B4636` / `#8A7561`, sukses `#15803D`, peringatan `#D97706`, bahaya `#DC2626`, info `#2563EB`. Font Plus Jakarta Sans (judul) + DM Sans (teks). Card kaca radius 22px, field 14px, tombol pill; **teks tombol primer `#221208`** (bukan putih).
 
 ## 2. Fitur yang Didesain
-**Jadwal shift (roster) — opsional.** Usaha dengan jam kerja yang sama setiap hari (kantor) tetap memakai jadwal kerja mingguan yang sudah ada dan **tidak melihat apa pun tentang shift**. Usaha dengan shift (kafe, toko, pabrik kecil) membuat **master shift** lalu menyusun **roster** per karyawan per tanggal.
+Pemilik yang baru mendaftar masuk ke dashboard yang masih kosong dan tidak tahu harus mulai dari mana. **Kartu checklist "Siapkan Exapay"** di **paling atas dashboard** memandu langkah setup sampai payroll pertama. Bukan modal/pop-up — tidak menghalangi kerja; dashboard tetap terlihat di bawahnya.
 
-- **Master shift** per usaha: nama + jam mulai–selesai. Shift **melewati tengah malam** didukung (mis. Malam 22:00–06:00, selesai keesokan hari).
-- **Mode jadwal per karyawan:** **Ikut jadwal usaha** (default) atau **Shift (roster)**. Hanya karyawan mode shift yang muncul di roster.
-- **Roster:** tabel karyawan × tanggal (minggu ini / minggu berikutnya). Klik sel → pilih shift atau **Libur**. **Satu shift per karyawan per tanggal.** Tombol **"Salin minggu lalu"**.
-- **Sel terkunci** (tidak bisa diubah, koreksi lewat menu Koreksi absensi): tanggal sudah lewat, karyawan sudah absen di tanggal itu, atau periode gaji sudah final.
-- Roster boleh diubah kapan saja untuk hari ini & ke depan (mis. menggantikan rekan). Tanpa aturan jeda minimal antar shift.
-- Setiap perubahan tercatat di log audit (dari → ke) dan karyawan **diberi tahu lewat email**.
-- **Opsional (WAJIB diperhatikan):** selama usaha belum punya master shift, **menu Roster tidak muncul** dan pilihan mode "Shift (roster)" di Pengaturan absen **nonaktif** dengan ajakan membuat shift dulu.
-- Absensi karyawan shift (fitur berikutnya): telat dihitung dari jam mulai shift; hari tanpa shift = libur; absen di hari tanpa shift tetap diterima dengan tanda **"Tanpa jadwal"**.
+**Langkah wajib (urutan tetap, centang otomatis dari data — pengguna tidak mencentang sendiri, kecuali langkah 3):**
+1. **Lengkapi profil usaha** — kota (menentukan zona waktu & UMK) dan tanggal gajian. Tombol: "Lengkapi profil"
+2. **Buat departemen & jabatan** — mis. Operasional · Barista. Tombol: "Atur organisasi"
+3. **Cek jadwal kerja & hari libur** — jadwal bawaan Senin–Jumat 08.00–17.00 sudah dibuat otomatis; cukup dicek. Tombol: "Cek jadwal" + tautan sekunder **"Tandai sudah dicek"**
+4. **Tambah karyawan** — satu per satu atau impor dari Excel. Tombol: "Tambah karyawan" + tautan sekunder "Impor Excel"
+5. **Atur gaji karyawan** — gaji pokok, tunjangan, kepesertaan BPJS. Keterangan progres: **"8 dari 12 karyawan sudah diatur"**. Tombol: "Atur gaji"
+6. **Undang karyawan ke portal** — agar bisa absen dari HP dan melihat slip gaji. Keterangan: **"3 dari 12 karyawan punya akun"**. Tombol: "Undang karyawan"
+7. **Buka periode gaji pertama** — hitung gaji, BPJS & PPh 21 otomatis, cek draf, lalu finalkan. Tombol: "Buka periode gaji"
+
+**Tambahan (opsional, tidak dihitung di progres):** Lokasi kerja (cek lokasi saat absen) · Shift kerja (untuk usaha dengan shift) · Aturan potongan absensi · Template KPI per jabatan. Tampil ringkas sebagai daftar tautan, bisa dilipat.
+
+**Perilaku:**
+- Progres "N dari 7 langkah" + progress bar tipis. Langkah selesai: centang hijau, teks redup, tanpa tombol. **Langkah berikutnya** (yang pertama belum selesai) disorot: deskripsi + tombol primer. Langkah lain yang belum selesai: judul saja + tombol sekunder kecil / chevron.
+- Langkah boleh dikerjakan tidak berurutan — yang sudah selesai tetap tercentang.
+- **Lewati:** tombol teks "Lewati panduan" di kepala kartu → dialog konfirmasi kecil: "Sembunyikan panduan? Anda bisa membukanya lagi dari menu akun › Panduan setup." [Batal] [Sembunyikan]. Berlaku untuk seluruh usaha (semua pemilik/admin).
+- **Dibuka lagi** dari dropdown menu akun (avatar kanan atas): item **"Panduan setup"** dengan keterangan progres kecil "4/7". Item ini hanya muncul selama panduan disembunyikan dan belum selesai.
+- **Semua selesai:** kartu berubah ringkas — "Exapay siap dipakai" + satu kalimat ("Payroll pertama Anda sudah dibuat. Panduan ini tidak akan muncul lagi.") + tombol "Tutup". Setelah ditutup tidak muncul lagi.
+- Usaha yang sudah lama berjalan (data lengkap) tidak melihat kartu ini sama sekali.
 
 ## 3. Peran
-- **Pemilik & Admin:** kelola master shift, ubah mode jadwal karyawan, susun roster semua karyawan.
-- **Atasan:** susun roster **bawahan langsung** saja (hanya mereka yang tampil). Tidak bisa mengelola master shift; mode jadwal hanya bisa dibaca.
-- **Karyawan:** di portal melihat **"Jadwal saya"** beberapa hari ke depan (hanya bila mode shift).
+- **Pemilik & Admin:** melihat & melewati panduan.
+- **Atasan & Karyawan:** **tidak** melihat panduan (tidak perlu didesain, cukup catatan).
 
 ## 4. Batasan (WAJIB — preferensi user)
 - Tanpa gradient warna-warni (termasuk mesh), tanpa glow/pendar. Blur hanya untuk panel kaca.
 - **Tanpa badge/pill ber-titik (dot)**, tanpa eyebrow label warna-warni, tanpa titik dekoratif.
-- **Tanpa ikon hiasan dalam kotak/lingkaran per baris.** Ikon hanya untuk aksi, status, atau navigasi; satu ikon per konteks.
-- **Jangan beri warna berbeda per shift** (bukan kalender warna-warni). Bedakan shift lewat teks (nama + jam) di chip netral; Libur = teks redup; sel terkunci = ikon gembok kecil + redup.
-- Maksimal 2 level radius bersarang. Satu font weight per elemen. Kontras teks di atas kaca WCAG AA. Jam di permukaan paling solid, angka tabular.
+- **Tanpa ikon hiasan dalam kotak/lingkaran per baris.** Ikon hanya untuk status (centang selesai / lingkaran kosong belum), aksi, atau navigasi; satu ikon per konteks. Tanpa ilustrasi maskot/konfeti.
+- Maksimal 2 level radius bersarang. Satu font weight per elemen. Kontras teks di atas kaca WCAG AA. Angka tabular.
+- Kartu tidak boleh terlalu tinggi di desktop: langkah selesai & belum (selain langkah berikutnya) satu baris saja; target tinggi kartu ≤ ±520px di desktop.
 - Hanya efek yang bisa dibuat dengan CSS standar.
 
-## 5. Yang Didesain Sekarang
-Usaha **Kopi Nusantara** (Kota Makassar), pengguna **Budi Santoso** (Pemilik). Desktop 1440px + mobile 390px untuk setiap area (portal: mobile saja), plus state yang disebut.
+## 5. Komponen Baru
+- **SetupGuideCard** — kartu kaca di atas dashboard: judul "Siapkan Exapay", subjudul satu kalimat ("Ikuti langkah ini sampai payroll pertama — ±20 menit."), progres "3 dari 7 langkah" + progress bar, tombol teks "Lewati panduan".
+- **SetupStepRow** — tiga keadaan: selesai (centang hijau, judul redup), berikutnya (disorot: judul tebal, deskripsi 1–2 baris, keterangan progres bila ada, tombol primer + tautan sekunder), belum (judul + tombol sekunder kecil). Seluruh baris selain yang selesai bisa diklik.
+- **SetupExtrasList** — "Tambahan (opsional)" dapat dilipat, daftar tautan satu baris dengan keterangan pendek.
+- **SetupSkipDialog** — dialog konfirmasi kecil.
+- **Item menu akun "Panduan setup"** dengan progres kecil di kanan.
+- **SetupDoneCard** — keadaan semua selesai.
 
-Data contoh master shift:
-- **Pagi** 07:00–15:00
-- **Siang** 15:00–23:00
-- **Malam** 22:00–06:00 (+1 hari)
+## 6. Layar yang Diminta (desktop 1440 & mobile 390)
+1. **Dashboard owner — baru daftar (0/7):** kartu panduan di atas, langkah 1 disorot; di bawahnya dashboard kosong (stat tile bernilai 0 / "—") seperti desain dashboard yang ada.
+2. **Sebagian selesai (4/7):** langkah 1–4 tercentang, **langkah 5 "Atur gaji"** disorot dengan "8 dari 12 karyawan sudah diatur"; bagian Tambahan terlipat.
+3. **Bagian Tambahan terbuka** (boleh digabung dengan layar 2 versi lain).
+4. **Dialog Lewati.**
+5. **Panduan disembunyikan:** dashboard tanpa kartu + dropdown menu akun terbuka menampilkan "Panduan setup 4/7".
+6. **Semua selesai:** SetupDoneCard di atas dashboard yang sudah berisi data.
+7. **Mobile 390:** layar 1 & 2 (kartu memenuhi lebar, tombol langkah berikutnya full-width, tinggi sentuh ≥ 44px).
 
-Karyawan mode shift: **Dewi Lestari** (Barista), **Rina Wulandari** (Kasir), **Agus Pratama** (Barista), **Maya Sari** (Barista), **Hendra Wijaya** (Roaster). Ikut jadwal usaha: Budi Santoso, Siti Rahmawati (Keuangan), Fajar Nugroho (Kurir).
-
-### Area 1 — Shift kerja (section baru di Pengaturan › Absensi `/settings/attendance`)
-Halaman Pengaturan absensi sudah berisi section form-section "Jadwal kerja", "Hari libur", "Hari kerja", "Riwayat aturan potongan". Tambahkan section **"Shift kerja"** setelah "Jadwal kerja" (bukan menu baru — agar usaha tanpa shift tidak terganggu).
-- **Keadaan kosong (default, usaha belum pakai shift):** teks singkat "Usaha Anda memakai jadwal kerja di atas untuk semua karyawan. Aktifkan shift jika karyawan bekerja bergiliran (mis. pagi/siang/malam)." + tombol sekunder **"Aktifkan shift"** (membuka dialog tambah shift pertama). Harus terasa ringan — satu baris penjelasan, bukan banner besar.
-- **Ada shift:** daftar/tabel kaca: nama, jam `07:00–15:00` (tabular), durasi `8 jam`, keterangan "selesai keesokan hari" untuk shift malam, jumlah karyawan yang terjadwal minggu ini; aksi **Ubah** + menu "⋯" **Hapus**. Tombol **"Tambah shift"**. Tautan **"Buka roster"**.
-- **Dialog Tambah/Ubah shift:** Nama shift* (mis. "Pagi"), Jam mulai*, Jam selesai* (input jam). Bila selesai ≤ mulai: keterangan info "Selesai keesokan hari (+1) — durasi 8 jam". Error: "Nama shift sudah dipakai", "Jam mulai dan selesai tidak boleh sama". Info kecil saat ubah: "Perubahan jam berlaku untuk roster yang belum terkunci."
-- **Dialog Hapus:** "Hapus shift Malam?" + "Shift ini terjadwal untuk 6 hari ke depan. Jadwal itu akan kosong dan perlu diisi ulang." + tombol bahaya. Bila tidak terpakai: teks lebih singkat.
-- **Skeleton** daftar.
-
-### Area 2 — Mode jadwal di Pengaturan absen karyawan (section di `/employees/[id]` tab Data)
-Section **"Pengaturan absen"** yang sudah ada (baris Lokasi absen, Wajib selfie). Tambahkan baris **"Mode jadwal"**.
-- **Baca:** "Ikut jadwal usaha (Sen–Jum 08:00–17:00)" / "Shift (roster)" + tautan kecil "Lihat roster".
-- **Ubah:** segmented **Ikut jadwal usaha | Shift (roster)** + keterangan "Karyawan shift hanya dijadwalkan pada tanggal yang diisi di roster. Hari tanpa shift dihitung libur."
-- **Usaha belum punya shift:** pilihan "Shift (roster)" nonaktif + teks "Buat shift dulu di Pengaturan › Absensi" (tautan).
-- **Tampilan atasan:** hanya baca.
-
-### Area 3 — Roster `/attendance/roster` (halaman baru)
-Menu sidebar **Absensi › Roster** (child baru setelah "Rekap"; terlihat untuk pemilik, admin, atasan) — **hanya muncul jika usaha punya minimal satu shift**.
-- Judul "Roster" + sub-judul "Atur shift karyawan per tanggal. Hari tanpa shift dihitung libur."
-- Toolbar: navigasi minggu (‹ **5–11 Okt 2026** ›) + segmented **Minggu ini | Minggu depan**, select **Departemen**, tombol sekunder **"Salin minggu lalu"**.
-- **Tabel kaca (desktop):** kolom pertama karyawan (avatar inisial + nama + jabatan kecil), lalu 7 kolom tanggal (header "Sen 5", "Sel 6", …; **hari ini** ditandai halus, mis. header tebal + garis aksen tipis di bawah — bukan latar warna-warni). Sel berisi **chip netral** "Pagi · 07–15" / "Malam · 22–06" atau teks redup "Libur"; sel kosong = "—" (belum diatur). Ringkasan kecil per baris di kanan: "5 shift".
-- **Klik sel** → popover/dropdown kecil: daftar shift (nama + jam), **Libur**, **Kosongkan**. Pilihan aktif dicentang. Perubahan langsung tersimpan (tampilkan state menyimpan kecil di sel + toast "Roster disimpan · Dewi diberi tahu lewat email").
-- **Sel terkunci:** redup + ikon gembok kecil; hover/klik → tooltip alasan: "Sudah lewat", "Sudah absen", atau "Periode gaji sudah final". Contoh: Senin 5 Okt Dewi & Rina sudah absen.
-- **Dialog "Salin minggu lalu":** "Salin roster 28 Sep–4 Okt ke 5–11 Okt?" + ringkasan "28 sel akan diisi · 4 sel terkunci dilewati · sel yang sudah diisi akan ditimpa". Konfirmasi + Batal.
-- Catatan di bawah tabel: "3 karyawan ikut jadwal usaha tidak tampil di roster." + tautan.
-- **Empty state:** belum ada karyawan mode shift → "Belum ada karyawan bermode shift" + teks "Ubah mode jadwal di detail karyawan (Pengaturan absen)." + tautan ke daftar karyawan.
-- **Mobile:** tampilan per karyawan (card) **atau** per hari (pilih yang paling nyaman di 390px; rekomendasi: pilih tanggal lewat strip 7 hari di atas, lalu daftar karyawan dengan shift masing-masing; ketuk → sheet pilih shift).
-- **Skeleton** tabel.
-- **Tampilan atasan** (frame kecil): judul sama, hanya bawahan langsung (Dewi, Agus), tanpa tombol kelola shift.
-
-### Area 4 — Portal karyawan `/me` (mobile 390px)
-1. **Kartu "Jadwal saya"** di beranda (di bawah kartu absen), hanya untuk karyawan mode shift: 7 hari ke depan, satu baris per hari: "Sen 5 Okt · Pagi 07:00–15:00", "Sel 6 Okt · Libur", "Rab 7 Okt · Malam 22:00–06:00 (+1)". Hari ini ditandai. Teks kecil "Jadwal bisa berubah — Anda diberi tahu lewat email."
-2. **Kartu absen** (yang sudah ada) pada hari ber-shift: baris "Shift Pagi · 07:00–15:00" menggantikan "Jadwal 08:00–17:00". Hari tanpa shift: "Tidak ada shift hari ini" — absen tetap bisa, setelah absen tampil keterangan ringan "Absen di luar jadwal — akan ditinjau atasan." (pola keterangan lokasi yang sudah ada).
-3. **Belum ada roster minggu ini:** "Jadwal belum diatur — tanyakan atasan Anda."
-
-### Area 5 — Rincian absensi & tinjauan (perubahan kecil, desktop + mobile)
-- Tabel rincian absensi (Tanggal | Masuk | Pulang | Status): tambahkan **shift hari itu** di bawah tanggal (mis. "Pagi 07–15"), atau "Libur" untuk hari tanpa shift. Shift malam: jam pulang keesokan hari diberi tanda "+1".
-- Antrean tinjauan: jenis tanda baru **"Tanpa jadwal"** (badge netral/info, rincian "Tidak ada shift pada Sab 10 Okt") — memakai badge tanda generik yang sudah ada.
-
-## 6. Output yang Diharapkan
-1. Lima area di atas dengan semua state yang disebut — desktop 1440px + mobile 390px (portal: mobile saja). High fidelity, data contoh realistis.
-2. **Komponen baru beserta variannya** (nama berdasarkan peran, bisa dipetakan ke Tailwind v4 `@theme` yang sudah ada): baris/tabel master shift, dialog shift (termasuk state +1 hari), chip shift (shift, libur, kosong, terkunci, menyimpan), popover pemilih shift, navigasi minggu, dialog salin minggu lalu, kartu "Jadwal saya", baris "Mode jadwal" (baca/ubah/nonaktif).
-3. Pakai ulang token yang sudah ada; jika butuh token baru, sebutkan eksplisit beserta alasannya.
-4. Semua bisa diimplementasikan dengan CSS standar + Tailwind v4.
+Sertakan juga halaman komponen **setup-components** (semua keadaan SetupStepRow, progress bar, item menu, dialog) seperti halaman komponen pada desain sebelumnya.

@@ -6,9 +6,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 
 ## Status Saat Ini
 
-**Phase:** 10 — Absensi Lanjutan: Geofence, Selfie & Shift — **selesai** (Phase 1–10 selesai)
+**Phase:** 11 — Kemudahan Mulai (Phase 1–10 selesai; production live)
 **Terakhir selesai:** 47b Pengajuan Izin/Cuti untuk Karyawan Shift (2026-10-03)
-**Berikutnya:** production **live** di https://hr.solvexaerp.tech (2026-10-03). Sisa pasca-deploy: uji restore pertama di VPS (`restore-test.sh`, catat di runbook Riwayat), uji Lighthouse ≥ 90 di production, tutup port publik layanan lain di VPS (lihat Notes). Tertunda (menunggu user): nama & kota penyelenggara `LEGAL_OPERATOR` + tinjauan ahli hukum draf `/privasi` & `/syarat`. Kandidat: hitungan tertunda di sidebar; uji coba klien di production
+**Berikutnya:** 48 Panduan Setup Awal — menunggu export Claude Design dari user (prompt di `context/designs/claude-design-prompt.md`; keputusan user 2026-10-03: kartu checklist di dashboard, lewati per usaha & bisa dibuka lagi dari menu akun). Pasca-deploy: uji restore pertama di VPS, Lighthouse di production, tutup port publik layanan lain di VPS. Tertunda (menunggu user): `LEGAL_OPERATOR` + tinjauan ahli hukum draf legal
 
 ---
 
@@ -84,6 +84,9 @@ Update file ini setiap selesai satu feature. Claude Code yang membaca file ini h
 - [x] 46 Master Shift & Roster
 - [x] 47 Absensi Berbasis Roster
 - [x] 47b Pengajuan Izin/Cuti untuk Karyawan Shift (sisipan, keputusan user 2026-10-03)
+
+### Phase 11 — Kemudahan Mulai
+- [ ] 48 Panduan Setup Awal (menunggu desain Claude Design)
 
 ---
 

@@ -330,3 +330,15 @@ Sisipan (keputusan user 2026-10-03). Pengajuan izin/sakit/cuti masih menghitung 
 **Logic:** karyawan mode shift: hari kerja pengajuan = hari ber-shift di roster (mulai roster pertama, sama dengan feature 47); tanggal yang roster-nya belum diatur diperkirakan mengikuti jadwal usaha (roster biasanya baru diisi 1–2 minggu ke depan — cuti bulan depan tetap bisa diajukan); tanggal yang diatur libur bukan hari kerja. Pengajuan ditolak hanya bila rentang tidak berisi satu pun hari kerja perkiraan. Jumlah hari di daftar pengajuan (portal & persetujuan) memakai perkiraan yang sama; rekap izin bulan di portal tetap mengikuti rekap (hanya hari ber-shift). Karyawan ikut jadwal usaha tidak berubah
 **UI:** tanpa UI baru — angka "N hari kerja" yang sudah ada mengikuti aturan di atas
 - **Verifikasi:** test — cuti di hari ber-shift yang bukan hari kerja usaha diterima; rentang hanya berisi hari libur roster ditolak; tanggal roster belum diatur dihitung mengikuti jadwal usaha; jumlah hari di daftar persetujuan per karyawan benar; karyawan jadwal usaha hasilnya sama
+
+---
+
+## Phase 11 — Kemudahan Mulai
+
+Ditambahkan 2026-10-03 (permintaan user setelah production live).
+
+### 48 Panduan Setup Awal
+**UI:** kartu checklist **"Siapkan Exapay"** di atas dashboard owner/admin (bukan modal, tidak menghalangi kerja): progres (mis. 3/7), daftar langkah dengan centang otomatis, langkah berikutnya disorot + tombol ke halaman tujuan, bagian **Tambahan** opsional. Tombol **Lewati** (konfirmasi singkat) → disembunyikan untuk usaha itu, bisa dibuka lagi dari menu akun › "Panduan setup". Semua langkah wajib selesai → kartu "Exapay siap dipakai" lalu hilang. Atasan & karyawan tidak melihat panduan. **Wajib referensi desain** (Claude Design — prompt `context/designs/claude-design-prompt.md`)
+**Langkah wajib (tanda selesai dihitung dari data, bukan dicentang manual):** (1) profil usaha — kota & tanggal gajian terisi; (2) minimal 1 departemen & 1 jabatan; (3) cek jadwal kerja & hari libur — jadwal pernah disimpan **atau** ditandai "sudah dicek" (jadwal bawaan dibuat otomatis saat daftar); (4) minimal 1 karyawan aktif; (5) semua karyawan aktif punya gaji; (6) minimal 1 karyawan punya akun portal (undangan diterima); (7) ada periode payroll. **Tambahan (opsional, tidak menghitung progres):** lokasi kerja, shift, aturan potongan absensi, template KPI
+**Logic:** endpoint status panduan (owner/admin) menghitung tiap langkah dari data yang ada; status lewati & "jadwal sudah dicek" disimpan per usaha (migration, audit). Usaha lama yang sudah berjalan langsung tampil "selesai"/tidak mengganggu
+- **Verifikasi:** test — usaha baru 0/7, tiap langkah berubah selesai setelah datanya ada; lewati → tersembunyi untuk semua owner/admin usaha itu & bisa dibuka lagi; atasan/karyawan 403; isolasi tenant. Visual desktop & mobile sesuai desain
