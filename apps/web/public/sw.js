@@ -2,7 +2,7 @@
 // Sengaja TIDAK meng-cache halaman, data, maupun respons API — isinya data pribadi per pengguna (slip gaji, data
 // karyawan). Navigasi selalu ke jaringan; hanya saat jaringan gagal, halaman statis /offline.html yang ditampilkan.
 // Ubah CACHE_NAME bila isi PRECACHE berubah agar cache lama dibersihkan.
-const CACHE_NAME = "exapay-offline-v1";
+const CACHE_NAME = "exapay-offline-v2";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL, "/icons/icon-192.png"];
 

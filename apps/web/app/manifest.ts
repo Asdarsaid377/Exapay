@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 
 // PWA (feature 37): bisa dipasang di HP. start_url "/" → proxy mengarahkan sesuai peran (karyawan ke /me).
-// Warna = token ui-tokens.md (background #fbf8f3, accent #f2790f); ikon dibuat dari logo placeholder ExapayLogo.
+// Warna = token ui-tokens.md (background #fbf8f3, accent #f2790f). Ikon: "E" kapital putih (Plus Jakarta Sans 800) di atas oranye
+// accent — permintaan user 2026-10-03; maskable dengan huruf lebih kecil (zona aman).
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
