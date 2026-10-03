@@ -10,6 +10,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingProblems } from "@/components/landing/LandingProblems";
+import { RevealOnScroll } from "@/components/landing/RevealOnScroll";
 import { LandingStartWhereYouAre } from "@/components/landing/LandingStartWhereYouAre";
 import { LandingSteps } from "@/components/landing/LandingSteps";
 import { fetchPublicPrice } from "@/lib/api/publicPricing";
@@ -52,7 +53,8 @@ export default async function HomePage() {
   const ctaLabel = trialCtaLabel(trialDays);
 
   return (
-    <div className="relative isolate overflow-x-clip">
+    <div data-landing className="relative isolate overflow-x-clip">
+      <RevealOnScroll />
       <LandingBackdrop />
       <div className="mx-auto flex w-full max-w-landing flex-col px-4 pt-3 lg:px-8 lg:pt-4 xl:px-0">
         <LandingHeader ctaLabel={ctaLabel} />

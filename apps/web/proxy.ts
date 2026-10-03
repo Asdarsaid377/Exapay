@@ -14,7 +14,7 @@ import { canAccessStaffPath } from "@/lib/navigation";
 // Halaman tanpa login. /login tetap diizinkan untuk user tanpa usaha aktif (langkah pilih usaha).
 // /payment: konfirmasi pembayaran dari tautan email pemilik platform (feature 42, token = akses)
 // "/" (persis): landing page untuk tamu (feature 43) — pengguna login tetap diarahkan ke halaman sesuai peran
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/signup", "/verify-email", "/invite", "/payment"];
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/signup", "/verify-email", "/invite", "/payment", "/privasi", "/syarat"];
 
 function isPublic(pathname: string): boolean {
   if (pathname === "/") return true;

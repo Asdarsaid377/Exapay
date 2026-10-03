@@ -3,13 +3,13 @@ import Link from "next/link";
 import { ExapayLogo } from "@/components/auth/ExapayLogo";
 import { LANDING_CONTACT } from "@/lib/landingContent";
 
-const COLUMNS = [
+const columnsFor = (anchorBase: "" | "/") => [
   {
     title: "Produk",
     links: [
-      { label: "Fitur", href: "#fitur" },
-      { label: "Harga", href: "#harga" },
-      { label: "FAQ", href: "#faq" },
+      { label: "Fitur", href: `${anchorBase}#fitur` },
+      { label: "Harga", href: `${anchorBase}#harga` },
+      { label: "FAQ", href: `${anchorBase}#faq` },
       { label: "Masuk", href: "/login" },
     ],
   },
@@ -27,9 +27,14 @@ const COLUMNS = [
       { label: `WhatsApp ${LANDING_CONTACT.whatsappLabel}`, href: LANDING_CONTACT.whatsappHref },
     ],
   },
-] as const;
+];
 
-export function LandingFooter() {
+type Props = {
+  // "/" di halaman selain landing agar tautan bagian kembali ke landing
+  anchorBase?: "" | "/";
+};
+
+export function LandingFooter({ anchorBase = "" }: Props) {
   return (
     <footer className="flex flex-col gap-7 border-t border-text-primary/10 px-1 py-8 lg:gap-12 lg:px-0 lg:pt-12 lg:pb-10">
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] lg:gap-10">
@@ -40,7 +45,7 @@ export function LandingFooter() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-6 lg:contents">
-          {COLUMNS.map((column) => (
+          {columnsFor(anchorBase).map((column) => (
             <nav key={column.title} aria-label={column.title} className="flex flex-col gap-1 lg:gap-3">
               <span className="pb-1 font-display text-[13.5px] font-bold lg:pb-0 lg:text-sm">{column.title}</span>
               {column.links.map((link) =>

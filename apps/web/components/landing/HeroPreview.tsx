@@ -23,7 +23,7 @@ const TABS: { label: string; icon: LucideIcon; active: boolean }[] = [
 // contoh — dibaca pembaca layar sebagai satu gambar.
 export function HeroPreview() {
   return (
-    <div role="img" aria-label="Contoh tampilan Exapay: draf payroll Oktober 2026 dan portal karyawan di HP" className="relative mt-2 h-105 lg:mt-0 lg:h-145">
+    <div role="img" aria-label="Contoh tampilan Exapay: draf payroll Oktober 2026 dan portal karyawan di HP" className="relative mt-2 h-105 animate-exa-rise [animation-delay:300ms] lg:mt-0 lg:h-145">
       <div className="glass-strong absolute top-0 right-10 left-0 flex flex-col gap-3 rounded-card p-4.5 lg:top-5 lg:right-auto lg:w-92 lg:gap-4.5 lg:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-0.75">
@@ -63,7 +63,7 @@ export function HeroPreview() {
       </div>
 
       {/* Portal karyawan — mobile: ringkas */}
-      <div className="absolute right-0 bottom-0 w-52.5 rounded-[30px] bg-inverse p-1.5 shadow-drawer lg:hidden">
+      <div className="absolute right-0 bottom-0 w-52.5 animate-exa-float rounded-[30px] bg-inverse p-1.5 shadow-drawer lg:hidden">
         <div className="flex flex-col gap-2.5 rounded-[24px] bg-background p-3.5">
           <div className="flex flex-col">
             <span className="font-display text-[15px] font-extrabold">Selamat pagi, Rina</span>
@@ -76,7 +76,7 @@ export function HeroPreview() {
       </div>
 
       {/* Portal karyawan — desktop: bingkai HP lengkap */}
-      <div className="absolute top-21 right-0 hidden h-124 w-59 rounded-device bg-inverse p-2 shadow-drawer lg:block">
+      <div className="absolute top-21 right-0 hidden h-124 w-59 animate-exa-float rounded-device bg-inverse p-2 shadow-drawer lg:block">
         <div className="relative flex h-full flex-col overflow-hidden rounded-[32px] bg-background">
           <div aria-hidden className="absolute -top-22.5 -right-20 size-55 rounded-full bg-shape-peach" />
           <div className="relative flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pt-3">

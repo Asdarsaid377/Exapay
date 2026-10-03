@@ -3,6 +3,7 @@ import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ServiceWorkerRegistrar } from "@/components/common/ServiceWorkerRegistrar";
+import { LANDING_MOTION_BOOTSTRAP } from "@/lib/landingMotion";
 
 import "./globals.css";
 
@@ -28,7 +29,12 @@ type Props = {
 
 export default function RootLayout({ children }: Props) {
   return (
-    <html lang="id" className={`${dmSans.variable} ${jakarta.variable}`}>
+    // suppressHydrationWarning: skrip gerak landing menambah kelas exa-motion sebelum hidrasi (hanya atribut <html>).
+    // data-scroll-behavior: Next mematikan gulir halus landing saat pindah halaman
+    <html lang="id" className={`${dmSans.variable} ${jakarta.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: LANDING_MOTION_BOOTSTRAP }} />
+      </head>
       <body className="bg-background font-sans text-text-primary antialiased">
         {children}
         <ServiceWorkerRegistrar />

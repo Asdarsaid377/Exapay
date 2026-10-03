@@ -14,7 +14,7 @@ export function LandingStartWhereYouAre() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-col">
             {LANDING_START_POINTS.map((point) => (
-              <div key={point.title} className="flex flex-col gap-1 border-t border-text-primary/10 py-3.5">
+              <div key={point.title} className="exa-reveal flex flex-col gap-1 border-t border-text-primary/10 py-3.5">
                 <h3 className="font-display text-base font-bold lg:text-[17px]">{point.title}</h3>
                 <p className="text-[14.5px] leading-normal text-pretty text-text-secondary lg:text-[15.5px]">{point.body}</p>
               </div>

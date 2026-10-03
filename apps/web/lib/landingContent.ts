@@ -2,13 +2,14 @@
 // (permintaan user 2026-10-02). Setiap klaim harus sesuai fitur yang sudah ada; harga & lama trial TIDAK ditulis di sini
 // (diambil dari data harga berlaku lewat GET /billing/public/price).
 
-// Kontak publik — placeholder sampai user memberi alamat resmi
+// Kontak publik resmi (diberikan user 2026-10-03)
 export const LANDING_CONTACT = {
-  email: "halo@exapay.id",
-  whatsappLabel: "+62 812-0000-0000",
-  whatsappHref: "https://wa.me/6281200000000",
+  email: "asdarsaid377@gmail.com",
+  whatsappLabel: "+62 896-3008-5814",
+  whatsappHref: "https://wa.me/6289630085814",
 } as const;
 
+// Anchor bagian landing; di halaman lain (/privasi, /syarat) diawali "/" agar kembali ke landing
 export const LANDING_ANCHORS = [
   { label: "Fitur", href: "#fitur" },
   { label: "Cara kerja", href: "#cara-kerja" },

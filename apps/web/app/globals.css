@@ -175,6 +175,8 @@
   --container-intro: 640px;
   --spacing-section-sm: 72px;
   --spacing-section: 128px;
+  /* Gerak landing (permintaan user 2026-10-03): perlambatan lembut tanpa pantulan */
+  --ease-exa-out: cubic-bezier(0.22, 1, 0.36, 1);
   /* Bingkai HP pada cuplikan portal */
   --radius-device: 40px;
 }
@@ -254,4 +256,102 @@
 
 @utility animate-exa-pulse {
   animation: exa-pulse 1.4s ease-in-out infinite;
+}
+
+/* ——— Gerak landing page (permintaan user 2026-10-03) ———
+   Hanya transform/opacity (komposit GPU). Muncul saat scroll = transisi berwaktu yang dipicu IntersectionObserver
+   (components/landing/RevealOnScroll.tsx + lib/landingMotion.ts) — bukan scroll-driven animation: yang itu tidak jalan di Firefox/Safari lama
+   dan hampir tidak terasa saat scroll cepat (masukan user). Semua dimatikan bila prefers-reduced-motion. */
+@keyframes exa-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes exa-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes exa-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-36px, 28px, 0) scale(1.04);
+  }
+}
+
+/* Masuk saat halaman dibuka (hero) — jeda bertahap lewat [animation-delay:…] */
+@utility animate-exa-rise {
+  animation: exa-rise 1.1s var(--ease-exa-out) both;
+}
+
+/* Muncul saat masuk layar: tersembunyi hanya bila skrip gerak aktif (html.exa-motion) — tanpa JavaScript konten tetap
+   tampil. Jeda bertahap (--reveal-delay) diisi RevealOnScroll untuk elemen yang masuk bersamaan. Tanpa scale (teks
+   bergetar), translate3d agar tetap di lapisan GPU. */
+@utility exa-reveal {
+  transition:
+    opacity 0.9s var(--ease-exa-out),
+    transform 0.9s var(--ease-exa-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.exa-motion .exa-reveal:not(.is-revealed) {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0);
+  }
+}
+
+@utility animate-exa-float {
+  animation: exa-float 7s ease-in-out infinite;
+}
+
+@utility animate-exa-drift {
+  animation: exa-drift 26s ease-in-out infinite alternate;
+}
+
+/* FAQ: buka/tutup <details> dengan tinggi beranimasi (browser tanpa ::details-content → langsung terbuka) */
+@utility exa-accordion {
+  interpolate-size: allow-keywords;
+  &::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      block-size 0.4s var(--ease-exa-out),
+      content-visibility 0.4s allow-discrete;
+  }
+  &[open]::details-content {
+    block-size: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-exa-rise,
+  .animate-exa-float,
+  .animate-exa-drift {
+    animation: none !important;
+  }
+  .exa-accordion::details-content,
+  .exa-reveal {
+    transition: none !important;
+  }
+}
+
+/* Gulir halus tautan anchor hanya di halaman landing/legal (penanda data-landing) — halaman aplikasi tidak terpengaruh */
+html:has([data-landing]) {
+  @media (prefers-reduced-motion: no-preference) {
+    scroll-behavior: smooth;
+  }
 }

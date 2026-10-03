@@ -22,7 +22,7 @@ export function LandingPricing({ price, ctaLabel }: Props) {
 
       {price ? (
         <div className="grid items-stretch gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-6">
-          <div className="flex flex-col gap-4.5 rounded-card border border-border-subtle bg-surface-solid p-5.5 shadow-glass-lg lg:gap-6 lg:p-9">
+          <div className="exa-reveal flex flex-col gap-4.5 rounded-card border border-border-subtle bg-surface-solid p-5.5 shadow-glass-lg lg:gap-6 lg:p-9">
             <div className="flex flex-col gap-1.5 lg:gap-2">
               <div className="flex flex-col gap-1.5 lg:flex-row lg:flex-wrap lg:items-baseline lg:gap-2.5">
                 <span className="font-display text-[42px] leading-none font-extrabold tracking-[-0.035em] tabular-nums lg:text-price">
@@ -51,7 +51,7 @@ export function LandingPricing({ price, ctaLabel }: Props) {
           <PriceCalculator pricePerEmployee={price.pricePerEmployee} minBilledEmployees={price.minBilledEmployees} ctaLabel={ctaLabel} />
         </div>
       ) : (
-        <div className="glass-strong flex flex-col gap-1.5 rounded-card p-5.5 lg:p-8">
+        <div className="glass-strong exa-reveal flex flex-col gap-1.5 rounded-card p-5.5 lg:p-8">
           <span className="font-display text-base font-bold">Harga sedang tidak dapat dimuat</span>
           <span className="text-[15px] text-text-secondary">Muat ulang halaman ini beberapa saat lagi.</span>
         </div>

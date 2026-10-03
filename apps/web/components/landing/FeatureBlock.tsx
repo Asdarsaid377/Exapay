@@ -17,12 +17,15 @@ type Props = {
 export function FeatureBlock({ title, description, points, preview, previewFirst = false, previewDesktopOnly = false }: Props) {
   return (
     <div className="grid items-center gap-4 lg:grid-cols-2 lg:gap-18">
-      <div className={`flex flex-col gap-4 lg:gap-5 ${previewFirst ? "lg:order-2" : ""}`}>
+      <div className={`exa-reveal flex flex-col gap-4 lg:gap-5 ${previewFirst ? "lg:order-2" : ""}`}>
         <h3 className="font-display text-[23px] leading-[1.2] font-extrabold tracking-[-0.02em] lg:text-feature">{title}</h3>
         <p className="text-[15.5px] leading-[1.55] text-pretty text-text-secondary lg:text-[17px]">{description}</p>
         <FeaturePoints points={points} />
       </div>
-      <div className={`${previewDesktopOnly ? "hidden lg:block" : ""} ${previewFirst ? "lg:order-1" : ""}`}>{preview}</div>
+      <div className={`exa-reveal ${previewDesktopOnly ? "hidden lg:block" : ""} ${previewFirst ? "lg:order-1" : ""}`}>
+        {/* Cuplikan sedikit terangkat saat disorot */}
+        <div className="transition-transform duration-500 ease-exa-out hover:-translate-y-1.5">{preview}</div>
+      </div>
     </div>
   );
 }

@@ -21,12 +21,12 @@ export function LandingFaq({ faqs }: Props) {
           .
         </p>
       </div>
-      <div className="glass-strong flex flex-col rounded-card px-4.5 py-1 lg:px-7 lg:py-2">
+      <div className="glass-strong exa-reveal flex flex-col rounded-card px-4.5 py-1 lg:px-7 lg:py-2">
         {faqs.map((faq, index) => (
-          <details key={faq.q} name="landing-faq" open={index === 0} className="group border-t border-border-subtle first:border-t-0">
+          <details key={faq.q} name="landing-faq" open={index === 0} className="exa-accordion group border-t border-border-subtle first:border-t-0">
             <summary className="flex min-h-15 cursor-pointer list-none items-center gap-3 py-3.5 text-text-primary transition-colors hover:text-accent-strong lg:min-h-16 lg:gap-4 lg:py-4 [&::-webkit-details-marker]:hidden">
               <span className="flex-1 font-display text-[15.5px] leading-[1.4] font-bold lg:text-[17px]">{faq.q}</span>
-              <ChevronDown aria-hidden className="size-4.5 shrink-0 transition-transform duration-200 group-open:rotate-180 lg:size-5" />
+              <ChevronDown aria-hidden className="size-4.5 shrink-0 transition-transform duration-300 ease-exa-out group-open:rotate-180 lg:size-5" />
             </summary>
             <p className="pb-4 text-[14.5px] leading-[1.6] text-pretty text-text-secondary lg:pr-10 lg:pb-5 lg:text-base">{faq.a}</p>
           </details>

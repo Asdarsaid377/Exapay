@@ -10,11 +10,13 @@ import { LANDING_ANCHORS } from "@/lib/landingContent";
 
 type Props = {
   ctaLabel: string;
+  // "/" di halaman selain landing (/privasi, /syarat) agar tautan bagian kembali ke landing
+  anchorBase?: "" | "/";
 };
 
 // Header kaca sticky landing page (snapshot context/designs/landing.html). Mobile: tombol menu membuka sheet kaca
 // berisi tautan anchor + Masuk + CTA; tutup via X / overlay / Escape / klik tautan.
-export function LandingHeader({ ctaLabel }: Props) {
+export function LandingHeader({ ctaLabel, anchorBase = "" }: Props) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function LandingHeader({ ctaLabel }: Props) {
           {LANDING_ANCHORS.map((anchor) => (
             <a
               key={anchor.href}
-              href={anchor.href}
+              href={`${anchorBase}${anchor.href}`}
               className="flex h-11 items-center rounded-full px-4 text-[15px] font-medium text-text-primary transition-colors hover:bg-control"
             >
               {anchor.label}
@@ -71,13 +73,13 @@ export function LandingHeader({ ctaLabel }: Props) {
 
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div aria-hidden onClick={close} className="absolute inset-0 bg-inverse/32" />
+          <div aria-hidden onClick={close} className="absolute inset-0 bg-inverse/32 transition-opacity duration-300 starting:opacity-0" />
           <div
             id="landing-menu"
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
-            className="glass-overlay absolute inset-x-2.5 top-2.5 flex flex-col gap-2 rounded-[26px] px-3 pt-3 pb-4"
+            className="glass-overlay absolute inset-x-2.5 top-2.5 flex flex-col gap-2 rounded-[26px] px-3 pt-3 pb-4 transition-[opacity,translate] duration-300 ease-exa-out starting:-translate-y-3 starting:opacity-0"
           >
             <div className="flex items-center justify-between pl-2.5">
               <ExapayLogo />
@@ -94,7 +96,7 @@ export function LandingHeader({ ctaLabel }: Props) {
               {LANDING_ANCHORS.map((anchor) => (
                 <a
                   key={anchor.href}
-                  href={anchor.href}
+                  href={`${anchorBase}${anchor.href}`}
                   onClick={close}
                   className="flex min-h-13 items-center rounded-field px-3 font-display text-[17px] font-bold text-text-primary transition-colors hover:bg-control"
                 >
