@@ -207,6 +207,41 @@ Snapshot tertentu: `restic snapshots` → `restore.sh <id snapshot postgres> <id
 - SeaweedFS tanpa identitas admin global: aplikasi hanya bucket `S3_BUCKET`, backup baca-saja.
 - Container aplikasi berjalan sebagai user `node` (non-root); setiap service hanya menerima env yang dibutuhkan.
 
+## 9. Analitik pengunjung (opsional) — Umami self-hosted
+
+Mencatat kunjungan **halaman publik saja** (beranda, kebijakan, pendaftaran) + klik "Coba gratis"/WhatsApp & pendaftaran
+berhasil. Tanpa cookie, data di VPS sendiri (database `umami` di Postgres Exapay), ±180 MB RAM. Tidak pernah dimuat di
+dalam aplikasi. Sudah disebut di Kebijakan Privasi.
+
+1. Isi `.env.production` (`openssl rand -hex 32` untuk ketiganya): `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET`, `UMAMI_2FA_KEY`.
+2. Tambah file analitik ke alias `exa` (di `~/.bashrc`, lalu `source ~/.bashrc`):
+   ```bash
+   alias exa='docker compose -f ~/exapay/docker-compose.prod.yml -f ~/exapay/docker-compose.behind-proxy.yml -f ~/exapay/docker-compose.analytics.yml --env-file ~/exapay/.env.production --project-directory ~/exapay'
+   exa up -d umami && curl -s http://127.0.0.1:8091/api/heartbeat     # {"ok":true}
+   ```
+3. DNS A `stats.<domain>` → IP VPS (DNS only), lalu:
+   ```bash
+   sudo cp docker/production/nginx/stats.conf.example /etc/nginx/conf.d/exapay-stats.conf   # ganti domain bila beda
+   sudo nginx -t && sudo systemctl reload nginx && sudo certbot --nginx -d stats.solvexaerp.tech
+   ```
+4. Buka `https://stats.<domain>` → login `admin` / `umami` → **segera ganti password** (Settings › Profile).
+5. Settings › Websites › **Add website** (nama Exapay, domain `hr.<domain>`) → buka kode pelacak, salin URL skrip
+   (`https://stats.<domain>/exa.js`) dan `data-website-id`. Isi `UMAMI_SCRIPT_URL` & `UMAMI_WEBSITE_ID`, lalu
+   `exa up -d web` (web membaca env saat start).
+6. Cek: buka landing, Umami › Realtime menampilkan kunjungan. Event: `cta-hero`, `cta-header`, `cta-menu`, `cta-pricing`,
+   `cta-closing`, `whatsapp-faq`, `whatsapp-closing`, `signup`.
+
+Database `umami` ikut backup harian (pg_dump hanya database Exapay — statistik **tidak** ikut backup; bila hilang, cukup
+mulai ulang hitungan).
+
+## 10. Google Search Console
+
+1. search.google.com/search-console → **Add property** → pilih **Domain** → `solvexaerp.tech`.
+2. Salin record **TXT** `google-site-verification=…` → Cloudflare › DNS › Add record (Type TXT, Name `@`) → **Verify**.
+3. Sitemaps → kirim `https://hr.solvexaerp.tech/sitemap.xml`. URL Inspection → `https://hr.solvexaerp.tech/` → **Request indexing**.
+4. Pratinjau tautan WhatsApp/Facebook: cek di developers.facebook.com/tools/debug (tombol *Scrape Again* bila gambar lama
+   masih tampil). WhatsApp menyimpan pratinjau lama beberapa saat — uji dengan tautan berparameter, mis. `/?v=2`.
+
 ## Riwayat uji restore
 
 | Tanggal | Lingkungan | Snapshot | Hasil |

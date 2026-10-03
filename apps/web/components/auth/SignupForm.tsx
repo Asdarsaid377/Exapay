@@ -11,6 +11,7 @@ import { Button } from "@/components/common/Button";
 import { FormAlert } from "@/components/common/FormAlert";
 import { PasswordField } from "@/components/common/PasswordField";
 import { TextField } from "@/components/common/TextField";
+import { trackEvent } from "@/lib/analytics";
 
 type Field = keyof SignupInput;
 type FieldErrors = Partial<Record<Field, string>>;
@@ -53,7 +54,10 @@ export function SignupForm() {
     setSubmitting(true);
     try {
       const outcome = await signup(parsed.data);
-      if (outcome.kind === "success") setSentTo(parsed.data.email);
+      if (outcome.kind === "success") {
+        trackEvent("signup");
+        setSentTo(parsed.data.email);
+      }
       else setFormError(outcome.kind === "error" ? outcome.message : "Terjadi kesalahan. Silakan coba lagi.");
     } catch {
       setFormError("Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.");

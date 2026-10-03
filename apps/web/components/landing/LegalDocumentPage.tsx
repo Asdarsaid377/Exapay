@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
+import { AnalyticsScript } from "@/components/landing/AnalyticsScript";
 import { LandingBackdrop } from "@/components/landing/LandingBackdrop";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
@@ -37,6 +38,7 @@ export function LegalDocumentPage({ document, related }: Props) {
   return (
     <div data-landing className="relative isolate overflow-x-clip">
       <RevealOnScroll />
+      <AnalyticsScript />
       <LandingBackdrop />
       <div className="mx-auto flex w-full max-w-landing flex-col px-4 pt-3 lg:px-8 lg:pt-4 xl:px-0">
         <LandingHeader ctaLabel="Coba gratis" anchorBase="/" />

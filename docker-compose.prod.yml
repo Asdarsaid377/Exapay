@@ -178,6 +178,9 @@ services:
     environment:
       API_INTERNAL_URL: http://api:4000
       APP_WEB_URL: https://${APP_DOMAIN}
+      # Analitik halaman publik (opsional, docker-compose.analytics.yml) — kosong = tanpa skrip
+      UMAMI_SCRIPT_URL: ${UMAMI_SCRIPT_URL:-}
+      UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
     depends_on:
       api:
         condition: service_healthy

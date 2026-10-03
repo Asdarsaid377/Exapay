@@ -26,7 +26,7 @@ export function LandingHero({ ctaLabel }: Props) {
         </div>
         <div className="flex animate-exa-rise flex-col gap-2.5 [animation-delay:220ms] lg:gap-3.5">
           <div className="flex flex-col gap-2.5 lg:flex-row lg:gap-3">
-            <Link href="/signup" className={buttonClassName({ className: "group h-13 px-7 text-base lg:h-13.5" })}>
+            <Link href="/signup" data-umami-event="cta-hero" className={buttonClassName({ className: "group h-13 px-7 text-base lg:h-13.5" })}>
               {ctaLabel}
               <ArrowRight aria-hidden className="size-4.5 transition-transform duration-300 ease-exa-out group-hover:translate-x-1" />
             </Link>

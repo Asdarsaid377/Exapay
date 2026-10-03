@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
+import { AnalyticsScript } from "@/components/landing/AnalyticsScript";
 import { LandingBackdrop } from "@/components/landing/LandingBackdrop";
 import { LandingClosingCta } from "@/components/landing/LandingClosingCta";
 import { LandingFaq } from "@/components/landing/LandingFaq";
@@ -14,7 +15,7 @@ import { RevealOnScroll } from "@/components/landing/RevealOnScroll";
 import { LandingStartWhereYouAre } from "@/components/landing/LandingStartWhereYouAre";
 import { LandingSteps } from "@/components/landing/LandingSteps";
 import { fetchPublicPrice } from "@/lib/api/publicPricing";
-import { landingFaqs, trialCtaLabel } from "@/lib/landingContent";
+import { landingFaqs, OG_IMAGE, trialCtaLabel } from "@/lib/landingContent";
 import { siteUrl } from "@/lib/siteUrl";
 
 const TITLE = "Exapay — Gaji, absensi & kinerja karyawan untuk UMKM";
@@ -36,9 +37,9 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "Exapay",
       title: TITLE,
       description: DESCRIPTION,
-      images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "Logo Exapay" }],
+      images: [OG_IMAGE],
     },
-    twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
+    twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [OG_IMAGE.url] },
   };
 }
 
@@ -55,6 +56,7 @@ export default async function HomePage() {
   return (
     <div data-landing className="relative isolate overflow-x-clip">
       <RevealOnScroll />
+      <AnalyticsScript />
       <LandingBackdrop />
       <div className="mx-auto flex w-full max-w-landing flex-col px-4 pt-3 lg:px-8 lg:pt-4 xl:px-0">
         <LandingHeader ctaLabel={ctaLabel} />

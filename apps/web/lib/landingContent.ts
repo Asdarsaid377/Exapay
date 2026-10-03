@@ -2,12 +2,17 @@
 // (permintaan user 2026-10-02). Setiap klaim harus sesuai fitur yang sudah ada; harga & lama trial TIDAK ditulis di sini
 // (diambil dari data harga berlaku lewat GET /billing/public/price).
 
-// Kontak publik resmi (diberikan user 2026-10-03)
+// Kontak publik resmi (diberikan user 2026-10-03). Tautan WhatsApp membuka chat dengan pesan pembuka terisi (promosi)
+const WHATSAPP_GREETING = "Halo, saya tertarik mencoba Exapay untuk usaha saya. Boleh minta info lebih lanjut?";
 export const LANDING_CONTACT = {
   email: "asdarsaid377@gmail.com",
   whatsappLabel: "+62 896-3008-5814",
-  whatsappHref: "https://wa.me/6289630085814",
+  whatsappHref: `https://wa.me/6289630085814?text=${encodeURIComponent(WHATSAPP_GREETING)}`,
 } as const;
+
+// Gambar pratinjau tautan (WhatsApp, Facebook, X) 1200×630 — cuplikan aplikasi asli dari landing + judul hero
+// (public/og-image.png, dibuat 2026-10-03). Buat ulang bila judul hero atau tampilan cuplikan berubah.
+export const OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Exapay — gaji, absensi & kinerja karyawan untuk UMKM" } as const;
 
 // Anchor bagian landing; di halaman lain (/privasi, /syarat) diawali "/" agar kembali ke landing
 export const LANDING_ANCHORS = [

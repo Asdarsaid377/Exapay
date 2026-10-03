@@ -55,7 +55,7 @@ export function LandingHeader({ ctaLabel, anchorBase = "" }: Props) {
           <Link href="/login" className="hidden h-11 items-center rounded-full px-4 text-[15px] font-bold text-text-primary transition-colors hover:bg-control lg:flex">
             Masuk
           </Link>
-          <Link href="/signup" className={buttonClassName({ className: "h-11 px-4 text-sm lg:px-5 lg:text-[15px]" })}>
+          <Link href="/signup" data-umami-event="cta-header" className={buttonClassName({ className: "h-11 px-4 text-sm lg:px-5 lg:text-[15px]" })}>
             Coba gratis
           </Link>
           <button
@@ -109,7 +109,7 @@ export function LandingHeader({ ctaLabel, anchorBase = "" }: Props) {
               <Link href="/login" className={buttonClassName({ variant: "secondary", size: "lg", fullWidth: true, className: "text-[15px]" })}>
                 Masuk
               </Link>
-              <Link href="/signup" className={buttonClassName({ size: "lg", fullWidth: true, className: "text-[15px]" })}>
+              <Link href="/signup" data-umami-event="cta-menu" className={buttonClassName({ size: "lg", fullWidth: true, className: "text-[15px]" })}>
                 {ctaLabel}
               </Link>
             </div>

@@ -14,7 +14,17 @@ export function LandingFaq({ faqs }: Props) {
       <div className="flex flex-col gap-3">
         <h2 className="text-balance font-display text-section-sm font-extrabold lg:text-section">Pertanyaan yang sering muncul</h2>
         <p className="hidden text-[17px] leading-[1.55] text-text-secondary lg:block">
-          Belum terjawab? Tulis ke{" "}
+          Belum terjawab?{" "}
+          <a
+            href={LANDING_CONTACT.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-umami-event="whatsapp-faq"
+            className="font-bold text-accent-strong hover:text-accent-hover hover:underline"
+          >
+            Chat WhatsApp
+          </a>{" "}
+          atau tulis ke{" "}
           <a href={`mailto:${LANDING_CONTACT.email}`} className="font-bold text-accent-strong hover:text-accent-hover hover:underline">
             {LANDING_CONTACT.email}
           </a>

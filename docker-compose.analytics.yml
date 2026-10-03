@@ -1,0 +1,58 @@
+# Analitik pengunjung halaman publik — Umami self-hosted (opsional, permintaan user 2026-10-03). Tanpa cookie, data di VPS
+# sendiri. Pakai bersama file utama (+ override proxy bila VPS memakai Nginx ERPNext):
+#   docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml -f docker-compose.analytics.yml \
+#     --env-file .env.production up -d
+# Database `umami` + role `umami` dibuat di Postgres Exapay oleh umami-db-init (idempoten, aman diulang).
+# Dashboard: 127.0.0.1:8091 → Nginx host stats.<domain> (docker/production/nginx/stats.conf.example). Login awal admin/umami — SEGERA ganti.
+# Env (.env.production): UMAMI_DB_PASSWORD, UMAMI_APP_SECRET, UMAMI_2FA_KEY (openssl rand -hex 32), lalu setelah membuat
+# website di dashboard: UMAMI_SCRIPT_URL & UMAMI_WEBSITE_ID (dibaca web → skrip hanya di landing, legal, daftar).
+services:
+  umami-db-init:
+    image: postgres:18-alpine
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:?}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?}
+      PGDATABASE: ${POSTGRES_DB:?}
+      UMAMI_DB_PASSWORD: ${UMAMI_DB_PASSWORD:?isi UMAMI_DB_PASSWORD di .env.production}
+    # Role dibuat/diperbarui passwordnya, database dibuat bila belum ada (CREATE DATABASE tidak bisa di dalam DO → \gexec)
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        psql -v ON_ERROR_STOP=1 -v pw="$$UMAMI_DB_PASSWORD" <<'SQL'
+        SELECT format('CREATE ROLE umami LOGIN PASSWORD %L', :'pw') WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'umami')\gexec
+        SELECT format('ALTER ROLE umami PASSWORD %L', :'pw')\gexec
+        SELECT 'CREATE DATABASE umami OWNER umami' WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'umami')\gexec
+        SQL
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  umami:
+    image: ghcr.io/umami-software/umami:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?}@postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?isi UMAMI_APP_SECRET di .env.production}
+      TWO_FACTOR_ENCRYPTION_KEY: ${UMAMI_2FA_KEY:?isi UMAMI_2FA_KEY di .env.production}
+      # Nama skrip pelacak selain bawaan "script.js" — mengurangi pemblokiran oleh ad blocker
+      TRACKER_SCRIPT_NAME: exa.js
+      DISABLE_TELEMETRY: "1"
+    ports:
+      - "127.0.0.1:8091:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      umami-db-init:
+        condition: service_completed_successfully

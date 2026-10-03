@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
+import { OG_IMAGE } from "@/lib/landingContent";
 import type { LegalDocument } from "@/lib/legalContent";
 import { siteUrl } from "@/lib/siteUrl";
 
@@ -13,6 +14,7 @@ export async function legalMetadata(document: LegalDocument, path: string): Prom
     title: { absolute: title },
     description: document.description,
     alternates: { canonical: path },
-    openGraph: { type: "article", locale: "id_ID", url: path, siteName: "Exapay", title, description: document.description },
+    openGraph: { type: "article", locale: "id_ID", url: path, siteName: "Exapay", title, description: document.description, images: [OG_IMAGE] },
+    twitter: { card: "summary_large_image", title, description: document.description, images: [OG_IMAGE.url] },
   };
 }

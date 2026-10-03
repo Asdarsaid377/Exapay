@@ -82,7 +82,7 @@ export function PriceCalculator({ pricePerEmployee, minBilledEmployees, ctaLabel
         <span className="text-[13px] text-text-secondary lg:text-[13.5px]">{formula}</span>
         {isMin ? <span className="mt-1 text-[13px] font-bold text-warning-text lg:mt-1.5 lg:text-[13.5px]">Minimum ditagih {minBilledEmployees} karyawan</span> : null}
       </div>
-      <Link href="/signup" className={buttonClassName({ size: "lg", fullWidth: true, className: "h-13 text-base" })}>
+      <Link href="/signup" data-umami-event="cta-pricing" className={buttonClassName({ size: "lg", fullWidth: true, className: "h-13 text-base" })}>
         {ctaLabel}
       </Link>
     </div>

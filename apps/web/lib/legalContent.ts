@@ -62,6 +62,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Penggajian: hasil perhitungan gaji, BPJS, PPh 21, dan slip gaji.",
         "Langganan: jumlah karyawan yang ditagih, tagihan, dan konfirmasi pembayaran.",
         "Catatan teknis: log audit perubahan data (siapa mengubah apa dan kapan) serta alamat IP untuk membatasi percobaan login berulang.",
+        "Statistik kunjungan halaman publik (beranda, kebijakan, pendaftaran): halaman yang dibuka, situs asal kunjungan, jenis perangkat dan browser, serta negara. Dicatat dengan Umami yang berjalan di server kami sendiri, tanpa cookie dan tanpa menyimpan alamat IP. Tidak dipakai di dalam aplikasi.",
       ],
     },
     {
@@ -72,6 +73,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Mengirim email layanan: verifikasi akun, atur ulang kata sandi, undangan, slip gaji, pengingat kepatuhan, pemberitahuan jadwal shift, serta tagihan dan kuitansi.",
         "Menagih dan mengonfirmasi pembayaran langganan.",
         "Menjaga keamanan dan menelusuri perubahan data lewat log audit.",
+        "Memahami berapa banyak pengunjung halaman publik dan dari mana mereka datang, untuk memperbaiki informasi di situs.",
       ],
       after: ["Kami tidak menjual data, tidak memakai data untuk iklan, dan tidak memasang pelacak pihak ketiga."],
     },
@@ -142,7 +144,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       id: "cookie",
       title: "Cookie dan penyimpanan di perangkat",
       paragraphs: [
-        "Exapay hanya memakai cookie yang diperlukan untuk login. Penyimpanan lokal di browser dipakai untuk hal kecil seperti mengingat bahwa pemberitahuan selfie sudah dibaca. Tidak ada cookie iklan atau analitik pihak ketiga.",
+        "Exapay hanya memakai cookie yang diperlukan untuk login. Penyimpanan lokal di browser dipakai untuk hal kecil seperti mengingat bahwa pemberitahuan selfie sudah dibaca. Statistik kunjungan halaman publik tidak memakai cookie dan menghormati pengaturan \"Do Not Track\" di browser. Tidak ada cookie iklan atau analitik pihak ketiga.",
       ],
     },
     {
