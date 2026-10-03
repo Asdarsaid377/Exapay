@@ -21,6 +21,8 @@ type Props = {
   todayLabel: string;
   // Tautan ke portal /me di menu akun (area usaha — absen milik sendiri, feature 14); tidak ada di panel super-admin
   showPortalLink?: boolean;
+  // Item "Panduan setup 4/7" di menu akun (feature 48) — null bila tidak relevan
+  setupGuideProgress?: string | null;
   children: ReactNode;
 };
 
@@ -29,7 +31,7 @@ const ICON_BUTTON =
 
 // Kerangka area owner/admin/atasan dan panel super-admin (snapshot context/designs/dashboard.html):
 // sidebar & header = panel kaca mengambang di atas bentuk latar; drawer kaca di mobile.
-export function AppShell({ user, headerStart, sections, todayLabel, showPortalLink = false, children }: Props) {
+export function AppShell({ user, headerStart, sections, todayLabel, showPortalLink = false, setupGuideProgress = null, children }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Drawer terbuka: kunci scroll halaman + Escape menutup
@@ -102,7 +104,7 @@ export function AppShell({ user, headerStart, sections, todayLabel, showPortalLi
             </button>
             <div className="min-w-0 flex-1">{headerStart}</div>
             <span className="hidden text-sm text-text-secondary lg:block">{todayLabel}</span>
-            <UserMenu user={user} switchTo={showPortalLink ? "portal" : undefined} />
+            <UserMenu user={user} switchTo={showPortalLink ? "portal" : undefined} setupGuideProgress={setupGuideProgress} />
           </header>
           <main className="flex flex-col gap-4 lg:gap-5">{children}</main>
         </div>

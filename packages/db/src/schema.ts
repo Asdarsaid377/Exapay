@@ -1941,3 +1941,21 @@ export const billingConfirmationTokens = pgTable(
     check("billing_confirmation_tokens_used", sql`(${t.usedAt} IS NULL) = (${t.usedTxid} IS NULL)`),
   ],
 );
+
+// Panduan setup awal (feature 48): satu baris per usaha, dibuat saat pertama kali diubah (tanpa baris = default).
+// Langkah selesai dihitung dari data; tabel ini hanya menyimpan keputusan pengguna: dilewati (hidden_at, bisa dibuka
+// lagi), jadwal kerja sudah dicek, dan kartu "siap dipakai" ditutup (closed_at → panduan tidak muncul lagi).
+export const setupGuideStates = pgTable(
+  "setup_guide_states",
+  {
+    tenantId: uuid("tenant_id")
+      .primaryKey()
+      .references(() => tenants.id, { onDelete: "restrict" }),
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    scheduleCheckedAt: timestamp("schedule_checked_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    updatedByUserId: uuid("updated_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+);

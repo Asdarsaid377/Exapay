@@ -854,3 +854,11 @@ export {
   type WorkShiftInput,
   type WorkShiftList,
 } from "./shiftRoster.js";
+export {
+  SETUP_STEP_KEYS,
+  setupGuideSchema,
+  setupGuideVisibilityInputSchema,
+  type SetupGuide,
+  type SetupGuideVisibilityInput,
+  type SetupStepKey,
+} from "./setupGuide.js";

@@ -39,6 +39,8 @@ _Diisi Claude Code setiap kali membaca/menyinkronkan link. Snapshot di repo mena
 | Roster `/attendance/roster` — tabel karyawan × 7 hari, popover pilih shift, sel terkunci + tooltip, toast, salin minggu lalu, kosong, skeleton, mobile (strip 7 hari + sheet), atasan | — (dari export zip) | `attendance-roster.html` | 2026-10-03 |
 | Portal `/me` "Jadwal saya" + kartu absen shift (shift / tanpa shift / absen di luar jadwal / belum ada roster) | — (dari export zip) | `me-schedule.html` | 2026-10-03 |
 | Komponen baru feature 46 (ShiftMasterSection, ShiftDialog, ShiftChip, ShiftPickerPopover, LockedCellTooltip, WeekNavigator, CopyWeekDialog, MyScheduleCard, baris Mode jadwal) | — (dari export zip) | `shift-components.html` | 2026-10-03 |
+| Panduan setup awal (feature 48) — dashboard 0/7, 4/7 (Tambahan terlipat & terbuka), dialog Lewati, menu akun "Panduan setup 4/7", "Exapay siap dipakai", mobile 0/7 & 4/7 | — (dari export zip, 2026-10-03) | `setup-guide.html` | 2026-10-03 |
+| Komponen baru feature 48 (SetupGuideCard, SetupStepRow selesai/berikutnya/belum + sub-progres, progress bar, SetupSkipDialog, item menu akun, SetupDoneCard) | — (dari export zip) | `setup-components.html` | 2026-10-03 |
 
 Prompt: `claude-design-prompt.md` berisi prompt terakhir (master shift & roster, feature 46); prompt sebelumnya (landing, glassmorphism, Karyawan) ada di riwayat git. Snapshot adalah source Claude Design apa adanya — hanya tautan antar-file yang diganti ke nama baru. `support.js` + `image-slot.js` adalah runtime Claude Design agar snapshot bisa dibuka di browser (butuh internet: font Google, ikon lucide-static & React dari unpkg); bukan kode aplikasi.
 

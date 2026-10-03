@@ -274,6 +274,13 @@
       "when": 1790985431266,
       "tag": "0038_attendance_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791008701061,
+      "tag": "0039_setup_guide",
+      "breakpoints": true
     }
   ]
 }

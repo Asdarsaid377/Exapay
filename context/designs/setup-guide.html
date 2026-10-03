@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;width:max-content">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;width:1440px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Exapay — Panduan setup awal</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:900px;text-wrap:pretty">Kartu "Siapkan Exapay" di atas dashboard Pemilik &amp; Admin · Kopi Nusantara · Senin, 5 Oktober 2026. Atasan dan Karyawan tidak melihat panduan ini. Tombol di tiap layar bisa diklik (Tambahan, Lewati, menu akun).</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px">
+      <a href="dashboard.html">Dashboard →</a>
+      <a href="setup-components.html">Komponen setup →</a>
+    </div>
+  </div>
+
+  <sc-for list="{{ screens }}" as="sc" hint-placeholder-count="1">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ sc.label }}</div>
+      <div data-screen-label="{{ sc.label }}" style="position:relative;width:1440px;border-radius:28px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+        <div style="position:absolute;inset:0;overflow:hidden">
+          <div style="position:absolute;width:640px;height:640px;border-radius:50%;background:#F7D3B3;top:-240px;right:-160px"></div>
+          <div style="position:absolute;width:380px;height:380px;border-radius:50%;background:#EADCCB;top:160px;left:-140px"></div>
+          <div style="position:absolute;width:440px;height:440px;border-radius:50%;background:#FAE0C8;top:540px;left:420px"></div>
+          <div style="position:absolute;width:580px;height:360px;border-radius:56px;background:#F6B27A;top:760px;right:100px"></div>
+        </div>
+        <div style="position:relative;display:flex;gap:20px;padding:20px">
+          <aside style="width:248px;flex:none;box-sizing:border-box;padding:20px 14px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;flex-direction:column;gap:24px">
+            <div style="display:flex;align-items:center;gap:10px;padding:4px 10px">
+              <div style="width:32px;height:32px;border-radius:10px;background:#F2790F;color:#221208;display:grid;place-items:center;font:800 18px 'Plus Jakarta Sans',sans-serif">e</div>
+              <span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.03em">exapay</span>
+            </div>
+            <nav style="display:flex;flex-direction:column;gap:2px">
+              <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+                <button style="width:100%;border:none;height:44px;padding:0 12px;border-radius:14px;display:flex;align-items:center;gap:12px;background:{{ item.bg }};color:{{ item.fg }};cursor:pointer;font:{{ item.font }};text-align:left" style-hover="background:rgba(255,255,255,0.62)">
+                  <span style="width:19px;height:19px;flex:none;background:currentColor;-webkit-mask:{{ item.mask }};mask:{{ item.mask }}"></span>
+                  <span style="flex:1">{{ item.label }}</span>
+                </button>
+              </sc-for>
+            </nav>
+          </aside>
+
+          <main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px">
+            <header style="position:relative;z-index:5;height:68px;box-sizing:border-box;padding:0 12px 0 10px;border-radius:22px;background:rgba(255,251,245,0.6);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,0.6);box-shadow:0 1px 2px rgba(74,42,16,0.05),0 10px 30px -12px rgba(74,42,16,0.14);display:flex;align-items:center;justify-content:space-between">
+              <button style="border:none;background:transparent;height:50px;padding:0 14px;border-radius:14px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;color:#221208" style-hover="background:rgba(255,255,255,0.62)">
+                <div style="display:flex;flex-direction:column;gap:1px">
+                  <span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span>
+                  <span style="font:400 13px 'DM Sans',sans-serif;color:#5B4636">Pemilik · Makassar</span>
+                </div>
+                <span style="width:18px;height:18px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat"></span>
+              </button>
+              <div style="display:flex;align-items:center;gap:16px">
+                <span style="font-size:14px;color:#5B4636">Senin, 5 Oktober 2026</span>
+                <div style="position:relative">
+                  <button onClick="{{ sc.toggleMenu }}" style="border:none;background:transparent;height:50px;padding:0 8px 0 5px;border-radius:999px;display:flex;align-items:center;gap:8px;cursor:pointer" style-hover="background:rgba(255,255,255,0.62)">
+                    <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">BS</span>
+                    <span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+                  </button>
+                  <sc-if value="{{ sc.menuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:58px;right:0;width:272px;padding:8px;box-sizing:border-box;border-radius:18px;background:rgba(255,253,249,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 20px 50px -16px rgba(74,42,16,0.3);display:flex;flex-direction:column;gap:4px">
+                      <div style="padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+                        <span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Budi Santoso</span>
+                        <span style="font-size:13px;color:#5B4636">budi@kopinusantara.id</span>
+                      </div>
+                      <div style="height:1px;background:rgba(34,18,8,0.08);margin:0 8px"></div>
+                      <sc-if value="{{ sc.menuGuide }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ sc.reopen }}" style="border:none;background:transparent;height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#221208;font:700 14px 'DM Sans',sans-serif;text-align:left" style-hover="background:rgba(242,121,15,0.1)">
+                          <span style="width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/list-checks.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/list-checks.svg) center / contain no-repeat"></span>
+                          <span style="flex:1">Panduan setup</span>
+                          <span style="font:500 13px 'DM Sans',sans-serif;color:#5B4636;font-variant-numeric:tabular-nums">{{ sc.short }}</span>
+                        </button>
+                      </sc-if>
+                      <button style="border:none;background:transparent;height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#B91C1C;font:700 14px 'DM Sans',sans-serif" style-hover="background:rgba(220,38,38,0.08)">
+                        <span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat"></span>Keluar
+                      </button>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </header>
+
+            <div style="display:flex;flex-direction:column;gap:6px;padding:4px 6px 0">
+              <h2 style="margin:0;font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">{{ sc.greet }}</h2>
+              <p style="margin:0;font-size:15px;color:#5B4636;text-wrap:pretty">{{ sc.sub }}</p>
+            </div>
+
+            <sc-if value="{{ sc.showGuide }}" hint-placeholder-val="{{ true }}">
+              <section style="display:grid;grid-template-columns:360px minmax(0,1fr);border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
+                <div style="padding:22px 24px 24px;display:flex;flex-direction:column;gap:18px;border-right:1px solid rgba(34,18,8,0.08)">
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                      <h3 style="margin:0;font:800 20px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Siapkan Exapay</h3>
+                      <button onClick="{{ sc.openDialog }}" style="flex:none;white-space:nowrap;border:none;background:transparent;height:34px;padding:0 10px;margin-right:-10px;border-radius:999px;cursor:pointer;color:#5B4636;font:700 13.5px 'DM Sans',sans-serif" style-hover="background:rgba(34,18,8,0.05);color:#221208">Lewati panduan</button>
+                    </div>
+                    <p style="margin:0;font-size:14px;line-height:1.5;color:#5B4636;text-wrap:pretty">Ikuti langkah ini sampai payroll pertama — ±20 menit.</p>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ sc.progress }}</span>
+                    <div style="height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ sc.pct }};background:#F2790F;border-radius:999px"></div></div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;border-top:1px solid rgba(34,18,8,0.08);padding-top:6px">
+                    <button onClick="{{ sc.toggleExt }}" style="border:none;background:transparent;height:40px;padding:0;display:flex;align-items:center;gap:8px;cursor:pointer;color:#221208;text-align:left">
+                      <span style="flex:1;font:700 14px 'DM Sans',sans-serif">Tambahan (opsional)</span>
+                      <span style="font:400 13px 'DM Sans',sans-serif;color:#75604D">4 pengaturan</span>
+                      <span style="width:16px;height:16px;flex:none;background:#5B4636;transform:{{ sc.chev }};transition:transform .2s;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+                    </button>
+                    <sc-if value="{{ sc.extOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;flex-direction:column">
+                        <sc-for list="{{ extras }}" as="x">
+                          <a href="{{ x.href }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;color:#221208;text-decoration:none" style-hover="color:#B34C08">
+                            <span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif">{{ x.t }}</span><span style="font:400 13px 'DM Sans',sans-serif;color:#5B4636">{{ x.d }}</span></span>
+                            <span style="width:16px;height:16px;flex:none;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+                          </a>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div style="padding:6px 24px">
+                  <sc-for list="{{ sc.steps }}" as="st" hint-placeholder-count="7">
+                    <div style="border-top:{{ st.border }}">
+                      <sc-if value="{{ st.isDone }}">
+                        <div style="min-height:46px;display:flex;align-items:center;gap:14px">
+                          <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:14px;height:14px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+                          <span style="flex:1;font:400 14.5px 'DM Sans',sans-serif;color:#75604D">{{ st.title }}</span>
+                          <span style="font:400 13px 'DM Sans',sans-serif;color:#15803D">Selesai</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ st.isNext }}">
+                        <div style="padding:18px 0 20px;display:flex;gap:14px">
+                          <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid #F2790F;margin-top:1px"></span>
+                          <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+                            <div style="display:flex;flex-direction:column;gap:4px">
+                              <span style="font:700 16px/1.35 'Plus Jakarta Sans',sans-serif">{{ st.title }}</span>
+                              <span style="font:400 14px/1.5 'DM Sans',sans-serif;color:#5B4636;max-width:560px;text-wrap:pretty">{{ st.desc }}</span>
+                            </div>
+                            <sc-if value="{{ st.hasNote }}">
+                              <div style="display:flex;align-items:center;gap:12px">
+                                <div style="width:140px;height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ st.notePct }};background:#221208;border-radius:999px"></div></div>
+                                <span style="font:500 13.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ st.note }}</span>
+                              </div>
+                            </sc-if>
+                            <div style="display:flex;align-items:center;gap:18px">
+                              <button style="border:none;background:#F2790F;height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif;transition:background .15s,transform .1s" style-hover="background:#D9600A" style-active="transform:scale(0.97)">{{ st.action }}</button>
+                              <sc-if value="{{ st.hasLink }}">
+                                <button style="border:none;background:transparent;height:42px;padding:0;cursor:pointer;color:#B34C08;font:700 14px 'DM Sans',sans-serif" style-hover="color:#D9600A;text-decoration:underline">{{ st.link }}</button>
+                              </sc-if>
+                            </div>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ st.isTodo }}">
+                        <div style="min-height:50px;display:flex;align-items:center;gap:14px;cursor:pointer" style-hover="background:rgba(34,18,8,0.025)">
+                          <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:1.5px solid rgba(34,18,8,0.3)"></span>
+                          <span style="flex:1;font:500 14.5px 'DM Sans',sans-serif">{{ st.title }}</span>
+                          <button style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:34px;padding:0 14px;border-radius:999px;cursor:pointer;color:#221208;font:700 13px 'Plus Jakarta Sans',sans-serif" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">{{ st.action }}</button>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{ sc.showDone }}" hint-placeholder-val="{{ false }}">
+              <section style="display:flex;align-items:center;gap:16px;padding:18px 20px 18px 24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2)">
+                <span style="width:28px;height:28px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:17px;height:17px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                  <span style="font:700 17px 'Plus Jakarta Sans',sans-serif">Exapay siap dipakai</span>
+                  <span style="font-size:14px;color:#5B4636">Payroll pertama Anda sudah dibuat. Panduan ini tidak akan muncul lagi.</span>
+                </div>
+                <button onClick="{{ sc.closeDone }}" style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:40px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">Tutup</button>
+              </section>
+            </sc-if>
+
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+              <sc-for list="{{ sc.stats }}" as="s" hint-placeholder-count="4">
+                <div style="min-height:128px;box-sizing:border-box;padding:20px;border-radius:22px;background:rgba(255,253,249,0.8);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px">
+                    <span style="font-size:14px;color:#5B4636">{{ s.label }}</span>
+                    <sc-if value="{{ s.hasBadge }}"><span style="height:24px;padding:0 10px;border-radius:999px;background:rgba(21,128,61,0.12);color:#166534;font:700 12.5px/24px 'DM Sans',sans-serif">{{ s.badge }}</span></sc-if>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:6px">
+                    <span style="font:700 17px 'Plus Jakarta Sans',sans-serif">{{ s.prefix }}</span>
+                    <span style="font:800 32px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ s.value }}</span>
+                    <span style="font:600 20px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ s.suffix }}</span>
+                  </div>
+                  <span style="font-size:13px;color:#75604D">{{ s.note }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+              <section style="padding:22px 24px 12px;border-radius:22px;background:rgba(255,253,249,0.78);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:8px">
+                <h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.01em">Tindakan tertunda</h3>
+                <sc-if value="{{ sc.noPending }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin:0;padding:14px 0 18px;font-size:14px;color:#5B4636;text-wrap:pretty">Belum ada yang perlu diputuskan. Pengajuan izin, log tugas, dan payroll akan muncul di sini.</p>
+                </sc-if>
+                <div style="display:flex;flex-direction:column">
+                  <sc-for list="{{ sc.pending }}" as="p">
+                    <div style="display:flex;align-items:center;gap:16px;padding:16px 0;border-top:{{ p.border }}">
+                      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                        <span style="font:700 15px 'DM Sans',sans-serif">{{ p.title }}</span>
+                        <span style="font-size:13.5px;color:#5B4636">{{ p.sub }}</span>
+                      </div>
+                      <button style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:40px;padding:0 18px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">{{ p.action }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+              <section style="padding:22px 24px 12px;border-radius:22px;background:rgba(255,253,249,0.78);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);border:1px solid rgba(255,255,255,0.75);box-shadow:0 1px 2px rgba(74,42,16,0.06),0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:8px">
+                <h3 style="margin:0;font:700 17px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.01em">Pengingat kepatuhan</h3>
+                <sc-if value="{{ sc.noReminders }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin:0;padding:14px 0 18px;font-size:14px;color:#5B4636;text-wrap:pretty">Tenggat setor BPJS, PPh 21, dan kontrak karyawan muncul setelah payroll pertama dibuat.</p>
+                </sc-if>
+                <div style="display:flex;flex-direction:column">
+                  <sc-for list="{{ sc.reminders }}" as="r">
+                    <div style="display:flex;align-items:center;gap:16px;padding:13px 0;border-top:{{ r.border }}">
+                      <div style="width:44px;flex:none;display:flex;flex-direction:column;align-items:center">
+                        <span style="font:800 20px/1.1 'Plus Jakarta Sans',sans-serif">{{ r.day }}</span>
+                        <span style="font-size:12px;color:#75604D">{{ r.mon }}</span>
+                      </div>
+                      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                        <span style="font:700 14.5px 'DM Sans',sans-serif">{{ r.title }}</span>
+                        <span style="font-size:13px;color:#5B4636">{{ r.sub }}</span>
+                      </div>
+                      <span style="height:26px;padding:0 10px;border-radius:999px;background:rgba(217,119,6,0.14);color:#92400E;font:700 12.5px/26px 'DM Sans',sans-serif">{{ r.due }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+
+        <sc-if value="{{ sc.dlgOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:20;background:rgba(34,18,8,0.32);display:grid;place-items:center">
+            <div role="dialog" style="width:440px;box-sizing:border-box;padding:24px;border-radius:22px;background:rgba(255,253,249,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 30px 70px -20px rgba(34,18,8,0.45);display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <h3 style="margin:0;font:700 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.01em">Sembunyikan panduan?</h3>
+                <p style="margin:0;font-size:14.5px;line-height:1.55;color:#5B4636;text-wrap:pretty">Anda bisa membukanya lagi dari menu akun › Panduan setup. Panduan disembunyikan untuk semua pemilik dan admin Kopi Nusantara.</p>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:10px">
+                <button onClick="{{ sc.closeDialog }}" style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif" style-hover="background:#FFFFFF;border-color:rgba(34,18,8,0.24)">Batal</button>
+                <button onClick="{{ sc.hide }}" style="border:none;background:#F2790F;height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif" style-hover="background:#D9600A">Sembunyikan</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+
+  <div style="display:flex;gap:48px;align-items:flex-start">
+    <sc-for list="{{ mobiles }}" as="m" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font:700 14px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ m.label }}</div>
+        <div data-screen-label="{{ m.label }}" style="position:relative;width:390px;border-radius:40px;overflow:hidden;background:#FBF8F3;box-shadow:0 30px 80px -30px rgba(74,42,16,0.35)">
+          <div style="position:absolute;inset:0;overflow:hidden">
+            <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:#F7D3B3;top:-120px;right:-140px"></div>
+            <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#FAE0C8;top:520px;left:-120px"></div>
+            <div style="position:absolute;width:300px;height:220px;border-radius:44px;background:#F6B27A;top:900px;right:-60px"></div>
+          </div>
+          <div style="position:relative;padding:12px 14px 24px;display:flex;flex-direction:column;gap:14px">
+            <header style="height:60px;flex:none;padding:0 8px 0 6px;border-radius:20px;background:rgba(255,251,245,0.66);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);box-shadow:0 10px 30px -12px rgba(74,42,16,0.18);display:flex;align-items:center;gap:6px">
+              <button style="width:44px;height:44px;border:none;background:transparent;border-radius:14px;display:grid;place-items:center;cursor:pointer"><span style="width:22px;height:22px;background:#221208;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/menu.svg) center / contain no-repeat"></span></button>
+              <button style="flex:1;border:none;background:transparent;height:44px;padding:0 8px;border-radius:14px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left;color:#221208">
+                <div style="display:flex;flex-direction:column"><span style="font:700 14.5px 'Plus Jakarta Sans',sans-serif">Kopi Nusantara</span><span style="font-size:12.5px;color:#5B4636">Pemilik</span></div>
+                <span style="width:16px;height:16px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevrons-up-down.svg) center / contain no-repeat"></span>
+              </button>
+              <span style="width:40px;height:40px;border-radius:50%;background:#221208;color:#FBF8F3;display:grid;place-items:center;font:700 13px 'Plus Jakarta Sans',sans-serif">BS</span>
+            </header>
+            <div style="padding:4px 6px 0;display:flex;flex-direction:column;gap:4px">
+              <h2 style="margin:0;font:800 24px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.025em">{{ m.greet }}</h2>
+              <p style="margin:0;font-size:14px;color:#5B4636;text-wrap:pretty">{{ m.sub }}</p>
+            </div>
+
+            <section style="padding:18px 16px 6px;border-radius:22px;background:rgba(255,253,249,0.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);box-shadow:0 16px 40px -14px rgba(74,42,16,0.2);display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                  <h3 style="margin:0;font:800 19px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Siapkan Exapay</h3>
+                  <button style="border:none;background:transparent;height:44px;padding:0 10px;margin-right:-10px;border-radius:999px;cursor:pointer;color:#5B4636;font:700 13.5px 'DM Sans',sans-serif">Lewati panduan</button>
+                </div>
+                <p style="margin:0;font-size:13.5px;line-height:1.5;color:#5B4636">Ikuti langkah ini sampai payroll pertama — ±20 menit.</p>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ m.progress }}</span>
+                <div style="height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ m.pct }};background:#F2790F;border-radius:999px"></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ m.steps }}" as="st" hint-placeholder-count="7">
+                  <div style="border-top:{{ st.border }}">
+                    <sc-if value="{{ st.isDone }}">
+                      <div style="min-height:48px;display:flex;align-items:center;gap:12px">
+                        <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:14px;height:14px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+                        <span style="flex:1;font:400 14px 'DM Sans',sans-serif;color:#75604D">{{ st.title }}</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ st.isNext }}">
+                      <div style="padding:16px 0;display:flex;flex-direction:column;gap:12px">
+                        <div style="display:flex;gap:12px">
+                          <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid #F2790F"></span>
+                          <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                            <span style="font:700 15.5px/1.35 'Plus Jakarta Sans',sans-serif">{{ st.title }}</span>
+                            <span style="font:400 13.5px/1.5 'DM Sans',sans-serif;color:#5B4636;text-wrap:pretty">{{ st.desc }}</span>
+                            <sc-if value="{{ st.hasNote }}">
+                              <div style="display:flex;flex-direction:column;gap:6px;padding-top:6px">
+                                <span style="font:500 13.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ st.note }}</span>
+                                <div style="height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ st.notePct }};background:#221208;border-radius:999px"></div></div>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </div>
+                        <button style="width:100%;border:none;background:#F2790F;height:48px;border-radius:999px;cursor:pointer;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">{{ st.action }}</button>
+                        <sc-if value="{{ st.hasLink }}">
+                          <button style="width:100%;border:none;background:transparent;height:44px;margin-top:-6px;cursor:pointer;color:#B34C08;font:700 14px 'DM Sans',sans-serif">{{ st.link }}</button>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ st.isTodo }}">
+                      <div style="min-height:52px;display:flex;align-items:center;gap:12px;cursor:pointer">
+                        <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:1.5px solid rgba(34,18,8,0.3)"></span>
+                        <span style="flex:1;font:500 14px 'DM Sans',sans-serif">{{ st.title }}</span>
+                        <span style="width:44px;height:44px;flex:none;margin-right:-12px;display:grid;place-items:center"><span style="width:18px;height:18px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></span>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="border-top:1px solid rgba(34,18,8,0.08);display:flex;flex-direction:column">
+                <button onClick="{{ m.toggleExt }}" style="border:none;background:transparent;height:48px;padding:0;display:flex;align-items:center;gap:8px;cursor:pointer;color:#221208;text-align:left">
+                  <span style="flex:1;font:700 14px 'DM Sans',sans-serif">Tambahan (opsional)</span>
+                  <span style="font:400 13px 'DM Sans',sans-serif;color:#75604D">4 pengaturan</span>
+                  <span style="width:16px;height:16px;flex:none;background:#5B4636;transform:{{ m.chev }};transition:transform .2s;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+                </button>
+                <sc-if value="{{ m.extOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;padding-bottom:8px">
+                    <sc-for list="{{ extras }}" as="x">
+                      <a href="{{ x.href }}" style="min-height:52px;display:flex;align-items:center;gap:10px;color:#221208;text-decoration:none">
+                        <span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif">{{ x.t }}</span><span style="font:400 13px 'DM Sans',sans-serif;color:#5B4636">{{ x.d }}</span></span>
+                        <span style="width:16px;height:16px;flex:none;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+                      </a>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </section>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <sc-for list="{{ m.stats }}" as="s" hint-placeholder-count="4">
+                <div style="padding:14px 16px;border-radius:20px;background:rgba(255,253,249,0.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:13px;color:#5B4636">{{ s.short }}</span>
+                  <div style="display:flex;align-items:baseline;gap:5px">
+                    <span style="font:800 26px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ s.value }}</span>
+                    <span style="font:600 16px 'Plus Jakarta Sans',sans-serif;color:#5B4636">{{ s.suffix }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ext: { s3: true }, menu: { s5: true }, dlg: { s4: true }, hidden: { s5: true }, closed: {} };
+  flip(k, id, v) { this.setState(s => ({ [k]: { ...s[k], [id]: v === undefined ? !s[k][id] : v } })); }
+  renderVals() {
+    const st = this.state;
+    const I = 'https://unpkg.com/lucide-static@0.460.0/icons/';
+    const mk = n => `url(${I}${n}.svg) center / contain no-repeat`;
+    const line = '1px solid rgba(34,18,8,0.08)';
+    const nav = [['Dashboard','layout-dashboard'],['Karyawan','users'],['Organisasi','network'],['Absensi','calendar-check'],['KPI','target'],['Payroll','wallet'],['Kepatuhan','shield-check'],['Pengaturan','settings']]
+      .map(([label, ic], i) => ({ label, mask: mk(ic), bg: i ? 'transparent' : 'rgba(242,121,15,0.16)', fg: i ? '#221208' : '#B34C08', font: i ? "500 14.5px 'DM Sans',sans-serif" : "700 14.5px 'DM Sans',sans-serif" }));
+    const STEPS = [
+      { t: 'Lengkapi profil usaha', d: 'Isi kota usaha (menentukan zona waktu & UMK) dan tanggal gajian.', a: 'Lengkapi profil' },
+      { t: 'Buat departemen & jabatan', d: 'Kelompokkan karyawan, mis. Operasional · Barista. Jabatan dipakai untuk gaji dan KPI.', a: 'Atur organisasi' },
+      { t: 'Cek jadwal kerja & hari libur', d: 'Jadwal bawaan Senin–Jumat 08.00–17.00 sudah kami buat. Cukup dicek, ubah bila perlu.', a: 'Cek jadwal', l: 'Tandai sudah dicek' },
+      { t: 'Tambah karyawan', d: 'Masukkan satu per satu atau impor sekaligus dari Excel.', a: 'Tambah karyawan', l: 'Impor Excel' },
+      { t: 'Atur gaji karyawan', d: 'Isi gaji pokok, tunjangan, dan kepesertaan BPJS tiap karyawan.', a: 'Atur gaji', n: '8 dari 12 karyawan sudah diatur', p: 8 / 12 },
+      { t: 'Undang karyawan ke portal', d: 'Agar karyawan bisa absen dari HP dan melihat slip gaji.', a: 'Undang karyawan', n: '3 dari 12 karyawan punya akun', p: 3 / 12 },
+      { t: 'Buka periode gaji pertama', d: 'Gaji, BPJS, dan PPh 21 dihitung otomatis. Cek draf, lalu finalkan.', a: 'Buka periode gaji' },
+    ];
+    const steps = n => STEPS.map((s, i) => ({
+      title: s.t, desc: s.d, action: s.a, link: s.l || '', hasLink: !!s.l,
+      note: s.n || '', hasNote: !!s.n && i === n, notePct: ((s.p || 0) * 100).toFixed(1) + '%',
+      isDone: i < n, isNext: i === n, isTodo: i > n, border: i ? line : 'none',
+    }));
+    const prog = n => ({ progress: `${n} dari 7 langkah`, pct: (n / 7 * 100).toFixed(1) + '%', short: `${n}/7`, steps: steps(n) });
+    const S = {
+      empty: [
+        { label: 'Biaya gaji bulan ini', short: 'Biaya gaji', prefix: '', value: '—', suffix: '', note: 'Belum ada periode gaji' },
+        { label: 'Karyawan aktif', short: 'Karyawan aktif', prefix: '', value: '0', suffix: '', note: 'Belum ada karyawan' },
+        { label: 'Kehadiran hari ini', short: 'Hadir hari ini', prefix: '', value: '—', suffix: '', note: 'Belum ada karyawan' },
+        { label: 'Rata-rata skor KPI', short: 'Rata-rata KPI', prefix: '', value: '—', suffix: '', note: 'Belum ada penilaian' },
+      ],
+      mid: [
+        { label: 'Biaya gaji bulan ini', short: 'Biaya gaji', prefix: '', value: '—', suffix: '', note: 'Periode gaji belum dibuka' },
+        { label: 'Karyawan aktif', short: 'Karyawan aktif', prefix: '', value: '12', suffix: '', note: '9 tetap · 3 kontrak' },
+        { label: 'Kehadiran hari ini', short: 'Hadir hari ini', prefix: '', value: '3', suffix: '/12', note: '9 karyawan belum punya akun portal' },
+        { label: 'Rata-rata skor KPI', short: 'Rata-rata KPI', prefix: '', value: '—', suffix: '', note: 'Belum ada penilaian' },
+      ],
+      full: [
+        { label: 'Biaya gaji bulan ini', prefix: 'Rp', value: '46.800.000', suffix: '', note: 'Periode 1–30 Sep 2026 · 12 slip', hasBadge: true, badge: 'Final' },
+        { label: 'Karyawan aktif', prefix: '', value: '12', suffix: '', note: 'Semua punya akun portal' },
+        { label: 'Kehadiran hari ini', prefix: '', value: '11', suffix: '/12', note: '1 izin' },
+        { label: 'Rata-rata skor KPI', prefix: '', value: '—', suffix: '', note: 'Penilaian pertama akhir Oktober' },
+      ],
+    };
+    const noData = { pending: [], reminders: [], noPending: true, noReminders: true };
+    const filled = {
+      pending: [
+        { title: '5 log tugas menunggu verifikasi', sub: 'Terlama sejak Jum, 2 Okt 2026', action: 'Verifikasi' },
+        { title: '1 pengajuan izin menunggu persetujuan', sub: 'Sakit · Rina Wulandari', action: 'Tinjau' },
+      ].map((p, i) => ({ ...p, border: i ? line : 'none' })),
+      reminders: [
+        { day: '10', mon: 'Okt', title: 'Setor iuran BPJS', sub: 'Kesehatan & Ketenagakerjaan · Sep 2026', due: 'H-5' },
+        { day: '15', mon: 'Okt', title: 'Setor PPh 21', sub: 'Masa pajak September 2026', due: 'H-10' },
+      ].map((r, i) => ({ ...r, border: i ? line : 'none' })),
+      noPending: false, noReminders: false,
+    };
+    const g0 = { greet: 'Selamat datang di Exapay, Budi', sub: 'Kopi Nusantara baru terdaftar. Ikuti panduan di bawah untuk menyiapkan payroll pertama.' };
+    const g4 = { greet: 'Selamat pagi, Budi', sub: 'Tinggal 3 langkah lagi sampai payroll pertama Kopi Nusantara.' };
+    const defs = [
+      { id: 's1', label: 'Layar 1 · Baru daftar (0/7) · desktop 1440', n: 0, stats: S.empty, ...g0, ...noData },
+      { id: 's2', label: 'Layar 2 · Sebagian selesai (4/7), Tambahan terlipat', n: 4, stats: S.mid, ...g4, ...noData },
+      { id: 's3', label: 'Layar 3 · Bagian Tambahan terbuka', n: 4, stats: S.mid, ...g4, ...noData },
+      { id: 's4', label: 'Layar 4 · Dialog Lewati panduan', n: 4, stats: S.mid, ...g4, ...noData },
+      { id: 's5', label: 'Layar 5 · Panduan disembunyikan — menu akun menampilkan "Panduan setup 4/7"', n: 4, stats: S.mid, greet: 'Selamat pagi, Budi', sub: '12 karyawan terdaftar · periode gaji pertama belum dibuka.', ...noData },
+      { id: 's6', label: 'Layar 6 · Semua selesai — SetupDoneCard di atas dashboard berisi data', n: 7, done: true, stats: S.full, greet: 'Selamat pagi, Budi', sub: 'Payroll September 2026 sudah final. 12 slip gaji terkirim ke portal karyawan.', ...filled },
+    ];
+    const screens = defs.map(d => {
+      const hidden = !!st.hidden[d.id];
+      return {
+        ...d, ...prog(d.n),
+        showGuide: !d.done && !hidden, showDone: !!d.done && !st.closed[d.id],
+        menuGuide: hidden && !d.done, menuOpen: !!st.menu[d.id], dlgOpen: !!st.dlg[d.id],
+        extOpen: !!st.ext[d.id], chev: st.ext[d.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+        toggleExt: () => this.flip('ext', d.id),
+        toggleMenu: () => this.flip('menu', d.id),
+        openDialog: () => this.flip('dlg', d.id, true),
+        closeDialog: () => this.flip('dlg', d.id, false),
+        hide: () => this.setState(s => ({ dlg: { ...s.dlg, [d.id]: false }, hidden: { ...s.hidden, [d.id]: true } })),
+        reopen: () => this.setState(s => ({ menu: { ...s.menu, [d.id]: false }, hidden: { ...s.hidden, [d.id]: false } })),
+        closeDone: () => this.flip('closed', d.id, true),
+      };
+    });
+    const mobiles = [
+      { id: 'm1', label: 'Mobile 390 · Layar 1 (0/7)', n: 0, stats: S.empty, ...g0 },
+      { id: 'm2', label: 'Mobile 390 · Layar 2 (4/7)', n: 4, stats: S.mid, ...g4 },
+    ].map(d => ({ ...d, ...prog(d.n), extOpen: !!st.ext[d.id], chev: st.ext[d.id] ? 'rotate(180deg)' : 'rotate(0deg)', toggleExt: () => this.flip('ext', d.id) }));
+    const extras = [
+      { t: 'Lokasi kerja', d: 'Cek lokasi karyawan saat absen', href: 'Exapay Lokasi Kerja.dc.html' },
+      { t: 'Shift kerja', d: 'Untuk usaha dengan jam bergilir', href: 'Exapay Shift Kerja.dc.html' },
+      { t: 'Aturan potongan absensi', d: 'Potongan telat dan alpa', href: '#' },
+      { t: 'Template KPI per jabatan', d: 'Target tugas harian tiap jabatan', href: '#' },
+    ];
+    return { nav, screens, mobiles, extras };
+  }
+}
+</script>
+</body>
+</html>

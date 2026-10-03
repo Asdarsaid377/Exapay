@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E1D6;font-family:'DM Sans',sans-serif;color:#221208;-webkit-font-smoothing:antialiased}a{color:#B34C08;text-decoration:none}a:hover{color:#D9600A;text-decoration:underline}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:40px;width:1280px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:800 34px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em">Komponen baru — Panduan setup</h1>
+      <p style="margin:0;font-size:16px;color:#5B4636;max-width:860px;text-wrap:pretty">Tanpa token baru. Status hanya lewat ikon centang hijau (selesai), lingkaran oranye (berikutnya), dan lingkaran kosong (belum). Langkah selesai tetap AA: teks #75604D, bukan #8A7561.</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:15px"><a href="setup-guide.html">Layar panduan →</a><a href="design-tokens.html">Token →</a></div>
+  </div>
+
+  <div style="position:relative;border-radius:28px;overflow:hidden;background:#FBF8F3;padding:32px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px">
+    <div style="position:absolute;width:520px;height:520px;border-radius:50%;background:#F7D3B3;top:-200px;right:-120px"></div>
+    <div style="position:absolute;width:420px;height:300px;border-radius:56px;background:#F6B27A;bottom:-80px;left:-60px"></div>
+
+    <section style="position:relative;grid-column:span 2;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupStepRow — desktop</h3><span style="font-size:13px;color:#5B4636">baris selesai 46px · belum 50px · berikutnya auto</span></div>
+      <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:0 20px;align-items:center">
+        <sc-for list="{{ rows }}" as="r">
+          <span style="font:500 13px 'DM Sans',sans-serif;color:#5B4636;align-self:start;padding-top:14px">{{ r.k }}</span>
+          <div style="border-top:1px solid rgba(34,18,8,0.08)">
+            <sc-if value="{{ r.isDone }}">
+              <div style="min-height:46px;display:flex;align-items:center;gap:14px">
+                <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:14px;height:14px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+                <span style="flex:1;font:400 14.5px 'DM Sans',sans-serif;color:#75604D">{{ r.t }}</span>
+                <span style="font:400 13px 'DM Sans',sans-serif;color:#15803D">Selesai</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ r.isNext }}">
+              <div style="padding:18px 0 20px;display:flex;gap:14px">
+                <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid #F2790F;margin-top:1px"></span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="font:700 16px/1.35 'Plus Jakarta Sans',sans-serif">{{ r.t }}</span>
+                    <span style="font:400 14px/1.5 'DM Sans',sans-serif;color:#5B4636">{{ r.d }}</span>
+                  </div>
+                  <sc-if value="{{ r.hasNote }}">
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:140px;height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:66.7%;background:#221208;border-radius:999px"></div></div>
+                      <span style="font:500 13.5px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">8 dari 12 karyawan sudah diatur</span>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;gap:18px">
+                    <button style="border:none;background:#F2790F;height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif" style-hover="background:#D9600A">{{ r.a }}</button>
+                    <sc-if value="{{ r.hasLink }}"><button style="border:none;background:transparent;height:42px;padding:0;cursor:pointer;color:#B34C08;font:700 14px 'DM Sans',sans-serif" style-hover="text-decoration:underline">{{ r.l }}</button></sc-if>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ r.isTodo }}">
+              <div style="min-height:50px;display:flex;align-items:center;gap:14px;cursor:pointer;background:{{ r.bg }}" style-hover="background:rgba(34,18,8,0.025)">
+                <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:1.5px solid rgba(34,18,8,0.3)"></span>
+                <span style="flex:1;font:500 14.5px 'DM Sans',sans-serif">{{ r.t }}</span>
+                <button style="border:1px solid {{ r.bd }};background:{{ r.btn }};height:34px;padding:0 14px;border-radius:999px;cursor:pointer;color:#221208;font:700 13px 'Plus Jakarta Sans',sans-serif">{{ r.a }}</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:16px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupStepRow — mobile</h3>
+      <div style="width:340px;display:flex;flex-direction:column">
+        <div style="min-height:48px;display:flex;align-items:center;gap:12px">
+          <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:14px;height:14px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+          <span style="flex:1;font:400 14px 'DM Sans',sans-serif;color:#75604D">Tambah karyawan</span>
+        </div>
+        <div style="padding:16px 0;display:flex;flex-direction:column;gap:12px;border-top:1px solid rgba(34,18,8,0.08)">
+          <div style="display:flex;gap:12px">
+            <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid #F2790F"></span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+              <span style="font:700 15.5px/1.35 'Plus Jakarta Sans',sans-serif">Atur gaji karyawan</span>
+              <span style="font:400 13.5px/1.5 'DM Sans',sans-serif;color:#5B4636">Isi gaji pokok, tunjangan, dan kepesertaan BPJS tiap karyawan.</span>
+            </div>
+          </div>
+          <button style="width:100%;border:none;background:#F2790F;height:48px;border-radius:999px;cursor:pointer;color:#221208;font:700 15px 'Plus Jakarta Sans',sans-serif">Atur gaji</button>
+        </div>
+        <div style="min-height:52px;display:flex;align-items:center;gap:12px;border-top:1px solid rgba(34,18,8,0.08)">
+          <span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:50%;border:1.5px solid rgba(34,18,8,0.3)"></span>
+          <span style="flex:1;font:500 14px 'DM Sans',sans-serif">Undang karyawan ke portal</span>
+          <span style="width:44px;height:44px;flex:none;margin-right:-12px;display:grid;place-items:center"><span style="width:18px;height:18px;background:#5B4636;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span></span>
+        </div>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B4636">Tombol utama full-width 48px · baris belum 52px dengan chevron 44×44.</p>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:18px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Progress bar</h3>
+      <sc-for list="{{ bars }}" as="b">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:700 14px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums">{{ b.l }}</span>
+          <div style="height:6px;border-radius:999px;background:rgba(34,18,8,0.08);overflow:hidden"><div style="height:100%;width:{{ b.w }};background:#F2790F;border-radius:999px"></div></div>
+        </div>
+      </sc-for>
+      <p style="margin:0;font-size:13px;color:#5B4636">Bar langkah: oranye 6px. Sub-progres di dalam langkah (karyawan diatur / punya akun): ink #221208, lebar 140px, agar tidak bersaing dengan progres utama.</p>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:12px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupExtrasList</h3>
+      <div style="display:flex;flex-direction:column;border-top:1px solid rgba(34,18,8,0.08)">
+        <button onClick="{{ toggleExt }}" style="border:none;background:transparent;height:40px;padding:0;display:flex;align-items:center;gap:8px;cursor:pointer;color:#221208;text-align:left">
+          <span style="flex:1;font:700 14px 'DM Sans',sans-serif">Tambahan (opsional)</span>
+          <span style="font:400 13px 'DM Sans',sans-serif;color:#75604D">4 pengaturan</span>
+          <span style="width:16px;height:16px;flex:none;background:#5B4636;transform:{{ chev }};transition:transform .2s;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-down.svg) center / contain no-repeat"></span>
+        </button>
+        <sc-if value="{{ extOpen }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ extras }}" as="x">
+            <a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 0;color:#221208;text-decoration:none" style-hover="color:#B34C08">
+              <span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:700 14px 'DM Sans',sans-serif">{{ x.t }}</span><span style="font:400 13px 'DM Sans',sans-serif;color:#5B4636">{{ x.d }}</span></span>
+              <span style="width:16px;height:16px;flex:none;background:#75604D;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center / contain no-repeat"></span>
+            </a>
+          </sc-for>
+        </sc-if>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B4636">Default terlipat. Tidak dihitung di progres. Mobile: baris 52px.</p>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:12px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">Menu akun · item "Panduan setup"</h3>
+      <div style="width:272px;padding:8px;box-sizing:border-box;border-radius:18px;background:rgba(255,253,249,0.92);border:1px solid rgba(255,255,255,0.8);box-shadow:0 20px 50px -16px rgba(74,42,16,0.3);display:flex;flex-direction:column;gap:4px">
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font:700 15px 'Plus Jakarta Sans',sans-serif">Budi Santoso</span><span style="font-size:13px;color:#5B4636">budi@kopinusantara.id</span></div>
+        <div style="height:1px;background:rgba(34,18,8,0.08);margin:0 8px"></div>
+        <button style="border:none;background:rgba(242,121,15,0.1);height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#221208;font:700 14px 'DM Sans',sans-serif;text-align:left">
+          <span style="width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/list-checks.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/list-checks.svg) center / contain no-repeat"></span>
+          <span style="flex:1">Panduan setup</span>
+          <span style="font:500 13px 'DM Sans',sans-serif;color:#5B4636;font-variant-numeric:tabular-nums">4/7</span>
+        </button>
+        <button style="border:none;background:transparent;height:44px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#B91C1C;font:700 14px 'DM Sans',sans-serif">
+          <span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/log-out.svg) center / contain no-repeat"></span>Keluar
+        </button>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B4636">Ditampilkan dalam keadaan hover. Hanya muncul selama panduan disembunyikan dan belum selesai.</p>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:12px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupSkipDialog</h3>
+      <div style="width:440px;max-width:100%;box-sizing:border-box;padding:24px;border-radius:22px;background:rgba(255,253,249,0.96);border:1px solid rgba(34,18,8,0.08);box-shadow:0 30px 70px -20px rgba(34,18,8,0.35);display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h3 style="margin:0;font:700 19px 'Plus Jakarta Sans',sans-serif">Sembunyikan panduan?</h3>
+          <p style="margin:0;font-size:14.5px;line-height:1.55;color:#5B4636;text-wrap:pretty">Anda bisa membukanya lagi dari menu akun › Panduan setup. Panduan disembunyikan untuk semua pemilik dan admin Kopi Nusantara.</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <button style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Batal</button>
+          <button style="border:none;background:#F2790F;height:42px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Sembunyikan</button>
+        </div>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B4636">Mobile: tombol ditumpuk full-width 48px.</p>
+    </section>
+
+    <section style="position:relative;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:12px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupDoneCard</h3>
+      <div style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:22px;background:rgba(255,255,255,0.7);border:1px solid rgba(34,18,8,0.08)">
+        <span style="width:28px;height:28px;flex:none;border-radius:50%;background:#15803D;display:grid;place-items:center"><span style="width:17px;height:17px;background:#FFFFFF;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/check.svg) center / contain no-repeat"></span></span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+          <span style="font:700 17px 'Plus Jakarta Sans',sans-serif">Exapay siap dipakai</span>
+          <span style="font-size:14px;color:#5B4636;text-wrap:pretty">Payroll pertama Anda sudah dibuat. Panduan ini tidak akan muncul lagi.</span>
+        </div>
+        <button style="border:1px solid rgba(34,18,8,0.14);background:rgba(255,255,255,0.75);height:40px;padding:0 20px;border-radius:999px;cursor:pointer;color:#221208;font:700 14px 'Plus Jakarta Sans',sans-serif">Tutup</button>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B4636">Setelah "Tutup", kartu tidak muncul lagi untuk usaha ini.</p>
+    </section>
+
+    <section style="position:relative;grid-column:span 2;padding:24px;border-radius:22px;background:rgba(255,253,249,0.84);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:10px">
+      <h3 style="margin:0;font:700 16px 'Plus Jakarta Sans',sans-serif">SetupGuideCard — aturan</h3>
+      <sc-for list="{{ rules }}" as="t">
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#3D2A1C;text-wrap:pretty">{{ t }}</p>
+      </sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ext: true };
+  renderVals() {
+    const rows = [
+      { k: 'Selesai', isDone: true, t: 'Lengkapi profil usaha' },
+      { k: 'Berikutnya', isNext: true, t: 'Tambah karyawan', d: 'Masukkan satu per satu atau impor sekaligus dari Excel.', a: 'Tambah karyawan', l: 'Impor Excel', hasLink: true },
+      { k: 'Berikutnya + progres', isNext: true, hasNote: true, t: 'Atur gaji karyawan', d: 'Isi gaji pokok, tunjangan, dan kepesertaan BPJS tiap karyawan.', a: 'Atur gaji' },
+      { k: 'Belum', isTodo: true, t: 'Undang karyawan ke portal', a: 'Undang karyawan', bg: 'transparent', bd: 'rgba(34,18,8,0.14)', btn: 'rgba(255,255,255,0.75)' },
+      { k: 'Belum · hover', isTodo: true, t: 'Buka periode gaji pertama', a: 'Buka periode gaji', bg: 'rgba(34,18,8,0.025)', bd: 'rgba(34,18,8,0.24)', btn: '#FFFFFF' },
+    ].map(r => ({ isDone: false, isNext: false, isTodo: false, hasNote: false, hasLink: false, l: '', ...r }));
+    const bars = [0, 4, 7].map(n => ({ l: `${n} dari 7 langkah`, w: (n / 7 * 100).toFixed(1) + '%' }));
+    const extras = [
+      { t: 'Lokasi kerja', d: 'Cek lokasi karyawan saat absen' },
+      { t: 'Shift kerja', d: 'Untuk usaha dengan jam bergilir' },
+      { t: 'Aturan potongan absensi', d: 'Potongan telat dan alpa' },
+      { t: 'Template KPI per jabatan', d: 'Target tugas harian tiap jabatan' },
+    ];
+    const rules = [
+      'Desktop: dua kolom — kiri 320px (judul, Lewati panduan, progres, Tambahan), kanan daftar langkah. Tinggi 0/7 ≈ 480px, 4/7 ≈ 500px.',
+      'Langkah berikutnya = langkah pertama yang belum selesai. Langkah bisa dikerjakan tidak berurutan; yang selesai tetap tercentang. Centang otomatis dari data, kecuali langkah 3 ("Tandai sudah dicek").',
+      'Radius bersarang maksimal 2: kartu 22px → tombol pill / bar. Baris langkah tanpa latar membulat; hover pakai tint datar.',
+      'Hanya Pemilik & Admin. Atasan & Karyawan tidak melihat kartu maupun item menu. Usaha lama dengan data lengkap tidak pernah melihat panduan.',
+    ];
+    return { rows, bars, extras, rules, extOpen: this.state.ext, chev: this.state.ext ? 'rotate(180deg)' : 'rotate(0deg)', toggleExt: () => this.setState(s => ({ ext: !s.ext })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -139,6 +139,7 @@ describe("role runtime app_user", () => {
       "refresh_tokens",
       "regencies",
       "salary_components",
+      "setup_guide_states",
       "shift_roster_days",
       "subscription_notices",
       "task_logs",

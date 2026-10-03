@@ -10,6 +10,7 @@ import { AuthModule } from "./modules/auth/auth.module.js";
 import { CompanyModule } from "./modules/company/company.module.js";
 import { ComplianceModule } from "./modules/compliance/compliance.module.js";
 import { DashboardModule } from "./modules/dashboard/dashboard.module.js";
+import { SetupGuideModule } from "./modules/setup-guide/setup-guide.module.js";
 import { EmailModule } from "./modules/email/email.module.js";
 import { EmployeesModule } from "./modules/employees/employees.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
@@ -49,6 +50,7 @@ import { RedisModule } from "./redis/redis.module.js";
     PayrollModule,
     ComplianceModule,
     DashboardModule,
+    SetupGuideModule,
     RedisModule,
     HealthModule,
   ],

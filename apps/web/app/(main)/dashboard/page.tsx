@@ -13,6 +13,10 @@ import { type PendingAction, PendingActionsCard } from "@/components/dashboard/P
 import { KpiPredicateDistribution } from "@/components/kpi/KpiPredicateDistribution";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { fetchOwnerDashboard, fetchSupervisorDashboard } from "@/lib/api/dashboard";
+import { fetchSetupGuide } from "@/lib/api/setupGuide";
+import { SetupDoneCard } from "@/components/setup/SetupDoneCard";
+import { SetupGuideCard } from "@/components/setup/SetupGuideCard";
+import { setupGuideVisible } from "@/lib/setupGuideContent";
 import { getSession } from "@/lib/auth/getSession";
 import { monthLabel } from "@/lib/attendanceLabels";
 import { firstNameOf, formatIsoDate, greetingFor } from "@/lib/datetime";
@@ -51,9 +55,26 @@ export default async function DashboardPage() {
   const waiting =
     data.pending.taskLogs.count + data.pending.leaveRequests.count + data.pending.kpiReviews.count + data.pending.payrollDrafts.length;
 
+  // Panduan setup (feature 48, design setup-guide): kartu di atas dashboard + sapaan mengikuti progres. Gagal dimuat → tanpa panduan
+  const guideResult = await fetchSetupGuide();
+  const guide = guideResult.ok && setupGuideVisible(guideResult.data) ? guideResult.data : null;
+  const firstName = firstNameOf(session?.user.fullName ?? "");
+  let title = greeting;
+  let description = summaryLine(data, waiting);
+  if (guide && !guide.allDone) {
+    if (guide.completedCount === 0) {
+      title = `Selamat datang di Exapay, ${firstName}`;
+      description = `${tenant.tenantName} baru terdaftar. Ikuti panduan di bawah untuk menyiapkan payroll pertama.`;
+    } else {
+      description = `Tinggal ${guide.totalCount - guide.completedCount} langkah lagi sampai payroll pertama ${tenant.tenantName}.`;
+    }
+  }
+
   return (
     <>
-      <PageHeader title={greeting} description={summaryLine(data, waiting)} />
+      <PageHeader title={title} description={description} />
+
+      {guide ? guide.allDone ? <SetupDoneCard /> : <SetupGuideCard guide={guide} tenantName={tenant.tenantName} /> : null}
 
       <MinimumWageBanner summary={data.minimumWage} />
 

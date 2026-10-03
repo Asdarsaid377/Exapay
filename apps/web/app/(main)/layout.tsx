@@ -6,10 +6,12 @@ import { SubscriptionBanner } from "@/components/billing/SubscriptionBanner";
 import { AppShell } from "@/components/layout/AppShell";
 import { TenantSwitcher } from "@/components/layout/TenantSwitcher";
 import { fetchSubscriptionStatus } from "@/lib/api/billing";
+import { fetchSetupGuide } from "@/lib/api/setupGuide";
 import { fetchWorkShifts } from "@/lib/api/shiftRoster";
 import { getSession } from "@/lib/auth/getSession";
 import { formatLongDate } from "@/lib/datetime";
 import { ROSTER_HREF, staffMenuFor } from "@/lib/navigation";
+import { setupGuideMenuLabel } from "@/lib/setupGuideContent";
 
 type Props = {
   children: ReactNode;
@@ -31,6 +33,8 @@ export default async function MainLayout({ children }: Props) {
   // Menu Roster hanya bila usaha punya master shift (feature 46). Gagal dimuat → menu tetap tampil (halaman roster menjelaskan)
   const shifts = await fetchWorkShifts();
   const hiddenHrefs = shifts.ok && shifts.data.items.length === 0 ? [ROSTER_HREF] : [];
+  // Panduan setup yang dilewati bisa dibuka lagi dari menu akun (feature 48). Gagal dimuat → tanpa item
+  const setupGuide = canSeeBilling ? await fetchSetupGuide() : null;
 
   return (
     <AppShell
@@ -39,6 +43,7 @@ export default async function MainLayout({ children }: Props) {
       sections={staffMenuFor(activeTenant.role, hiddenHrefs)}
       todayLabel={formatLongDate(new Date())}
       showPortalLink
+      setupGuideProgress={setupGuide?.ok ? setupGuideMenuLabel(setupGuide.data) : null}
     >
       {subscription?.ok ? <SubscriptionBanner summary={subscription.data} canManage={activeTenant.role === "owner"} /> : null}
       {children}

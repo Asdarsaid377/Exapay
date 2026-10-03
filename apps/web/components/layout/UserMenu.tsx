@@ -1,11 +1,13 @@
 "use client";
 
 import type { SessionUser } from "@exapay/shared";
-import { ChevronDown, Clock, LayoutDashboard, LoaderCircle, LogOut } from "lucide-react";
+import { ChevronDown, Clock, LayoutDashboard, ListChecks, LoaderCircle, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { logout } from "@/actions/auth";
+import { setSetupGuideHidden } from "@/actions/setupGuide";
 import { DropdownMenu } from "@/components/common/DropdownMenu";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 
@@ -15,6 +17,8 @@ type Props = {
   showChevron?: boolean;
   // Pindah area untuk owner/admin/atasan yang juga absen (feature 14): sidebar → portal /me, portal → /dashboard
   switchTo?: "portal" | "dashboard";
+  // Panduan setup disembunyikan & belum selesai (feature 48): item "Panduan setup 4/7" membuka lagi
+  setupGuideProgress?: string | null;
 };
 
 const SWITCH_LINKS = {
@@ -23,8 +27,24 @@ const SWITCH_LINKS = {
 } as const;
 
 // Avatar inisial di header: identitas akun + keluar
-export function UserMenu({ user, showChevron = true, switchTo }: Props) {
+export function UserMenu({ user, showChevron = true, switchTo, setupGuideProgress = null }: Props) {
+  const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [openingGuide, setOpeningGuide] = useState(false);
+
+  async function reopenGuide(close: () => void) {
+    setOpeningGuide(true);
+    try {
+      const outcome = await setSetupGuideHidden(false);
+      if (outcome.kind === "success") {
+        close();
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } finally {
+      setOpeningGuide(false);
+    }
+  }
   const switchLink = switchTo ? SWITCH_LINKS[switchTo] : null;
 
   return (
@@ -56,6 +76,18 @@ export function UserMenu({ user, showChevron = true, switchTo }: Props) {
               <switchLink.icon aria-hidden className="size-4.5 text-text-secondary" />
               {switchLink.label}
             </Link>
+          ) : null}
+          {setupGuideProgress ? (
+            <button
+              type="button"
+              onClick={() => void reopenGuide(close)}
+              disabled={openingGuide}
+              className="flex h-11 w-full items-center gap-2.5 rounded-inner px-3 text-left text-sm font-bold text-text-primary transition-colors hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/45 disabled:opacity-60"
+            >
+              {openingGuide ? <LoaderCircle aria-hidden className="size-4.5 animate-spin" /> : <ListChecks aria-hidden className="size-4.5 text-text-secondary" />}
+              <span className="flex-1">Panduan setup</span>
+              <span className="text-[13px] font-medium text-text-secondary tabular-nums">{setupGuideProgress}</span>
+            </button>
           ) : null}
           <form action={logout} onSubmit={() => setLoggingOut(true)}>
             <button
