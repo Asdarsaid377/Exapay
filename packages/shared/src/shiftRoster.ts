@@ -11,6 +11,8 @@ export const WORK_SHIFT_NAME_MAX = 40;
 export const ROSTER_DAYS = 7;
 // Portal "Jadwal saya": hari ini + 6 hari
 export const MY_SCHEDULE_DAYS = 7;
+// Absen masuk karyawan mode shift paling cepat 2 jam sebelum shift mulai (feature 47)
+export const SHIFT_CHECK_IN_EARLY_MINUTES = 120;
 
 // business = ikut jadwal usaha (default); shift = dijadwalkan lewat roster
 export const EMPLOYEE_SCHEDULE_MODES = ["business", "shift"] as const;

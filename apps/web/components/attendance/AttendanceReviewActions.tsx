@@ -1,6 +1,12 @@
 "use client";
 
-import { ATTENDANCE_REVIEW_DECISION_LABELS, type AttendanceReviewDecision, type AttendanceReviewItem, attendanceReviewDecisionSchema } from "@exapay/shared";
+import {
+  ATTENDANCE_REVIEW_DECISION_LABELS,
+  type AttendanceReviewDecision,
+  type AttendanceReviewItem,
+  attendanceReviewDecisionSchema,
+  reviewSubjectOf,
+} from "@exapay/shared";
 import { ArrowUpRight, MoreHorizontal, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,7 +58,7 @@ export function AttendanceReviewActions({ item, timeZone, correctionHref, fullWi
   async function submit() {
     if (!decision) return;
     setFormError(null);
-    const parsed = attendanceReviewDecisionSchema.safeParse({ decision, note });
+    const parsed = attendanceReviewDecisionSchema.safeParse({ decision, note, subject: reviewSubjectOf(item.flag.kind) });
     if (!parsed.success) {
       setNoteError(parsed.error.issues[0]?.message ?? "Catatan tidak valid");
       return;
@@ -166,7 +172,7 @@ export function AttendanceReviewActions({ item, timeZone, correctionHref, fullWi
                 {formatIsoDate(item.workDate)} · {eventLabel(item.event, item.at, timeZone)}
               </span>
               <div className="pt-1">
-                <AttendanceFlag flag={item.flag} />
+                <AttendanceFlag flag={item.flag} workDate={item.workDate} />
               </div>
             </div>
           </div>

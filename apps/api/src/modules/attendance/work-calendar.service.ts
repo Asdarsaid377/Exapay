@@ -1,4 +1,4 @@
-import { companyHolidays, nationalHolidayExclusions, nationalHolidays, workScheduleDays } from "@exapay/db";
+import { companyHolidays, employees, nationalHolidayExclusions, nationalHolidays, shiftRosterDays, workScheduleDays } from "@exapay/db";
 import {
   type CompanyHoliday,
   type CompanyHolidayInput,
@@ -14,7 +14,7 @@ import {
   WEEKDAYS,
 } from "@exapay/shared";
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { asc, between, eq, max, sql } from "drizzle-orm";
+import { and, asc, between, eq, inArray, max, min, sql } from "drizzle-orm";
 
 import { type AuthUser, tenantContextOf } from "../../common/auth/auth-user.js";
 import { DRIZZLE } from "../../database/database.module.js";
@@ -22,6 +22,16 @@ import { isUniqueViolation } from "../../database/errors.js";
 import { type Database, type TenantContext, type Transaction, withTenant } from "../../database/tenant-transaction.js";
 import { AuditService } from "../audit/audit.service.js";
 import { countHolidaysOnWorkdays, countWorkingDays, isoWeekday, type WorkCalendar, workingDaysByMonth } from "./work-calendar.js";
+
+// Baris roster (feature 46) — shiftName/startTime/endTime null = libur. Jam dibaca "HH:MM:SS".
+export type RosterDayRow = {
+  employeeId: string;
+  workDate: string;
+  workShiftId: string | null;
+  shiftName: string | null;
+  startTime: string | null;
+  endTime: string | null;
+};
 
 export type WorkDayInfo = {
   isWorkday: boolean;
@@ -210,6 +220,59 @@ export class WorkCalendarService {
       workdays: new Set(schedule.days.filter((day) => day.isWorkday).map((day) => day.weekday)),
       holidays: new Set([...national.filter((h) => h.observed).map((h) => h.date), ...company.map((h) => h.date)]),
     };
+  }
+
+  // Kalender kerja per karyawan (feature 47): mode shift → hari kerja = tanggal ber-shift di roster dalam rentang, mulai
+  // tanggal roster pertama karyawan (sebelumnya & tanpa roster sama sekali = kalender usaha — mode tidak berversi, pindah
+  // mode tidak mengubah hari lampau); ikut jadwal usaha → kalender usaha apa adanya.
+  async employeeCalendars(tx: Transaction, base: WorkCalendar, employeeIds: readonly string[], from: string, to: string): Promise<Map<string, WorkCalendar>> {
+    const calendars = new Map<string, WorkCalendar>(employeeIds.map((id) => [id, base]));
+    const shiftIds = await this.shiftModeEmployeeIds(tx, employeeIds);
+    if (shiftIds.length === 0) return calendars;
+    const rows = await this.rosterRows(tx, shiftIds, from, to);
+    const firstDates = await tx
+      .select({ employeeId: shiftRosterDays.employeeId, since: min(shiftRosterDays.workDate) })
+      .from(shiftRosterDays)
+      .where(inArray(shiftRosterDays.employeeId, shiftIds))
+      .groupBy(shiftRosterDays.employeeId);
+    for (const id of shiftIds) {
+      const since = firstDates.find((row) => row.employeeId === id)?.since;
+      if (!since) continue;
+      const own = rows.filter((row) => row.employeeId === id);
+      calendars.set(id, {
+        ...base,
+        roster: {
+          since,
+          shiftDates: new Set(own.filter((row) => row.shiftName !== null).map((row) => row.workDate)),
+          offDates: new Set(own.filter((row) => row.shiftName === null).map((row) => row.workDate)),
+        },
+      });
+    }
+    return calendars;
+  }
+
+  async shiftModeEmployeeIds(tx: Transaction, employeeIds: readonly string[]): Promise<string[]> {
+    if (employeeIds.length === 0) return [];
+    const rows = await tx
+      .select({ id: employees.id })
+      .from(employees)
+      .where(and(inArray(employees.id, [...employeeIds]), eq(employees.scheduleMode, "shift")));
+    return rows.map((row) => row.id);
+  }
+
+  async rosterRows(tx: Transaction, employeeIds: readonly string[], from: string, to: string): Promise<RosterDayRow[]> {
+    if (employeeIds.length === 0) return [];
+    return tx
+      .select({
+        employeeId: shiftRosterDays.employeeId,
+        workDate: shiftRosterDays.workDate,
+        workShiftId: shiftRosterDays.workShiftId,
+        shiftName: shiftRosterDays.shiftName,
+        startTime: shiftRosterDays.startTime,
+        endTime: shiftRosterDays.endTime,
+      })
+      .from(shiftRosterDays)
+      .where(and(inArray(shiftRosterDays.employeeId, [...employeeIds]), between(shiftRosterDays.workDate, from, to)));
   }
 
   // Jadwal satu tanggal untuk absen (feature 14): hari kerja = hari kerja jadwal dan bukan libur yang diikuti

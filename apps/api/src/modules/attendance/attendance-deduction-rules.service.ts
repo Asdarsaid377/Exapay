@@ -32,7 +32,7 @@ import { AttendancePeriodsService } from "./attendance-periods.service.js";
 import { type RecapEmployment, recapEmployee } from "./attendance-recap.js";
 import { loadAttendanceViewer } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
-import { countWorkingDays } from "./work-calendar.js";
+import { countPlannedWorkingDays } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
 const ENTITY = "attendance_deduction_rule";
@@ -235,7 +235,8 @@ export class AttendanceDeductionRulesService {
     if (employeeList.length === 0) return result;
     const ids = employeeList.map((employee) => employee.id);
     const calendar = await this.workCalendar.loadCalendar(tx, from, to);
-    const periodWorkingDays = countWorkingDays(calendar, from, to);
+    // Mode shift (feature 47): hari kerja = hari ber-shift di roster, pembagi = perkiraan hari kerja periode per karyawan
+    const calendars = await this.workCalendar.employeeCalendars(tx, calendar, ids, from, to);
     const recordRows = await tx
       .select({
         employeeId: attendanceRecords.employeeId,
@@ -253,8 +254,9 @@ export class AttendanceDeductionRulesService {
         .map((row) => ({ workDate: row.workDate, lateMinutes: row.lateMinutes, hasCheckOut: row.checkOutAt !== null }));
       const leaves = leaveRows.filter((row) => row.employeeId === employee.id);
       const employment = { joinDate: employee.joinDate, endDate: employee.endDate };
-      const recap = recapEmployee({ calendar, from, to, today, employment, records, leaves });
-      result.set(employee.id, deductionFacts({ days: recap.days, records, leaves, periodWorkingDays }));
+      const own = calendars.get(employee.id) ?? calendar;
+      const recap = recapEmployee({ calendar: own, from, to, today, employment, records, leaves });
+      result.set(employee.id, deductionFacts({ days: recap.days, records, leaves, periodWorkingDays: countPlannedWorkingDays(own, from, to) }));
     }
     return result;
   }

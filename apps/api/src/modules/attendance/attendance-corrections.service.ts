@@ -5,6 +5,7 @@ import {
   type AttendanceCorrectionInput,
   type AttendanceCorrectionList,
   type AttendanceCorrectionListQuery,
+  type EmployeeScheduleMode,
 } from "@exapay/shared";
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, count, desc, eq } from "drizzle-orm";
@@ -17,6 +18,8 @@ import { AuditService } from "../audit/audit.service.js";
 import { lateMinutes, localClock, minutesOfDay, zonedInstant } from "./attendance-clock.js";
 import { type AttendanceViewer, loadAttendanceViewer } from "./attendance-viewer.js";
 import { AttendanceService } from "./attendance.service.js";
+import { shiftLateMinutes } from "./shift-attendance.js";
+import { addDays } from "./shift-roster.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
 type Times = { checkInAt: Date | null; checkOutAt: Date | null; lateMinutes: number | null };
@@ -92,7 +95,7 @@ export class AttendanceCorrectionsService {
       await withTenant(this.db, ctx, async (tx) => {
         const manager = await this.requireManager(tx, ctx);
         const [employee] = await tx
-          .select({ id: employees.id, joinDate: employees.joinDate, endDate: employees.endDate })
+          .select({ id: employees.id, joinDate: employees.joinDate, endDate: employees.endDate, scheduleMode: employees.scheduleMode })
           .from(employees)
           .where(eq(employees.id, input.employeeId));
         if (!employee) throw new NotFoundException("Karyawan tidak ditemukan");
@@ -110,6 +113,8 @@ export class AttendanceCorrectionsService {
             id: attendanceRecords.id,
             timeZone: attendanceRecords.timeZone,
             scheduledStart: attendanceRecords.scheduledStart,
+            scheduledEnd: attendanceRecords.scheduledEnd,
+            shiftName: attendanceRecords.shiftName,
             checkInAt: attendanceRecords.checkInAt,
             checkOutAt: attendanceRecords.checkOutAt,
             lateMinutes: attendanceRecords.lateMinutes,
@@ -120,9 +125,28 @@ export class AttendanceCorrectionsService {
 
         // Jam dibaca di zona waktu tanggal kerja itu (baris lama menyimpan zonanya sendiri)
         const timeZone = existing?.timeZone ?? tenantZone;
+        // Jadwal: snapshot baris yang ada; hari tanpa absen → jadwal saat ini (roster untuk karyawan mode shift, feature 47)
+        const schedule = existing
+          ? {
+              start: existing.scheduledStart?.slice(0, 5) ?? null,
+              end: existing.scheduledEnd?.slice(0, 5) ?? null,
+              shiftName: existing.shiftName,
+            }
+          : await this.scheduleOf(tx, employee.id, employee.scheduleMode, input.workDate);
+        // Shift malam: jam pulang sebelum jam masuk dibaca keesokan hari
+        const overnight = schedule.start !== null && schedule.end !== null && schedule.end <= schedule.start;
+        if (input.checkOut !== null && input.checkOut < input.checkIn && !overnight)
+          throw new BadRequestException("Jam pulang harus setelah jam masuk (jam pulang keesokan hari hanya untuk shift malam)");
         const checkInAt = zonedInstant(input.workDate, input.checkIn, timeZone);
-        const checkOutAt = input.checkOut ? zonedInstant(input.workDate, input.checkOut, timeZone) : null;
+        const checkOutAt = input.checkOut
+          ? zonedInstant(input.checkOut < input.checkIn ? addDays(input.workDate, 1) : input.workDate, input.checkOut, timeZone)
+          : null;
         if (checkInAt > now || (checkOutAt !== null && checkOutAt > now)) throw new BadRequestException("Jam koreksi belum terjadi");
+        // Telat dari jam mulai jadwal; shift dihitung per instant (sama hasilnya untuk jadwal satu hari)
+        const late =
+          schedule.shiftName !== null && schedule.start !== null
+            ? shiftLateMinutes(checkInAt, zonedInstant(input.workDate, schedule.start, timeZone))
+            : lateMinutes(minutesOfDay(input.checkIn), schedule.start);
 
         let recordId: string;
         let before: Times;
@@ -131,7 +155,6 @@ export class AttendanceCorrectionsService {
           if (sameInstant(existing.checkInAt, checkInAt) && sameInstant(existing.checkOutAt, checkOutAt))
             throw new BadRequestException("Jam masuk dan pulang sama dengan data sekarang — tidak ada yang dikoreksi");
           // Jadwal tetap snapshot saat absen masuk; telat dihitung ulang dari jam masuk baru
-          const late = lateMinutes(minutesOfDay(input.checkIn), existing.scheduledStart);
           const checkInChanged = !sameInstant(existing.checkInAt, checkInAt);
           const checkOutChanged = !sameInstant(existing.checkOutAt, checkOutAt);
           await tx
@@ -153,9 +176,8 @@ export class AttendanceCorrectionsService {
           before = { checkInAt: existing.checkInAt, checkOutAt: existing.checkOutAt, lateMinutes: existing.lateMinutes };
           after = { checkInAt, checkOutAt, lateMinutes: late };
         } else {
-          // Hari tanpa absen: jadwal hari itu diambil dari jadwal kerja saat ini (snapshot seperti absen biasa)
-          const day = await this.workCalendar.dayInfo(tx, input.workDate);
-          const late = lateMinutes(minutesOfDay(input.checkIn), day.startTime);
+          // Hari tanpa absen: jadwal hari itu diambil dari jadwal saat ini (snapshot seperti absen biasa). Koreksi admin di hari
+          // tanpa shift tidak diberi tanda "Tanpa jadwal" — sudah diputuskan pengoreksi.
           const [row] = await tx
             .insert(attendanceRecords)
             .values({
@@ -163,8 +185,9 @@ export class AttendanceCorrectionsService {
               employeeId: employee.id,
               workDate: input.workDate,
               timeZone,
-              scheduledStart: day.startTime,
-              scheduledEnd: day.endTime,
+              scheduledStart: schedule.start,
+              scheduledEnd: schedule.end,
+              shiftName: schedule.shiftName,
               lateMinutes: late,
               checkInAt,
               checkOutAt,
@@ -216,6 +239,21 @@ export class AttendanceCorrectionsService {
       if (isUniqueViolation(error)) throw new ConflictException("Karyawan baru saja absen pada tanggal ini. Muat ulang halaman lalu koreksi lagi.");
       throw error;
     }
+  }
+
+  private async scheduleOf(
+    tx: Transaction,
+    employeeId: string,
+    mode: EmployeeScheduleMode,
+    date: string,
+  ): Promise<{ start: string | null; end: string | null; shiftName: string | null }> {
+    if (mode === "shift") {
+      const [row] = await this.workCalendar.rosterRows(tx, [employeeId], date, date);
+      if (!row?.shiftName || !row.startTime || !row.endTime) return { start: null, end: null, shiftName: null };
+      return { start: row.startTime.slice(0, 5), end: row.endTime.slice(0, 5), shiftName: row.shiftName };
+    }
+    const day = await this.workCalendar.dayInfo(tx, date);
+    return { start: day.startTime, end: day.endTime, shiftName: null };
   }
 
   // Hanya owner/admin (dibaca ulang dari DB). Tidak ada yang mengoreksi absensinya sendiri.

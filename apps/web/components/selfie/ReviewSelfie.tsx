@@ -39,7 +39,11 @@ export function ReviewSelfieThumb({ item, timeZone }: Props) {
               state: item.selfie,
               src,
               at: item.at,
-              geofence: { status: item.flag.kind, distanceM: item.flag.distanceM, locationName: item.flag.locationName, accuracyM: item.flag.accuracyM },
+              // Tanda "Tanpa jadwal" bukan status lokasi — penampil foto tanpa keterangan lokasi
+              geofence:
+                item.flag.kind === "no_schedule"
+                  ? null
+                  : { status: item.flag.kind, distanceM: item.flag.distanceM, locationName: item.flag.locationName, accuracyM: item.flag.accuracyM },
             },
           ]}
           initialEvent={item.event}

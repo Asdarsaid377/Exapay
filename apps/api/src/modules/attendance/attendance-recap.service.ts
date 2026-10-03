@@ -23,10 +23,14 @@ import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmploy
 import { payrollMonthOf } from "./attendance-period.js";
 import { AttendancePeriodsService } from "./attendance-periods.service.js";
 import { AttendanceService, geofenceOf, selfieStateOf } from "./attendance.service.js";
+import { rosterEntryOf } from "./shift-roster.js";
 import { countWorkingDays, type WorkCalendar } from "./work-calendar.js";
 import { WorkCalendarService } from "./work-calendar.service.js";
 
 export type Period = { from: string; to: string };
+
+// Rekap + kalender kerja karyawan itu (mode shift: roster) — pembagi target KPI memakai kalender yang sama
+export type EmployeeRecap = RecapResult & { calendar: WorkCalendar };
 
 const NOT_FOUND = "Karyawan tidak ditemukan";
 
@@ -95,6 +99,8 @@ type RecordRow = {
   checkOutDistanceM: number | null;
   checkOutLocationName: string | null;
   checkOutAccuracy: number | null;
+  shiftName: string | null;
+  unscheduled: boolean;
 };
 
 type LeaveRow = RecapLeave & { employeeId: string };
@@ -191,8 +197,13 @@ export class AttendanceRecapService {
       const { from, to, month, currentMonth } = await this.recapPeriod(tx, ctx, query, today);
       const period = { from, to };
       const records = await this.selectRecords(tx, [row.id], period);
-      const leaves = await this.selectLeaves(tx, [row.id], period);
       const calendar = await this.workCalendar.loadCalendar(tx, period.from, period.to);
+      const result = (await this.recapEmployees(tx, [row], period, today, calendar)).get(row.id);
+      if (!result) throw new Error("[attendance-recap] rekap karyawan hilang");
+      const [shiftMode] = await this.workCalendar.shiftModeEmployeeIds(tx, [row.id]);
+      // Mode shift: isi roster per hari untuk ditampilkan (Pagi 07–15 / Libur)
+      const rosterRows = shiftMode ? await this.workCalendar.rosterRows(tx, [row.id], period.from, period.to) : [];
+      const rosterByDate = new Map(rosterRows.map((r) => [r.workDate, r]));
       const corrected = await tx
         .selectDistinct({ workDate: attendanceCorrections.workDate })
         .from(attendanceCorrections)
@@ -200,9 +211,9 @@ export class AttendanceRecapService {
       const correctedDates = new Set(corrected.map((c) => c.workDate));
       const recordByDate = new Map(records.map((r) => [r.workDate, r]));
 
-      const result = recapEmployee({ calendar, ...period, today, employment: row, records: records.map(toRecapRecord), leaves });
       const days: AttendanceDay[] = result.days.map((day) => {
         const record = recordByDate.get(day.date);
+        const roster = rosterByDate.get(day.date);
         return {
           ...day,
           record: record
@@ -218,8 +229,11 @@ export class AttendanceRecapService {
                 checkOutSelfie: selfieStateOf(record.checkOutSelfieKey, record.checkOutSelfieType),
                 checkInGeofence: geofenceOf(record.checkInGeofence, record.checkInDistanceM, record.checkInLocationName, record.checkInAccuracy),
                 checkOutGeofence: geofenceOf(record.checkOutGeofence, record.checkOutDistanceM, record.checkOutLocationName, record.checkOutAccuracy),
+                shiftName: record.shiftName,
+                unscheduled: record.unscheduled,
               }
             : null,
+          shift: roster ? rosterEntryOf(roster) : null,
           corrected: correctedDates.has(day.date),
         };
       });
@@ -230,6 +244,7 @@ export class AttendanceRecapService {
         currentMonth,
         today,
         timeZone,
+        scheduleMode: shiftMode ? "shift" : "business",
         summary: result.summary,
         days,
         canCorrect: viewer.manage && row.id !== viewer.ownEmployeeId,
@@ -237,29 +252,34 @@ export class AttendanceRecapService {
     });
   }
 
-  // Rekap per karyawan untuk modul lain (skor KPI feature 21) di dalam transaksi ber-tenant pemanggil — cakupan penglihat dicek pemanggil
+  // Rekap per karyawan untuk modul lain (skor KPI feature 21) di dalam transaksi ber-tenant pemanggil — cakupan penglihat dicek pemanggil.
+  // `calendar` = kalender usaha; karyawan mode shift memakai roster (feature 47) dalam `calendarRange` (default periode —
+  // skor KPI memakai bulan penuh untuk pembagi target bulanan).
   async recapEmployees(
     tx: Transaction,
     rows: readonly (RecapEmployment & { id: string })[],
     period: Period,
     today: string,
     calendar: WorkCalendar,
-  ): Promise<Map<string, RecapResult>> {
+    calendarRange: Period = period,
+  ): Promise<Map<string, EmployeeRecap>> {
     const ids = rows.map((row) => row.id);
     const records = await this.selectRecords(tx, ids, period);
     const leaves = await this.selectLeaves(tx, ids, period);
+    const calendars = await this.workCalendar.employeeCalendars(tx, calendar, ids, calendarRange.from, calendarRange.to);
     return new Map(
-      rows.map((row) => [
-        row.id,
-        recapEmployee({
-          calendar,
+      rows.map((row) => {
+        const own = calendars.get(row.id) ?? calendar;
+        const result = recapEmployee({
+          calendar: own,
           ...period,
           today,
           employment: row,
           records: records.filter((r) => r.employeeId === row.id).map(toRecapRecord),
           leaves: leaves.filter((l) => l.employeeId === row.id),
-        }),
-      ]),
+        });
+        return [row.id, { ...result, calendar: own }];
+      }),
     );
   }
 
@@ -357,6 +377,8 @@ export class AttendanceRecapService {
         checkOutDistanceM: attendanceRecords.checkOutDistanceM,
         checkOutLocationName: attendanceRecords.checkOutLocationName,
         checkOutAccuracy: attendanceRecords.checkOutAccuracy,
+        shiftName: attendanceRecords.shiftName,
+        unscheduled: attendanceRecords.unscheduled,
       })
       .from(attendanceRecords)
       .where(and(inArray(attendanceRecords.employeeId, employeeIds), between(attendanceRecords.workDate, period.from, period.to)));

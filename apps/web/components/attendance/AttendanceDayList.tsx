@@ -12,6 +12,7 @@ import { formatClockTime, formatDuration } from "@/lib/attendanceLabels";
 import { DAY_STATUS_TONES, dayStatusLabel } from "@/lib/attendanceRecapLabels";
 import { formatIsoDate } from "@/lib/datetime";
 import { SELFIE_EVENT_LABELS, selfieSrc } from "@/lib/selfies";
+import { dayShiftLabel } from "@/lib/shiftLabels";
 import { weekdayLabelOf } from "@/lib/workCalendarLabels";
 import { FLAG_TONES, flagLabel } from "@/lib/workLocationLabels";
 
@@ -29,6 +30,7 @@ const GRID = "lg:grid lg:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1
 // Rincian harian satu karyawan + tombol koreksi per tanggal (feature 16). Terbaru di atas; tanggal mendatang disembunyikan.
 // Selfie (feature 45, design attendance-selfie-detail): desktop = tabel Tanggal | Masuk | Pulang | Status, tiap jam dengan
 // thumbnail selfie + tanda lokasi; mobile = daftar dengan thumbnail di kanan. Klik thumbnail → SelfieViewer.
+// Mode shift (feature 47): shift per hari di bawah tanggal ("Pagi 07–15" / "Libur") + badge "Tanpa jadwal".
 export function AttendanceDayList({ data, showEmployee = true }: Props) {
   const { employee, summary, timeZone, today, canCorrect } = data;
   const [viewing, setViewing] = useState<{ record: DayRecord; date: string; event: AttendanceEvent } | null>(null);
@@ -80,9 +82,11 @@ export function AttendanceDayList({ data, showEmployee = true }: Props) {
             {days.map((day) => {
               const label = dayStatusLabel(day.status, day.record?.lateMinutes ?? 0, day.date === today);
               const record = day.record;
+              const shift = day.shift ? dayShiftLabel(day.shift) : null;
               const statusBadges = (
                 <>
                   <Badge tone={DAY_STATUS_TONES[day.status]}>{label}</Badge>
+                  {record?.unscheduled ? <Badge tone={FLAG_TONES.no_schedule}>{flagLabel("no_schedule")}</Badge> : null}
                   {day.corrected ? (
                     <span className="inline-flex h-6.5 items-center rounded-full border border-border-outline px-2.5 text-[12.5px] font-bold text-text-secondary">Dikoreksi</span>
                   ) : null}
@@ -96,6 +100,7 @@ export function AttendanceDayList({ data, showEmployee = true }: Props) {
                     <div className="flex flex-col gap-px">
                       <span className="text-[14.5px] font-bold text-text-primary tabular-nums">{formatIsoDate(day.date)}</span>
                       <span className="text-caption text-text-tertiary">{weekdayLabelOf(day.date)}</span>
+                      {shift ? <span className="text-caption text-neutral-text tabular-nums">{shift}</span> : null}
                     </div>
                     <TimeCell record={record} event="check_in" timeZone={timeZone} onOpen={() => record && open(record, day.date, "check_in")} />
                     <TimeCell
@@ -111,9 +116,10 @@ export function AttendanceDayList({ data, showEmployee = true }: Props) {
 
                   {/* Mobile: daftar */}
                   <div className="flex items-center gap-3 py-2.5 lg:hidden">
-                    <div className="flex w-13.5 shrink-0 flex-col">
+                    <div className="flex min-w-13.5 shrink-0 flex-col">
                       <span className="font-display text-[14.5px] font-bold text-text-primary tabular-nums">{formatIsoDate(day.date).replace(/ \d{4}$/, "")}</span>
                       <span className="text-xs text-text-tertiary">{weekdayLabelOf(day.date)}</span>
+                      {shift ? <span className="text-xs whitespace-nowrap text-neutral-text tabular-nums">{shift}</span> : null}
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
                       {record ? (

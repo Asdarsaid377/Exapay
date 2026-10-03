@@ -16,7 +16,7 @@ import { Decimal } from "decimal.js";
 
 import { monthRange } from "../attendance/attendance-clock.js";
 import type { RecapDay } from "../attendance/attendance-recap.js";
-import { countWorkingDays, type WorkCalendar } from "../attendance/work-calendar.js";
+import { countPlannedWorkingDays, type WorkCalendar, weeklyWorkingDays } from "../attendance/work-calendar.js";
 
 // Skor KPI satu karyawan untuk satu rentang (feature 21) — fungsi murni: tanpa DB, tanpa tanggal sistem.
 // Rumus lengkap di packages/shared/src/kpiScores.ts. Dipakai skor ad-hoc; penilaian periodik (feature 22) menyimpan snapshot hasilnya.
@@ -45,7 +45,8 @@ export type ScoreIndicator = {
 };
 
 export type KpiScoreInput = {
-  // Harus mencakup bulan penuh dari setiap hari target (pembagi target bulanan = hari kerja sebulan)
+  // Harus mencakup bulan penuh dari setiap hari target (pembagi target bulanan = hari kerja sebulan).
+  // Karyawan mode shift (feature 47): kalender roster — pembagi = perkiraan hari kerja (tanggal belum diatur ikut jadwal usaha)
   calendar: WorkCalendar;
   // Status harian dari recapEmployee untuk rentang skor (sudah dipotong sampai hari ini)
   days: readonly RecapDay[];
@@ -87,6 +88,7 @@ function achievementOf(actual: Num, target: Num): Num {
 }
 
 // Target periode = jumlah target per hari target. Mingguan ÷ hari kerja per minggu jadwal; bulanan ÷ hari kerja bulan tanggal itu.
+// Mode shift: mingguan ÷ perkiraan hari kerja minggu Sen–Min tanggal itu.
 function periodTargetOf(indicator: ScoreIndicator, targetDates: readonly string[], calendar: WorkCalendar): Num {
   const target = new Num(indicator.target);
   const monthDays = new Map<string, number>();
@@ -97,14 +99,14 @@ function periodTargetOf(indicator: ScoreIndicator, targetDates: readonly string[
         total = total.plus(target);
         break;
       case "weekly":
-        total = total.plus(target.div(calendar.workdays.size));
+        total = total.plus(target.div(weeklyWorkingDays(calendar, date)));
         break;
       case "monthly": {
         const month = date.slice(0, 7);
         let divisor = monthDays.get(month);
         if (divisor === undefined) {
           const range = monthRange(month);
-          divisor = countWorkingDays(calendar, range.from, range.to);
+          divisor = countPlannedWorkingDays(calendar, range.from, range.to);
           monthDays.set(month, divisor);
         }
         // Tanggal target selalu hari kerja → pembagi ≥ 1

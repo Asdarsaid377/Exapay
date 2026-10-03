@@ -1,4 +1,4 @@
-import type { AttendanceReviewItem } from "@exapay/shared";
+import { type AttendanceReviewItem, reviewSubjectOf } from "@exapay/shared";
 import type { ReactNode } from "react";
 
 import { AttendanceFlag } from "@/components/attendance/AttendanceFlag";
@@ -24,7 +24,7 @@ const CELL = "px-4 py-3 first:pl-5 last:pr-5";
 // Antrean tinjauan absen bertanda (design attendance-review): tabel kaca di desktop, card di mobile.
 // Satu baris per absen masuk/pulang bertanda. Thumbnail selfie di kolom Absen (feature 45).
 export function AttendanceReviewTable({ items, timeZone, decisionHeading, correctionHrefFor, footer }: Props) {
-  const key = (item: AttendanceReviewItem): string => `${item.recordId}-${item.event}`;
+  const key = (item: AttendanceReviewItem): string => `${item.recordId}-${item.event}-${reviewSubjectOf(item.flag.kind)}`;
   return (
     <>
       <section className="hidden rounded-card glass-data lg:block">
@@ -68,7 +68,7 @@ export function AttendanceReviewTable({ items, timeZone, decisionHeading, correc
                   </div>
                 </td>
                 <td className={CELL}>
-                  <AttendanceFlag flag={item.flag} />
+                  <AttendanceFlag flag={item.flag} workDate={item.workDate} />
                 </td>
                 <td className={CELL}>
                   <AttendanceReviewActions item={item} timeZone={timeZone} correctionHref={correctionHrefFor(item)} />
@@ -97,7 +97,7 @@ export function AttendanceReviewTable({ items, timeZone, decisionHeading, correc
                 <ReviewSelfieThumb item={item} timeZone={timeZone} />
               </div>
               <div className="border-t border-border-subtle/90 pt-2.5">
-                <AttendanceFlag flag={item.flag} />
+                <AttendanceFlag flag={item.flag} workDate={item.workDate} />
               </div>
               <AttendanceReviewActions item={item} timeZone={timeZone} correctionHref={correctionHrefFor(item)} fullWidth />
             </li>

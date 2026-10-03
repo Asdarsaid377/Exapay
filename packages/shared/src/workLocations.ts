@@ -99,18 +99,31 @@ export type EmployeeAttendanceSettings = z.infer<typeof employeeAttendanceSettin
 export const ATTENDANCE_EVENTS = ["check_in", "check_out"] as const;
 export type AttendanceEvent = (typeof ATTENDANCE_EVENTS)[number];
 
-// Jenis tanda — generik: feature 47 menambah "no_schedule" (absen di hari tanpa shift)
-export const ATTENDANCE_FLAG_KINDS = ["outside", "inaccurate", "no_location"] as const satisfies readonly GeofenceStatus[];
+// Jenis tanda — lokasi (feature 44, per absen masuk/pulang) + "no_schedule" (feature 47: karyawan mode shift absen masuk
+// di hari tanpa shift). Satu item tinjauan per tanda; tanda lokasi & jadwal pada absen masuk yang sama ditinjau terpisah.
+export const GEOFENCE_FLAG_KINDS = ["outside", "inaccurate", "no_location"] as const satisfies readonly GeofenceStatus[];
+export type GeofenceFlagKind = (typeof GEOFENCE_FLAG_KINDS)[number];
+export const ATTENDANCE_FLAG_KINDS = [...GEOFENCE_FLAG_KINDS, "no_schedule"] as const;
 export type AttendanceFlagKind = (typeof ATTENDANCE_FLAG_KINDS)[number];
 
 export const ATTENDANCE_FLAG_LABELS: Record<AttendanceFlagKind, string> = {
   outside: "Di luar lokasi",
   inaccurate: "Lokasi tidak akurat",
   no_location: "Tanpa lokasi",
+  no_schedule: "Tanpa jadwal",
 };
 
-export function isAttendanceFlag(status: GeofenceStatus | null): status is AttendanceFlagKind {
+// Status geofence yang bertanda (selain di lokasi)
+export function isAttendanceFlag(status: GeofenceStatus | null): status is GeofenceFlagKind {
   return status !== null && status !== "inside";
+}
+
+// Yang ditinjau dari satu absen: lokasi (absen masuk/pulang) atau jadwal (hanya absen masuk)
+export const ATTENDANCE_REVIEW_SUBJECTS = ["location", "schedule"] as const;
+export type AttendanceReviewSubject = (typeof ATTENDANCE_REVIEW_SUBJECTS)[number];
+
+export function reviewSubjectOf(kind: AttendanceFlagKind): AttendanceReviewSubject {
+  return kind === "no_schedule" ? "schedule" : "location";
 }
 
 export const ATTENDANCE_REVIEW_DECISIONS = ["accepted", "follow_up"] as const;
@@ -128,6 +141,8 @@ export const attendanceReviewDecisionSchema = z
   .object({
     decision: z.enum(ATTENDANCE_REVIEW_DECISIONS),
     note: z.string().trim().max(ATTENDANCE_REVIEW_NOTE_MAX, `Catatan maksimal ${ATTENDANCE_REVIEW_NOTE_MAX} karakter`).default(""),
+    // Tanpa subject = tanda lokasi (perilaku feature 44)
+    subject: z.enum(ATTENDANCE_REVIEW_SUBJECTS).default("location"),
   })
   .refine((input) => input.decision === "accepted" || input.note.length >= 3, { path: ["note"], message: "Tulis catatan tindak lanjut (minimal 3 karakter)" });
 export type AttendanceReviewDecisionInput = z.input<typeof attendanceReviewDecisionSchema>;
@@ -183,7 +198,9 @@ export const attendanceReviewListSchema = z.object({
   // Belum ditinjau dengan filter jenis & bulan yang sama
   pendingCount: z.number().int(),
   timeZone: z.string(),
-  // false → empty state "Lokasi kerja belum diatur"
+  // false (keduanya) → empty state "Lokasi kerja belum diatur"
   hasLocations: z.boolean(),
+  // Usaha punya master shift (tanda "Tanpa jadwal" bisa muncul walau tanpa lokasi kerja)
+  hasShifts: z.boolean(),
 });
 export type AttendanceReviewList = z.infer<typeof attendanceReviewListSchema>;

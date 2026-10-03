@@ -18,6 +18,7 @@ import { type Database, type Transaction, withTenant } from "../../database/tena
 import { localClock, monthRange } from "../attendance/attendance-clock.js";
 import { type Period, resolvePeriod, AttendanceRecapService } from "../attendance/attendance-recap.service.js";
 import { loadAttendanceViewer, viewerEmployeeScope } from "../attendance/attendance-viewer.js";
+import { addDays } from "../attendance/shift-roster.js";
 import { AttendanceService } from "../attendance/attendance.service.js";
 import { WorkCalendarService } from "../attendance/work-calendar.service.js";
 import { verifiedTaskTotals } from "../tasks/verified-task-totals.js";
@@ -216,9 +217,11 @@ export class KpiScoresService {
       .orderBy(asc(kpiIndicators.sortOrder));
     const indicatorsOf = (templateId: string): ScoreIndicator[] => indicatorRows.filter((indicator) => indicator.templateId === templateId);
 
-    // Kalender mencakup bulan penuh: pembagi target bulanan = hari kerja sebulan
-    const calendar = await this.workCalendar.loadCalendar(tx, monthRange(period.from.slice(0, 7)).from, monthRange(period.to.slice(0, 7)).to);
-    const recaps = await this.recap.recapEmployees(tx, withTemplate, period, today, calendar);
+    // Kalender mencakup bulan penuh: pembagi target bulanan = hari kerja sebulan. Roster karyawan mode shift (feature 47)
+    // dimuat ±6 hari di luar bulan agar minggu Sen–Min di tepi bulan lengkap untuk pembagi mingguan.
+    const calendarRange = { from: addDays(monthRange(period.from.slice(0, 7)).from, -6), to: addDays(monthRange(period.to.slice(0, 7)).to, 6) };
+    const calendar = await this.workCalendar.loadCalendar(tx, calendarRange.from, calendarRange.to);
+    const recaps = await this.recap.recapEmployees(tx, withTemplate, period, today, calendar, calendarRange);
     const totals = await verifiedTaskTotals(
       tx,
       withTemplate.map((row) => row.id),
@@ -233,7 +236,7 @@ export class KpiScoresService {
       scored.set(row.id, {
         template: { id: row.templateId, name: row.templateName },
         // Nilai atasan hanya ada di penilaian periodik (feature 22) — skor ad-hoc selalu "belum dinilai"
-        result: kpiScore({ calendar, days: recap.days, indicators: indicatorsOf(row.templateId), actuals, ratings: ratings.get(row.id) ?? new Map() }),
+        result: kpiScore({ calendar: recap.calendar, days: recap.days, indicators: indicatorsOf(row.templateId), actuals, ratings: ratings.get(row.id) ?? new Map() }),
       });
     }
     return scored;

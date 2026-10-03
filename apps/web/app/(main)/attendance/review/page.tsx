@@ -62,7 +62,7 @@ export default async function AttendanceReviewPage({ searchParams }: Props) {
   const filtered = query.flag !== "all" || query.month !== undefined;
 
   let body;
-  if (!list.hasLocations && list.total === 0 && !filtered) {
+  if (!list.hasLocations && !list.hasShifts && list.total === 0 && !filtered) {
     body = (
       <EmptyState
         title="Lokasi kerja belum diatur"
@@ -79,7 +79,7 @@ export default async function AttendanceReviewPage({ searchParams }: Props) {
   } else if (list.items.length === 0) {
     body =
       query.status === "pending" && !filtered ? (
-        <EmptyState title="Tidak ada absen yang perlu ditinjau" description="Absen di luar lokasi kerja akan muncul di sini." />
+        <EmptyState title="Tidak ada absen yang perlu ditinjau" description={list.hasShifts ? "Absen di luar lokasi kerja atau di luar jadwal shift akan muncul di sini." : "Absen di luar lokasi kerja akan muncul di sini."} />
       ) : (
         <EmptyState
           title="Tidak ada absen yang cocok"

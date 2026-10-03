@@ -8,6 +8,18 @@ export type WorkCalendar = {
   workdays: ReadonlySet<Weekday>;
   // Libur yang berlaku untuk usaha: libur nasional/cuti bersama yang diikuti + libur usaha
   holidays: ReadonlySet<string>;
+  // Karyawan mode shift (feature 47): mulai `since`, hari kerja = tanggal ber-shift di roster; jadwal mingguan & libur usaha
+  // tidak berlaku. Tanggal tanpa baris roster (belum diatur) = libur. Sebelum `since` tetap kalender usaha.
+  roster?: RosterDates;
+};
+
+export type RosterDates = {
+  // Tanggal roster pertama karyawan — mode jadwal tidak berversi, jadi pindah ke mode shift tidak mengubah hari lampau
+  // ketika karyawan masih ikut jadwal usaha (rekap, alpa, draf payroll periode berjalan)
+  since: string;
+  shiftDates: ReadonlySet<string>;
+  // Tanggal yang diatur libur di roster
+  offDates: ReadonlySet<string>;
 };
 
 const DAY_MS = 86_400_000;
@@ -25,8 +37,41 @@ export function isoWeekday(isoDate: string): Weekday {
   return weekday;
 }
 
-export function isWorkingDay(calendar: WorkCalendar, isoDate: string): boolean {
+function isBusinessWorkingDay(calendar: WorkCalendar, isoDate: string): boolean {
   return calendar.workdays.has(isoWeekday(isoDate)) && !calendar.holidays.has(isoDate);
+}
+
+export function isWorkingDay(calendar: WorkCalendar, isoDate: string): boolean {
+  const { roster } = calendar;
+  if (roster && isoDate >= roster.since) return roster.shiftDates.has(isoDate);
+  return isBusinessWorkingDay(calendar, isoDate);
+}
+
+// Perkiraan hari kerja untuk pembagi (target KPI bulanan/mingguan, pembagi potongan absensi): karyawan mode shift memakai
+// roster, tanggal yang belum diatur diperkirakan mengikuti jadwal usaha — roster biasanya baru diisi 1–2 minggu ke depan,
+// tanpa perkiraan ini target per hari awal bulan membengkak. Roster lengkap → sama dengan hari ber-shift.
+export function isPlannedWorkingDay(calendar: WorkCalendar, isoDate: string): boolean {
+  const { roster } = calendar;
+  if (!roster || isoDate < roster.since) return isBusinessWorkingDay(calendar, isoDate);
+  if (roster.shiftDates.has(isoDate)) return true;
+  if (roster.offDates.has(isoDate)) return false;
+  return isBusinessWorkingDay(calendar, isoDate);
+}
+
+export function countPlannedWorkingDays(calendar: WorkCalendar, from: string, to: string): number {
+  let total = 0;
+  for (let ms = toUtcMs(from), end = toUtcMs(to); ms <= end; ms += DAY_MS) {
+    if (isPlannedWorkingDay(calendar, new Date(ms).toISOString().slice(0, 10))) total += 1;
+  }
+  return total;
+}
+
+// Pembagi target mingguan untuk tanggal ini: hari kerja jadwal per minggu; mode shift = perkiraan hari kerja minggu Sen–Min itu
+export function weeklyWorkingDays(calendar: WorkCalendar, isoDate: string): number {
+  if (!calendar.roster) return calendar.workdays.size;
+  const monday = new Date(toUtcMs(isoDate) - (isoWeekday(isoDate) - 1) * DAY_MS).toISOString().slice(0, 10);
+  const sunday = new Date(toUtcMs(monday) + 6 * DAY_MS).toISOString().slice(0, 10);
+  return countPlannedWorkingDays(calendar, monday, sunday);
 }
 
 // Semua tanggal kerja dari `from` sampai `to` (inklusif). from > to → kosong.
@@ -43,7 +88,7 @@ export function countWorkingDays(calendar: WorkCalendar, from: string, to: strin
   return workingDatesBetween(calendar, from, to).length;
 }
 
-// Libur yang benar-benar mengurangi hari kerja (jatuh di hari kerja jadwal) dalam rentang
+// Libur yang benar-benar mengurangi hari kerja (jatuh di hari kerja jadwal) dalam rentang — kalender usaha
 export function countHolidaysOnWorkdays(calendar: WorkCalendar, from: string, to: string): number {
   let total = 0;
   for (const date of calendar.holidays) {

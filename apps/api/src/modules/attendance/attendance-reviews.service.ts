@@ -1,14 +1,15 @@
-import { attendanceRecords, attendanceReviews, employees, positions, users } from "@exapay/db";
+import { attendanceRecords, attendanceReviews, employees, positions, users, workShifts } from "@exapay/db";
 import {
-  ATTENDANCE_FLAG_KINDS,
   ATTENDANCE_REVIEWS_PAGE_SIZE,
   type AttendanceEvent,
+  type AttendanceFlagKind,
   type AttendanceReviewDecision,
   type AttendanceReviewDecisionData,
   type AttendanceReviewItem,
   type AttendanceReviewList,
   type AttendanceReviewListQuery,
-  type GeofenceStatus,
+  type AttendanceReviewSubject,
+  GEOFENCE_FLAG_KINDS,
   isAttendanceFlag,
 } from "@exapay/shared";
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
@@ -23,11 +24,12 @@ import { type AttendanceViewer, loadAttendanceViewer, viewerCanSee, viewerEmploy
 import { AttendanceService, selfieStateOf } from "./attendance.service.js";
 import { WorkLocationsService } from "./work-locations.service.js";
 
-const FLAGGED = [...ATTENDANCE_FLAG_KINDS];
+const FLAGGED = [...GEOFENCE_FLAG_KINDS];
 
 type ReviewRow = {
   attendanceRecordId: string;
   event: AttendanceEvent;
+  subject: AttendanceReviewSubject;
   decision: AttendanceReviewDecision;
   note: string | null;
   reviewedByName: string | null;
@@ -35,7 +37,8 @@ type ReviewRow = {
 };
 
 // Tinjauan absen bertanda (feature 44, /attendance/review): satu item per absen masuk/pulang yang bertanda (di luar lokasi,
-// lokasi tidak akurat, tanpa lokasi). Owner/admin semua karyawan; atasan bawahan langsung. Keputusan tidak mengubah jam/gaji —
+// lokasi tidak akurat, tanpa lokasi) + satu item "Tanpa jadwal" per absen masuk karyawan mode shift di hari tanpa shift
+// (feature 47, subject schedule — ditinjau terpisah dari tanda lokasi absen yang sama). Owner/admin semua karyawan; atasan bawahan langsung. Keputusan tidak mengubah jam/gaji —
 // koreksi tetap lewat attendance_corrections. Tidak ada yang meninjau absensinya sendiri.
 @Injectable()
 export class AttendanceReviewsService {
@@ -50,7 +53,11 @@ export class AttendanceReviewsService {
     const ctx = tenantContextOf(user);
     return withTenant(this.db, ctx, async (tx) => {
       const viewer = await this.requireViewer(tx, ctx);
-      const flaggedRecord = or(inArray(attendanceRecords.checkInGeofence, FLAGGED), inArray(attendanceRecords.checkOutGeofence, FLAGGED));
+      const flaggedRecord = or(
+        inArray(attendanceRecords.checkInGeofence, FLAGGED),
+        inArray(attendanceRecords.checkOutGeofence, FLAGGED),
+        eq(attendanceRecords.unscheduled, true),
+      );
       const range = query.month ? monthRange(query.month) : null;
       // Volume UMKM (< 50 karyawan) kecil: semua absen bertanda dalam cakupan dimuat, filter status & halaman di aplikasi
       const records = await tx
@@ -74,6 +81,7 @@ export class AttendanceReviewsService {
           checkInSelfieType: attendanceRecords.checkInSelfieType,
           checkOutSelfieKey: attendanceRecords.checkOutSelfieKey,
           checkOutSelfieType: attendanceRecords.checkOutSelfieType,
+          unscheduled: attendanceRecords.unscheduled,
         })
         .from(attendanceRecords)
         .innerJoin(employees, eq(employees.id, attendanceRecords.employeeId))
@@ -87,6 +95,7 @@ export class AttendanceReviewsService {
               .select({
                 attendanceRecordId: attendanceReviews.attendanceRecordId,
                 event: attendanceReviews.event,
+                subject: attendanceReviews.subject,
                 decision: attendanceReviews.decision,
                 note: attendanceReviews.note,
                 reviewedByName: attendanceReviews.reviewedByName,
@@ -99,8 +108,8 @@ export class AttendanceReviewsService {
                   records.map((r) => r.id),
                 ),
               );
-      const reviewOf = (recordId: string, event: AttendanceEvent): AttendanceReviewItem["review"] => {
-        const row = reviews.find((r) => r.attendanceRecordId === recordId && r.event === event);
+      const reviewOf = (recordId: string, event: AttendanceEvent, subject: AttendanceReviewSubject): AttendanceReviewItem["review"] => {
+        const row = reviews.find((r) => r.attendanceRecordId === recordId && r.event === event && r.subject === subject);
         return row ? { decision: row.decision, note: row.note, reviewedByName: row.reviewedByName, reviewedAt: row.reviewedAt.toISOString() } : null;
       };
 
@@ -138,7 +147,20 @@ export class AttendanceReviewsService {
             at: side.at.toISOString(),
             flag: { kind: side.status, distanceM: side.distanceM, locationName: side.locationName, accuracyM: side.accuracyM },
             selfie: side.selfie,
-            review: reviewOf(record.id, side.event),
+            review: reviewOf(record.id, side.event, "location"),
+            canReview,
+          });
+        }
+        if (record.unscheduled) {
+          items.push({
+            recordId: record.id,
+            event: "check_in",
+            employee,
+            workDate: record.workDate,
+            at: record.checkInAt.toISOString(),
+            flag: { kind: "no_schedule", distanceM: null, locationName: null, accuracyM: null },
+            selfie: sides[0].selfie,
+            review: reviewOf(record.id, "check_in", "schedule"),
             canReview,
           });
         }
@@ -156,6 +178,7 @@ export class AttendanceReviewsService {
         pendingCount: byFlag.filter((item) => item.review === null).length,
         timeZone: await this.attendance.tenantTimeZone(tx, ctx.tenantId),
         hasLocations: await this.workLocations.hasLocations(tx),
+        hasShifts: (await tx.select({ id: workShifts.id }).from(workShifts).limit(1)).length > 0,
       };
     });
   }
@@ -174,19 +197,24 @@ export class AttendanceReviewsService {
           supervisorId: employees.supervisorId,
           checkInGeofence: attendanceRecords.checkInGeofence,
           checkOutGeofence: attendanceRecords.checkOutGeofence,
+          unscheduled: attendanceRecords.unscheduled,
         })
         .from(attendanceRecords)
         .innerJoin(employees, eq(employees.id, attendanceRecords.employeeId))
         .where(eq(attendanceRecords.id, recordId));
       if (!record || !viewerCanSee(viewer, record.supervisorId)) throw new NotFoundException("Absen tidak ditemukan");
       if (record.employeeId === viewer.ownEmployeeId) throw new ForbiddenException("Anda tidak dapat meninjau absensi Anda sendiri");
-      const status: GeofenceStatus | null = event === "check_in" ? record.checkInGeofence : record.checkOutGeofence;
-      if (!isAttendanceFlag(status)) throw new ConflictException("Absen ini tidak bertanda — tidak perlu ditinjau. Muat ulang halaman.");
+      const { subject } = input;
+      const geofence = event === "check_in" ? record.checkInGeofence : record.checkOutGeofence;
+      let flag: AttendanceFlagKind | null = null;
+      if (subject === "schedule") flag = event === "check_in" && record.unscheduled ? "no_schedule" : null;
+      else if (isAttendanceFlag(geofence)) flag = geofence;
+      if (!flag) throw new ConflictException("Absen ini tidak bertanda — tidak perlu ditinjau. Muat ulang halaman.");
 
       const [before] = await tx
         .select({ decision: attendanceReviews.decision, note: attendanceReviews.note })
         .from(attendanceReviews)
-        .where(and(eq(attendanceReviews.attendanceRecordId, record.id), eq(attendanceReviews.event, event)))
+        .where(and(eq(attendanceReviews.attendanceRecordId, record.id), eq(attendanceReviews.event, event), eq(attendanceReviews.subject, subject)))
         .for("update");
       const [actor] = await tx.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.userId));
       const values = {
@@ -198,16 +226,19 @@ export class AttendanceReviewsService {
       };
       const [review] = await tx
         .insert(attendanceReviews)
-        .values({ tenantId: ctx.tenantId, attendanceRecordId: record.id, event, ...values })
-        .onConflictDoUpdate({ target: [attendanceReviews.tenantId, attendanceReviews.attendanceRecordId, attendanceReviews.event], set: values })
+        .values({ tenantId: ctx.tenantId, attendanceRecordId: record.id, event, subject, ...values })
+        .onConflictDoUpdate({
+          target: [attendanceReviews.tenantId, attendanceReviews.attendanceRecordId, attendanceReviews.event, attendanceReviews.subject],
+          set: values,
+        })
         .returning({ id: attendanceReviews.id });
 
       await this.audit.record(tx, ctx, {
         entity: "attendance_record",
         entityId: record.id,
         action: "review",
-        before: before ? { event, decision: before.decision, note: before.note } : null,
-        after: { event, workDate: record.workDate, flag: status, decision: values.decision, note: values.note, reviewId: review?.id ?? null },
+        before: before ? { event, subject, decision: before.decision, note: before.note } : null,
+        after: { event, subject, workDate: record.workDate, flag, decision: values.decision, note: values.note, reviewId: review?.id ?? null },
       });
     });
   }

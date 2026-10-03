@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { attendanceMonthSchema, geofenceResultSchema, SELFIE_STATES } from "./attendance.js";
 import { LEAVE_REASON_MAX } from "./leaveRequests.js";
+import { EMPLOYEE_SCHEDULE_MODES, rosterEntrySchema } from "./shiftRoster.js";
 import { CALENDAR_YEAR_MAX, CALENDAR_YEAR_MIN, isoDateSchema } from "./workCalendar.js";
 
 // Rekap & koreksi absensi (feature 16): rekap per periode di /attendance (owner/admin semua, atasan bawahan langsung),
@@ -106,8 +107,13 @@ export const attendanceDaySchema = z.object({
       // Status lokasi saat absen (feature 44) — tanda di sel jam & penampil selfie
       checkInGeofence: geofenceResultSchema.nullable(),
       checkOutGeofence: geofenceResultSchema.nullable(),
+      // Feature 47: shift yang dicocokkan saat absen (snapshot) & absen di hari tanpa shift
+      shiftName: z.string().nullable(),
+      unscheduled: z.boolean(),
     })
     .nullable(),
+  // Karyawan mode shift (feature 47): isi roster hari itu — null = belum diatur / karyawan ikut jadwal usaha
+  shift: rosterEntrySchema.nullable(),
   // Pernah dikoreksi owner/admin
   corrected: z.boolean(),
 });
@@ -123,6 +129,8 @@ export const employeeAttendanceDaysSchema = z.object({
   today: z.string(),
   timeZone: z.string(),
   summary: attendanceRecapSummarySchema,
+  // Mode jadwal karyawan saat ini — shift: hari kerja = hari ber-shift di roster
+  scheduleMode: z.enum(EMPLOYEE_SCHEDULE_MODES),
   // Urut tanggal naik, seluruh periode
   days: z.array(attendanceDaySchema),
   // Penglihat boleh mengoreksi (owner/admin, bukan absensinya sendiri)
@@ -134,7 +142,7 @@ export type EmployeeAttendanceDays = z.infer<typeof employeeAttendanceDaysSchema
 
 const clockTimeSchema = z.string("Jam wajib diisi").regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/, "Jam tidak valid (JJ:MM)");
 
-// Jam lokal usaha pada tanggal kerja. Tanpa shift malam: pulang harus setelah masuk di tanggal yang sama.
+// Jam lokal usaha pada tanggal kerja. Pulang sebelum jam masuk hanya untuk shift malam (dibaca keesokan hari — dicek API).
 export const attendanceCorrectionInputSchema = z
   .object({
     employeeId: z.uuid("Karyawan tidak valid"),
@@ -148,7 +156,7 @@ export const attendanceCorrectionInputSchema = z
       .min(3, "Alasan minimal 3 karakter")
       .max(LEAVE_REASON_MAX, `Alasan maksimal ${LEAVE_REASON_MAX} karakter`),
   })
-  .refine((input) => input.checkOut === null || input.checkOut > input.checkIn, { path: ["checkOut"], message: "Jam pulang harus setelah jam masuk" });
+  .refine((input) => input.checkOut === null || input.checkOut !== input.checkIn, { path: ["checkOut"], message: "Jam pulang tidak boleh sama dengan jam masuk" });
 export type AttendanceCorrectionInput = z.infer<typeof attendanceCorrectionInputSchema>;
 
 export const attendanceCorrectionListQuerySchema = z.object({

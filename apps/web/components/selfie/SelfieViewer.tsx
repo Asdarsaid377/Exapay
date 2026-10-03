@@ -94,7 +94,7 @@ export function SelfieViewer({ open, onClose, title, description, workDate, time
           ) : null}
           <span className="text-[15px] font-medium text-text-primary tabular-nums sm:text-base">{when}</span>
           {flag !== null && isAttendanceFlag(flag.status) ? (
-            <AttendanceFlag flag={{ kind: flag.status, distanceM: flag.distanceM, locationName: flag.locationName, accuracyM: flag.accuracyM }} />
+            <AttendanceFlag flag={{ kind: flag.status, distanceM: flag.distanceM, locationName: flag.locationName, accuracyM: flag.accuracyM }} workDate={workDate} />
           ) : null}
           <div className="hidden flex-1 sm:block" />
           <p className="text-caption text-pretty text-text-tertiary">Foto hanya bukti kehadiran. Disimpan 90 hari, lalu dihapus otomatis.</p>

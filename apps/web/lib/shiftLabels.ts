@@ -35,6 +35,11 @@ export function rosterEntryLabel(entry: RosterEntry): string {
   return `${entry.name} ${entry.startTime}–${entry.endTime}${entry.overnight ? " (+1)" : ""}`;
 }
 
+// Shift per hari di rincian absensi (design attendance-selfie-detail): "Pagi 07–15", "Libur"
+export function dayShiftLabel(entry: RosterEntry): string {
+  return entry.kind === "off" ? "Libur" : `${entry.name} ${shortShiftRange(entry.startTime, entry.endTime)}`;
+}
+
 // Tooltip sel terkunci (design attendance-roster "LockedCellTooltip")
 export function rosterLockLabel(lock: RosterLockReason): string {
   return lock === "attended" ? "Sudah absen · koreksi lewat Koreksi absensi" : ROSTER_LOCK_LABELS[lock];

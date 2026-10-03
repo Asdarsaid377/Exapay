@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { rosterEntrySchema } from "./shiftRoster.js";
 import { CALENDAR_YEAR_MAX, CALENDAR_YEAR_MIN } from "./workCalendar.js";
 
 // Absen masuk/pulang karyawan (feature 14, portal /me). Waktu selalu dari server; lokasi GPS opsional (dicatat, tidak memblokir).
@@ -101,6 +102,10 @@ export const attendanceRecordSchema = z.object({
   scheduledEnd: z.string().nullable(),
   lateMinutes: z.number().int(),
   status: z.enum(ATTENDANCE_STATUSES),
+  // Nama shift yang dicocokkan saat absen masuk (feature 47, snapshot) — null = ikut jadwal usaha / tanpa shift
+  shiftName: z.string().nullable(),
+  // Karyawan mode shift absen masuk di hari tanpa shift → tanda "Tanpa jadwal" (ditinjau, gaji tidak berubah)
+  unscheduled: z.boolean(),
   checkInLocated: z.boolean(),
   checkOutLocated: z.boolean(),
   checkInGeofence: geofenceResultSchema.nullable(),
@@ -128,6 +133,17 @@ export const attendanceTodaySchema = z.object({
   locationCheck: z.boolean(),
   // true = absen masuk/pulang wajib menyertakan selfie (portal membuka kamera depan)
   selfieRequired: z.boolean(),
+  // Karyawan mode shift (feature 47) — null = ikut jadwal usaha (kartu memakai `day`)
+  shift: z
+    .object({
+      // Tanggal kerja kartu: shift malam dihitung di tanggal mulai (setelah tengah malam bisa = kemarin, sampai absen pulang)
+      workDate: z.string(),
+      // null = roster belum diatur; off = libur
+      entry: rosterEntrySchema.nullable(),
+      // Absen masuk paling cepat (ISO) — null bila tanpa shift atau sudah absen masuk
+      checkInOpensAt: z.string().nullable(),
+    })
+    .nullable(),
   record: attendanceRecordSchema.nullable(),
 });
 export type AttendanceToday = z.infer<typeof attendanceTodaySchema>;

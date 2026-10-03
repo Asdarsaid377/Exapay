@@ -1,7 +1,7 @@
 "use client";
 
 import { type AttendanceEvent, type AttendanceLocation, type AttendanceRecord, type AttendanceToday, timeZoneLabel } from "@exapay/shared";
-import { CircleCheck, Clock, LogIn, LogOut } from "lucide-react";
+import { CalendarX, CircleCheck, Clock, LogIn, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -39,6 +39,8 @@ const ACCESS_MESSAGES = {
 // Jam tampil = jam server (selisih jam perangkat dikoreksi); jam yang tercatat tetap ditentukan API saat tombol ditekan.
 // Wajib selfie (feature 45, design me-attendance-selfie): pemberitahuan sekali per perangkat → kamera depan → kirim
 // absen + foto. Lokasi dibaca bersamaan saat kamera terbuka. Foto di kartu dibuka lewat SelfieViewer.
+// Mode shift (feature 47, design me-schedule): baris jadwal = shift kartu aktif; absen masuk dibuka 2 jam sebelum shift;
+// absen di hari tanpa shift diberi keterangan "Absen di luar jadwal".
 export function AttendanceCard({ today }: Props) {
   const router = useRouter();
   const [offsetMs, setOffsetMs] = useState<number | null>(null);
@@ -114,6 +116,9 @@ export function AttendanceCard({ today }: Props) {
   const busy = step !== null;
   const shots = record ? selfieShots(record) : [];
   const busyLabel = step === "locating" ? "Mengambil lokasi…" : "Menyimpan…";
+  // Shift belum dibuka untuk absen masuk — tombol aktif sendiri saat jamnya tiba
+  const opensAt = today.shift?.checkInOpensAt ?? null;
+  const notYetOpen = !record && opensAt !== null && now.getTime() < Date.parse(opensAt);
 
   return (
     <section aria-labelledby="attendance-card-title" className="glass-strong flex flex-col gap-4 rounded-[24px] p-5">
@@ -133,9 +138,7 @@ export function AttendanceCard({ today }: Props) {
           {formatClockTime(now, today.timeZone)}
         </time>
         <span className="text-[15px] font-bold text-text-primary">{formatLongDate(new Date(`${today.date}T12:00:00Z`), "UTC")}</span>
-        <span className="text-sm text-text-secondary">
-          {today.day.startTime && today.day.endTime ? `Jadwal ${today.day.startTime}–${today.day.endTime}` : "Tidak ada jadwal kerja hari ini"}
-        </span>
+        <span className="text-sm text-text-secondary tabular-nums">{scheduleLine(today)}</span>
       </div>
 
       {today.access !== "ok" ? (
@@ -181,16 +184,26 @@ export function AttendanceCard({ today }: Props) {
               <CheckInLocationNote event="check_in" geofence={record.checkInGeofence} />
             )
           ) : null}
+          {record?.unscheduled ? (
+            <div role="status" className="flex gap-2.5 rounded-[14px] border border-info/22 bg-info/6 px-3.5 py-3">
+              <CalendarX aria-hidden className="mt-px size-4.5 shrink-0 text-info" />
+              <p className="text-sm text-pretty text-text-primary">Absen di luar jadwal — akan ditinjau atasan.</p>
+            </div>
+          ) : null}
 
           {error ? <FormAlert tone="danger">{error}</FormAlert> : null}
 
           {!record ? (
             <>
-              <Button size="lg" fullWidth loading={busy} onClick={() => void clock("in")}>
+              <Button size="lg" fullWidth loading={busy} disabled={notYetOpen} onClick={() => void clock("in")}>
                 {busy ? null : <LogIn aria-hidden className="size-5" />}
                 {busy ? busyLabel : "Absen Masuk"}
               </Button>
-              {today.selfieRequired ? (
+              {notYetOpen && opensAt ? (
+                <p className="text-center text-[13px] text-pretty text-text-secondary tabular-nums">
+                  Absen masuk dibuka pukul {formatClockTime(opensAt, today.timeZone)} (2 jam sebelum shift mulai).
+                </p>
+              ) : today.selfieRequired ? (
                 <p className="text-center text-[13px] text-pretty text-text-secondary">
                   Absen memakai selfie sebagai bukti kehadiran.{today.locationCheck ? " Lokasi Anda juga dicatat saat absen." : ""}
                 </p>
@@ -320,8 +333,20 @@ function checkInText(record: AttendanceRecord, timeZone: string): string {
   return `Masuk ${formatClockTime(record.checkInAt, timeZone)} · ${attendanceStatusLabel(record)}`;
 }
 
-// Keterangan kanan atas: nama libur / hari libur jadwal
+// Baris jadwal di bawah tanggal: jadwal usaha, atau shift kartu aktif (mode shift)
+function scheduleLine(today: AttendanceToday): string {
+  const { shift } = today;
+  if (!shift) return today.day.startTime && today.day.endTime ? `Jadwal ${today.day.startTime}–${today.day.endTime}` : "Tidak ada jadwal kerja hari ini";
+  if (!shift.entry) return "Jadwal belum diatur";
+  if (shift.entry.kind === "off") return "Tidak ada shift hari ini";
+  // Shift malam yang dimulai kemarin dan belum absen pulang
+  const label = shift.workDate < today.date ? `Shift ${shift.entry.name} kemarin` : shift.workDate > today.date ? `Shift ${shift.entry.name} besok` : `Shift ${shift.entry.name}`;
+  return `${label} · ${shift.entry.startTime}–${shift.entry.endTime}${shift.entry.overnight ? " (+1)" : ""}`;
+}
+
+// Keterangan kanan atas: nama libur / hari libur jadwal (mode shift: ada shift atau tidak)
 function dayNote(today: AttendanceToday): string {
+  if (today.shift) return today.shift.entry?.kind === "shift" ? "Hari kerja" : "Hari libur";
   if (today.day.holidayName) return today.day.holidayName;
   return today.day.isWorkday ? "Hari kerja" : "Hari libur";
 }

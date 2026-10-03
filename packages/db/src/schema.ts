@@ -4,6 +4,7 @@ import {
   ATTENDANCE_ALLOWANCE_MODES,
   ATTENDANCE_EVENTS,
   ATTENDANCE_REVIEW_DECISIONS,
+  ATTENDANCE_REVIEW_SUBJECTS,
   BILLING_DECISION_SOURCES,
   BILLING_INVOICE_STATUSES,
   BPJS_PROGRAMS,
@@ -593,6 +594,11 @@ export const attendanceRecords = pgTable(
     checkInSelfieType: text("check_in_selfie_type", { enum: TASK_PHOTO_TYPES }),
     checkOutSelfieKey: text("check_out_selfie_key"),
     checkOutSelfieType: text("check_out_selfie_type", { enum: TASK_PHOTO_TYPES }),
+    // Absensi berbasis roster (feature 47): nama shift yang dicocokkan saat absen masuk (snapshot, jam di scheduled_start/end;
+    // shift malam = scheduled_end ≤ scheduled_start, tanggal kerja = tanggal mulai). unscheduled = karyawan mode shift absen
+    // masuk di hari tanpa shift → tanda "Tanpa jadwal" untuk ditinjau (bukan hari kerja, tidak telat).
+    shiftName: text("shift_name"),
+    unscheduled: boolean("unscheduled").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -638,6 +644,8 @@ export const attendanceRecords = pgTable(
       "attendance_records_check_out_selfie",
       sql`(${t.checkOutSelfieKey} IS NULL OR ${t.checkOutSelfieType} IS NOT NULL) AND coalesce(${t.checkOutSelfieType} IN ('image/jpeg', 'image/png', 'image/webp'), true)`,
     ),
+    check("attendance_records_shift_name", sql`${t.shiftName} IS NULL OR (length(${t.shiftName}) BETWEEN 1 AND 40 AND ${t.scheduledStart} IS NOT NULL)`),
+    check("attendance_records_unscheduled", sql`NOT ${t.unscheduled} OR (${t.scheduledStart} IS NULL AND ${t.shiftName} IS NULL)`),
     // Antrean tinjauan: absen bertanda per tenant per tanggal
     index("attendance_records_tenant_flagged_idx")
       .on(t.tenantId, t.workDate)
@@ -802,6 +810,7 @@ export const shiftRosterDays = pgTable(
 );
 
 export const attendanceEvent = pgEnum("attendance_event", ATTENDANCE_EVENTS);
+export const attendanceReviewSubject = pgEnum("attendance_review_subject", ATTENDANCE_REVIEW_SUBJECTS);
 export const attendanceReviewDecision = pgEnum("attendance_review_decision", ATTENDANCE_REVIEW_DECISIONS);
 
 // Keputusan tinjauan absen bertanda (feature 44): satu baris per absen masuk/pulang, boleh diubah (keputusan terakhir menang,
@@ -815,6 +824,8 @@ export const attendanceReviews = pgTable(
       .references(() => tenants.id, { onDelete: "restrict" }),
     attendanceRecordId: uuid("attendance_record_id").notNull(),
     event: attendanceEvent("event").notNull(),
+    // location = tanda geofence (feature 44); schedule = tanda "Tanpa jadwal" absen masuk (feature 47)
+    subject: attendanceReviewSubject("subject").notNull().default("location"),
     decision: attendanceReviewDecision("decision").notNull(),
     note: text("note"),
     reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
@@ -824,7 +835,7 @@ export const attendanceReviews = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    uniqueIndex("attendance_reviews_tenant_record_event_key").on(t.tenantId, t.attendanceRecordId, t.event),
+    uniqueIndex("attendance_reviews_tenant_record_event_subject_key").on(t.tenantId, t.attendanceRecordId, t.event, t.subject),
     foreignKey({
       name: "attendance_reviews_record_fk",
       columns: [t.tenantId, t.attendanceRecordId],
@@ -832,6 +843,7 @@ export const attendanceReviews = pgTable(
     }).onDelete("restrict"),
     check("attendance_reviews_note", sql`${t.note} IS NULL OR length(${t.note}) BETWEEN 1 AND 500`),
     check("attendance_reviews_follow_up_note", sql`${t.decision} <> 'follow_up' OR ${t.note} IS NOT NULL`),
+    check("attendance_reviews_schedule_check_in", sql`${t.subject} <> 'schedule' OR ${t.event} = 'check_in'`),
   ],
 );
 

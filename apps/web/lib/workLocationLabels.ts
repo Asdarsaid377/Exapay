@@ -11,14 +11,16 @@ import {
 
 import type { BadgeTone } from "@/components/common/Badge";
 import { formatClockTime } from "@/lib/attendanceLabels";
+import { scheduleDayLabel } from "@/lib/shiftLabels";
 
 // Teks & tautan lokasi kerja dan tinjauan absensi (feature 44, design settings-locations / attendance-review / geofence-components)
 
-// Badge tanda: warning untuk lokasi meleset, neutral untuk lokasi tidak terbaca (design "AttendanceFlagBadge")
+// Badge tanda: warning untuk lokasi meleset, neutral untuk lokasi tidak terbaca, info untuk tanpa jadwal (design "AttendanceFlagBadge")
 export const FLAG_TONES: Record<AttendanceFlagKind, BadgeTone> = {
   outside: "warning",
   inaccurate: "warning",
   no_location: "neutral",
+  no_schedule: "info",
 };
 
 export const DECISION_TONES: Record<AttendanceReviewDecision, BadgeTone> = {
@@ -47,7 +49,8 @@ export function formatCoordinates(latitude: number, longitude: number): string {
 }
 
 // Rincian satu baris di bawah badge tanda (generik — jenis baru cukup menambah kasus)
-export function flagDetail(flag: AttendanceReviewItem["flag"]): string {
+export function flagDetail(flag: AttendanceReviewItem["flag"], workDate: string): string {
+  if (flag.kind === "no_schedule") return `Tidak ada shift pada ${scheduleDayLabel(workDate)}`;
   if (flag.kind === "no_location") return "Lokasi tidak terbaca (izin lokasi ditolak atau GPS mati)";
   const place = flag.locationName ?? "lokasi kerja";
   if (flag.kind === "inaccurate") return `Akurasi ${flag.accuracyM !== null ? formatAccuracy(flag.accuracyM) : "rendah"}, terdekat ${place}`;
