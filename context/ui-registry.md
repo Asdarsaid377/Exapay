@@ -117,6 +117,13 @@ Setelah membangun component apapun — update file ini dengan format entry di ba
 - **Pola kelas kunci:** wrapper `mx-auto max-w-lg px-3.5 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] gap-3.5`; header `glass sticky top-3 h-15 rounded-[20px]`; bottom nav mengambang `fixed inset-x-0 bottom-0 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]` → `glass h-18 rounded-[24px] p-1.5 grid-cols-5 gap-1`, item `rounded-[18px] text-xs`, aktif `bg-accent-soft font-bold text-accent-strong`, default `text-text-secondary`
 - **Catatan:** maks 3 lapisan blur di portal (header, kartu utama, bottom nav) — card lain `surface-solid`. Beranda aktif hanya tepat di `/me`. Prop `inactive` (feature 37): karyawan nonaktif → hanya item `whenInactive` (Slip & Profil) `grid-cols-2`; layout portal mengisinya lewat `isInactiveEmployee()` (`lib/portalAccess.ts`)
 
+### DashboardShortcut
+- **Path:** apps/web/components/layout/DashboardShortcut.tsx
+- **Dipakai di:** /me (beranda portal) — hanya owner/admin/atasan yang tertaut ke data karyawan aktif
+- **Referensi desain:** tanpa referensi visual (izin user 2026-10-05) — turunan pola baris TenantPicker
+- **Pola kelas kunci:** `surface-solid flex min-h-15 items-center gap-3 rounded-[20px] px-4 py-2.5 hover:bg-accent/10`; ikon `LayoutDashboard` dalam lingkaran `size-10 rounded-full bg-accent/10 text-accent-strong`; judul 15px bold, sub 13px `text-text-secondary`; `ChevronRight` di kanan
+- **Catatan:** tampil tepat di bawah sapaan, sebelum kartu absen
+
 ### PageHeader
 - **Path:** apps/web/components/layout/PageHeader.tsx
 - **Dipakai di:** /dashboard, /me, halaman "Segera hadir"

@@ -44,9 +44,11 @@ export function readSessionClaims(accessToken: string | undefined): SessionClaim
   }
 }
 
-// Halaman awal sesuai peran. null = sudah login tapi belum memilih usaha (tampilkan pilihan di /login).
+// Halaman awal. null = sudah login tapi belum memilih usaha (tampilkan pilihan di /login).
+// Semua peran mendarat di portal /me agar absen mudah ditemukan; owner/admin/atasan yang tidak tertaut ke data karyawan
+// aktif diteruskan /me ke /dashboard (keputusan user 2026-10-05).
 export function homePathFor(claims: Pick<SessionClaims, "tenantId" | "role" | "isSuperAdmin">): string | null {
-  if (claims.tenantId && claims.role) return claims.role === "karyawan" ? "/me" : "/dashboard";
+  if (claims.tenantId && claims.role) return "/me";
   if (claims.isSuperAdmin) return "/admin/tenants";
   return null;
 }

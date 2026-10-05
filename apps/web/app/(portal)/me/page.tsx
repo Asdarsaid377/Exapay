@@ -1,12 +1,14 @@
 import { CloudOff } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AttendanceCard } from "@/components/attendance/AttendanceCard";
 import { AttendanceMonthTile } from "@/components/attendance/AttendanceMonthTile";
 import { MyScheduleCard } from "@/components/attendance/MyScheduleCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { KpiScoreTile } from "@/components/kpi/KpiScoreTile";
+import { DashboardShortcut } from "@/components/layout/DashboardShortcut";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { LatestPayslipTile } from "@/components/payroll/LatestPayslipTile";
 import { LogTaskButton } from "@/components/tasks/LogTaskButton";
@@ -18,17 +20,21 @@ import { fetchMySchedule } from "@/lib/api/shiftRoster";
 import { fetchMyTaskDay } from "@/lib/api/taskLogs";
 import { getSession } from "@/lib/auth/getSession";
 import { DEFAULT_TIME_ZONE, firstNameOf, formatLongDate, greetingFor } from "@/lib/datetime";
-import { requireActiveEmployee } from "@/lib/portalAccess";
+import { canUsePortalAttendance, requireActiveEmployee } from "@/lib/portalAccess";
 
 export const metadata: Metadata = { title: "Beranda — Exapay" };
 
 // Beranda portal karyawan mengikuti snapshot context/designs/me.html. Kartu absen (feature 14) + tugas hari ini (feature 19)
 // + "Jadwal saya" untuk karyawan shift (feature 46) + grid tile (feature 37): "Skor bulan ini" (tampil jika jabatan punya template KPI), "Kehadiran bulan ini", "Slip gaji
 // terakhir" (tampil jika ada slip terbit). Tile yang gagal dimuat dilewati — kartu utama tetap tampil.
+// Semua peran mendarat di sini setelah login: owner/admin/atasan yang belum memenuhi syarat absen → /dashboard; yang
+// memenuhi melihat pintasan "Buka dashboard" di bawah sapaan.
 export default async function PortalHomePage() {
+  const session = await getSession();
+  const isStaff = session?.activeTenant != null && session.activeTenant.role !== "karyawan";
+  if (isStaff && !(await canUsePortalAttendance())) redirect("/dashboard");
   await requireActiveEmployee();
-  const [session, today, tasks, score, history, payslips, schedule] = await Promise.all([
-    getSession(),
+  const [today, tasks, score, history, payslips, schedule] = await Promise.all([
     fetchAttendanceToday(),
     fetchMyTaskDay(null),
     fetchMyKpiScore(null),
@@ -45,6 +51,7 @@ export default async function PortalHomePage() {
   return (
     <>
       <PageHeader title={`${greetingFor(now, timeZone)}, ${firstNameOf(session?.user.fullName ?? "")}`} description={formatLongDate(now, timeZone)} />
+      {isStaff ? <DashboardShortcut /> : null}
       {today.ok ? (
         <AttendanceCard today={today.data} />
       ) : (

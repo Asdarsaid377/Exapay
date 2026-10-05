@@ -10,6 +10,7 @@ import { fetchSetupGuide } from "@/lib/api/setupGuide";
 import { fetchWorkShifts } from "@/lib/api/shiftRoster";
 import { getSession } from "@/lib/auth/getSession";
 import { formatLongDate } from "@/lib/datetime";
+import { canUsePortalAttendance } from "@/lib/portalAccess";
 import { ROSTER_HREF, staffMenuFor } from "@/lib/navigation";
 import { setupGuideMenuLabel } from "@/lib/setupGuideContent";
 
@@ -35,6 +36,8 @@ export default async function MainLayout({ children }: Props) {
   const hiddenHrefs = shifts.ok && shifts.data.items.length === 0 ? [ROSTER_HREF] : [];
   // Panduan setup yang dilewati bisa dibuka lagi dari menu akun (feature 48). Gagal dimuat → tanpa item
   const setupGuide = canSeeBilling ? await fetchSetupGuide() : null;
+  // Menu "Absen saya" hanya bila tertaut ke data karyawan aktif — selain itu /me meneruskan balik ke /dashboard
+  const showPortalLink = await canUsePortalAttendance();
 
   return (
     <AppShell
@@ -42,7 +45,7 @@ export default async function MainLayout({ children }: Props) {
       headerStart={<TenantSwitcher activeTenant={activeTenant} tenants={session.tenants} />}
       sections={staffMenuFor(activeTenant.role, hiddenHrefs)}
       todayLabel={formatLongDate(new Date())}
-      showPortalLink
+      showPortalLink={showPortalLink}
       setupGuideProgress={setupGuide?.ok ? setupGuideMenuLabel(setupGuide.data) : null}
     >
       {subscription?.ok ? <SubscriptionBanner summary={subscription.data} canManage={activeTenant.role === "owner"} /> : null}
