@@ -1,0 +1,19 @@
+{
+  "name": "exapay-marketing-video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Render video promosi Exapay (Story/Reels/TikTok) ke MP4. Terpisah dari pnpm workspace agar tidak ikut build produksi.",
+  "scripts": {
+    "render": "node src/render.mjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "esbuild": "0.25.12",
+    "lucide-react": "1.48.0",
+    "puppeteer-core": "^24.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3"
+  }
+}

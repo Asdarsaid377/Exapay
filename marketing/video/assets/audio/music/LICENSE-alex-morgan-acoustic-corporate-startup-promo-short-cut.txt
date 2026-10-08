@@ -1,0 +1,16 @@
+Track:    Acoustic Corporate Startup Promo Short Cut
+Artist:   Alex Morgan
+Album:    Corporate Business Vol. 1
+Source:   https://freemusicarchive.org/music/alex-morgan/corporate-business-vol-1-vol-1/acoustic-corporate-startup-promo-short-cut/
+Note:     marked "AI-generated" by the uploader on Free Music Archive; 73 s, 96 BPM (listed)
+Downloaded: 2026-10-08 (MP3 320 kbps, unmodified file)
+
+License:  Creative Commons Attribution 4.0 International (CC BY 4.0)
+          https://creativecommons.org/licenses/by/4.0/
+          Full legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Commercial use is allowed. Attribution is REQUIRED wherever the video is published, e.g. in the post caption:
+  Music: "Acoustic Corporate Startup Promo Short Cut" by Alex Morgan (Free Music Archive), CC BY 4.0
+
+Changes made in the rendered videos: trimmed, time-stretched 97.47 → 96 BPM (atempo, pitch preserved),
+volume lowered, faded in/out, mixed with sound effects.

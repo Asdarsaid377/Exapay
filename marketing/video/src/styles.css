@@ -1,0 +1,34 @@
+/* Entry Tailwind untuk scene video. Token & utility (glass-strong, surface-solid, dll.) diambil dari
+   apps/web/app/globals.css — render.mjs menyalinnya ke build/theme.css tanpa baris @import "tailwindcss". */
+@import "tailwindcss" source(none);
+@import "../build/theme.css";
+
+@source "../build/mockups.html";
+@source "./scene.js";
+
+:root {
+  /* Diisi next/font di app; di video memakai file TTF OFL dari assets/fonts (@font-face disisipkan render.mjs) */
+  --font-jakarta: "Plus Jakarta Sans";
+  --font-dm-sans: "DM Sans";
+}
+
+/* Semua gerak dihitung per frame oleh scene.js */
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-background);
+}
+
+#stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+}

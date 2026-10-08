@@ -44,6 +44,7 @@
 ├── .env.production.example           → template env production (salinan asli `.env.production` tidak di-commit)
 ├── docker/postgres/init/             → script init: role app_owner & app_user (dev & production)
 ├── docker/production/                → Dockerfile multi-target, Caddyfile, SeaweedFS start.sh, image backup (restic), uji restore, README runbook deploy
+├── marketing/video/                  → render video promosi (Story/Reels) ke MP4: Node + Chrome headless + ffmpeg, memakai ulang mockup landing & token globals.css. package.json sendiri di LUAR pnpm workspace agar tidak ikut build/bundle produksi (keputusan user 2026-10-08, lihat README di folder itu)
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── apps/
